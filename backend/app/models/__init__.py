@@ -1,36 +1,55 @@
 """All ORM models. Importing this package registers every table on Base.metadata."""
 
-from app.models.group import Group, GroupInvitation, GroupMember
+from app.models.favorite import Favorite
 from app.models.import_job import ImportJob
+from app.models.note import Note
+from app.models.notebook import Notebook, NotebookAccess, NotebookInvitation
+from app.models.pantry import PantryItem, ShoppingListItem
 from app.models.recipe import (
     Recipe,
+    RecipeCategory,
     RecipeContribution,
-    RecipeEditor,
     RecipeIngredient,
     RecipeOccasion,
     RecipeSeason,
+    RecipeTag,
 )
-from app.models.taxonomy import Ingredient, Occasion, Season
+from app.models.spice import SpiceBlend, SpiceBlendItem, SpiceEquivalenceRule, SpiceSubstitution
+from app.models.taxonomy import Category, Ingredient, Occasion, Season, ShoppingSection, Tag
 from app.models.user import AuthIdentity, PasswordResetToken, User
-from app.models.wine import RecipeWine, Wine
+from app.models.wine import PairingRule, RecipeWine, Wine, WineCategory
 
 __all__ = [
     "AuthIdentity",
-    "Group",
-    "GroupInvitation",
-    "GroupMember",
+    "Category",
+    "Favorite",
     "ImportJob",
     "Ingredient",
+    "Note",
+    "Notebook",
+    "NotebookAccess",
+    "NotebookInvitation",
     "Occasion",
+    "PairingRule",
+    "PantryItem",
     "PasswordResetToken",
     "Recipe",
+    "RecipeCategory",
     "RecipeContribution",
-    "RecipeEditor",
     "RecipeIngredient",
     "RecipeOccasion",
     "RecipeSeason",
+    "RecipeTag",
     "RecipeWine",
     "Season",
+    "ShoppingListItem",
+    "ShoppingSection",
+    "SpiceBlend",
+    "SpiceBlendItem",
+    "SpiceEquivalenceRule",
+    "SpiceSubstitution",
+    "Tag",
     "User",
     "Wine",
+    "WineCategory",
 ]

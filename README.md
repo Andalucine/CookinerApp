@@ -1,6 +1,6 @@
 # CookinerApp
 
-Recetario compartido por grupos (familias, amigos) con búsqueda por ingredientes, tiempo, cocinero, fuente, estación y época; importación de recetas y vinos desde páginas web conservando el enlace a la fuente original; vídeos de YouTube embebidos y vinos recomendados para cada receta.
+Cuaderno de cocina personal (recetas, vinos, especias, notas y despensa) que se puede compartir con lectores y editores, con búsqueda por ingredientes, tiempo, cocinero, fuente, estación y época; importación de recetas y vinos desde páginas web conservando el enlace a la fuente original; vídeos de YouTube embebidos y vinos recomendados para cada receta.
 
 - **Backend:** Python 3.12 · FastAPI · PostgreSQL 16 · SQLAlchemy · Alembic (`backend/`)
 - **App móvil:** Expo / React Native, iOS y Android (`mobile/`)
@@ -14,7 +14,7 @@ Requisitos: Docker Desktop y git.
 1. Clonar el repositorio y entrar en la carpeta.
 2. Copiar las variables de entorno: `cp .env.example .env` (los valores por defecto sirven para desarrollo).
 3. Arrancar la base de datos y la API: `docker compose up --build`
-4. Aplicar las migraciones (en otra terminal): `docker compose exec api alembic upgrade head` — crea las tablas y precarga estaciones y épocas.
+4. Crear las tablas y cargar los catálogos (en otra terminal): `docker compose exec api alembic upgrade head` y después `docker compose exec api python -m scripts.seed_catalogs` (estaciones, épocas, categorías, etiquetas, especias, vinos, secciones de compra; se puede repetir sin duplicar). Si tenías la base de datos de la sesión 2, antes: `docker compose down -v`.
 5. Abrir http://localhost:8000/docs — la documentación interactiva de la API. `GET /health` debe responder `{"status": "ok"}`.
 
 Para parar: `docker compose down`. Para borrar también la base de datos: `docker compose down -v`.

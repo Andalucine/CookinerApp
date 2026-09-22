@@ -12,8 +12,10 @@ class ImportJob(Base):
     __tablename__ = "import_jobs"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
-    group_id: Mapped[int | None] = mapped_column(ForeignKey("groups.id", ondelete="CASCADE"))
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    notebook_id: Mapped[int | None] = mapped_column(ForeignKey("notebooks.id", ondelete="CASCADE"))
     kind: Mapped[str] = mapped_column(String(10), nullable=False)  # 'recipe' | 'wine'
     url: Mapped[str] = mapped_column(String(1000), nullable=False)
     status: Mapped[str] = mapped_column(String(10), default="pending", nullable=False)  # ok|error

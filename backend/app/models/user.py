@@ -1,16 +1,29 @@
-"""Users, external identities (Google/Apple) and password reset codes."""
+"""Users, their plan, external identities (Google/Apple) and password reset codes."""
 
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, UniqueConstraint, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 from app.models.base import TimestampMixin
 
 if TYPE_CHECKING:
-    from app.models.group import GroupMember
+    from app.models.notebook import Notebook, NotebookAccess
+
+PLAN_FREE = "free"
+PLAN_INDIVIDUAL = "individual"
+PLAN_FAMILY = "family"
+
+# Limits per plan (None = unlimited). Copied into the user row on registration so that an
+# individual account can be given an exception without changing the plan.
+PLAN_LIMITS: dict[str, dict[str, int | None]] = {
+    PLAN_FREE: {"max_recipes": 15, "max_shared_with": 0},
+    PLAN_INDIVIDUAL: {"max_recipes": None, "max_shared_with": 2},
+    PLAN_FAMILY: {"max_recipes": None, "max_shared_with": None},
+}
+FAMILY_PLAN_ACCOUNTS = 5
 
 
 class User(TimestampMixin, Base):
@@ -25,10 +38,24 @@ class User(TimestampMixin, Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
+    # Plan: 'free' | 'individual' | 'family'. Billing is not implemented yet.
+    plan: Mapped[str] = mapped_column(String(20), default=PLAN_FREE, nullable=False)
+    max_recipes: Mapped[int | None] = mapped_column(Integer)  # None = unlimited
+    max_shared_with: Mapped[int | None] = mapped_column(Integer)  # None = unlimited
+    # Family plan: the account that pays; the other (up to 4) accounts point to it.
+    family_owner_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+
     identities: Mapped[list["AuthIdentity"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
-    memberships: Mapped[list["GroupMember"]] = relationship(back_populates="user")
+    notebook: Mapped["Notebook"] = relationship(
+        back_populates="owner", uselist=False, foreign_keys="Notebook.owner_id"
+    )
+    notebook_accesses: Mapped[list["NotebookAccess"]] = relationship(back_populates="user")
+
+    @property
+    def notebook_id(self) -> int:
+        return self.notebook.id
 
 
 class AuthIdentity(TimestampMixin, Base):

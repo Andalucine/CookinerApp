@@ -1,20 +1,41 @@
-"""Reference tables: ingredients catalogue, seasons and occasions."""
+"""Reference tables shared by all notebooks: ingredients, seasons, occasions, categories,
+tags and shopping sections."""
 
-from sqlalchemy import Boolean, ForeignKey, String, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Boolean, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 
 
+class ShoppingSection(Base):
+    """Supermarket sections, in the order you walk through the shop."""
+
+    __tablename__ = "shopping_sections"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    code: Mapped[str] = mapped_column(String(30), unique=True, nullable=False)  # produce, meat...
+    name_es: Mapped[str] = mapped_column(String(60), nullable=False)
+    name_en: Mapped[str] = mapped_column(String(60), nullable=False)
+    position: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
+
 class Ingredient(Base):
-    """Global catalogue, shared by all groups. `name` is normalised (lowercase, singular)."""
+    """Global catalogue. `name` is normalised (lowercase, singular). Spices are ingredients too."""
 
     __tablename__ = "ingredients"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(100), unique=True, index=True, nullable=False)
     name_en: Mapped[str | None] = mapped_column(String(100))
-    category: Mapped[str | None] = mapped_column(String(50))  # verdura, carne, pescado...
+    # Other names people use ("hierbabuena", "matalahúva"), comma separated
+    aliases: Mapped[str | None] = mapped_column(String(300))
+    is_spice: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # 'herbs', 'seeds', 'barks_roots_flowers', 'peppers_chillies', 'paprikas', 'blends',
+    # 'salts_seasonings' — only for spices
+    spice_family: Mapped[str | None] = mapped_column(String(30))
+    shopping_section_id: Mapped[int | None] = mapped_column(ForeignKey("shopping_sections.id"))
+
+    shopping_section: Mapped[ShoppingSection | None] = relationship()
 
 
 class Season(Base):
@@ -29,13 +50,59 @@ class Season(Base):
 
 
 class Occasion(Base):
-    """Occasions/periods: Navidad, Cuaresma... Preloaded ones have group_id NULL."""
+    """Occasions/periods: Navidad, Cuaresma... Preloaded ones have notebook_id NULL."""
 
     __tablename__ = "occasions"
-    __table_args__ = (UniqueConstraint("group_id", "name_es"),)
+    __table_args__ = (UniqueConstraint("notebook_id", "name_es"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    group_id: Mapped[int | None] = mapped_column(ForeignKey("groups.id", ondelete="CASCADE"))
+    notebook_id: Mapped[int | None] = mapped_column(ForeignKey("notebooks.id", ondelete="CASCADE"))
     name_es: Mapped[str] = mapped_column(String(50), nullable=False)
     name_en: Mapped[str] = mapped_column(String(50), nullable=False)
     is_preloaded: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+
+class Category(Base):
+    """Recipe category tree, three levels: branch (Salado/Dulce/Bebidas) → category → subcategory.
+
+    Global and closed in v1 (`notebook_id` NULL). The column is there so that a notebook can add
+    its own subcategories later, as occasions already allow.
+    """
+
+    __tablename__ = "categories"
+    __table_args__ = (UniqueConstraint("parent_id", "slug"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    parent_id: Mapped[int | None] = mapped_column(
+        ForeignKey("categories.id", ondelete="CASCADE"), index=True
+    )
+    notebook_id: Mapped[int | None] = mapped_column(ForeignKey("notebooks.id", ondelete="CASCADE"))
+    slug: Mapped[str] = mapped_column(String(60), nullable=False)
+    name_es: Mapped[str] = mapped_column(String(80), nullable=False)
+    name_en: Mapped[str] = mapped_column(String(80), nullable=False)
+    examples_es: Mapped[str | None] = mapped_column(String(200))  # "gazpacho, salmorejo"
+    level: Mapped[int] = mapped_column(Integer, nullable=False)  # 1 branch, 2 category, 3 sub
+    position: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    is_preloaded: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    parent: Mapped["Category | None"] = relationship(remote_side=[id], back_populates="children")
+    children: Mapped[list["Category"]] = relationship(
+        back_populates="parent", order_by="Category.position"
+    )
+
+
+class Tag(Base):
+    """Closed lists the user ticks.
+
+    kind = 'course' | 'method' | 'diet' | 'difficulty' | 'origin'.
+    """
+
+    __tablename__ = "tags"
+    __table_args__ = (UniqueConstraint("kind", "code"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    kind: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    code: Mapped[str] = mapped_column(String(40), nullable=False)
+    name_es: Mapped[str] = mapped_column(String(60), nullable=False)
+    name_en: Mapped[str] = mapped_column(String(60), nullable=False)
+    position: Mapped[int] = mapped_column(Integer, default=0, nullable=False)

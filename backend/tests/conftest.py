@@ -32,3 +32,33 @@ def client(db_session):
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def seeded(db_session):
+    """Catalogues loaded (categories, tags, spices, sections...)."""
+    from scripts.seed_catalogs import run
+
+    run(db_session)
+    return db_session
+
+
+@pytest.fixture
+def make_user(client):
+    """Register a user and return the auth headers for them."""
+
+    def _make(name="Ana", email=None, language="es"):
+        r = client.post(
+            "/auth/register",
+            json={
+                "email": email or f"{name.lower()}@example.com",
+                "display_name": name,
+                "password": "secreta123",
+                "language": language,
+            },
+        )
+        assert r.status_code == 201, r.text
+        body = r.json()
+        return {"Authorization": f"Bearer {body['access_token']}"}, body["user"]
+
+    return _make

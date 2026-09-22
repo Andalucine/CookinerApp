@@ -14,6 +14,20 @@ def test_register_returns_token_and_user(client):
     assert body["access_token"]
     assert body["user"]["email"] == "ana@example.com"  # normalised to lowercase
     assert body["user"]["display_name"] == "Ana"
+    # free plan with its limits, and the personal notebook created on the spot
+    assert body["user"]["plan"] == "free"
+    assert body["user"]["max_recipes"] == 15
+    assert body["user"]["max_shared_with"] == 0
+    assert body["user"]["notebook_id"] > 0
+
+
+def test_register_creates_one_notebook_named_after_the_user(client, db_session):
+    from app.models import Notebook
+
+    register(client)
+    notebooks = db_session.query(Notebook).all()
+    assert len(notebooks) == 1
+    assert notebooks[0].name == "Cuaderno de Ana"
 
 
 def test_register_duplicate_email_is_rejected_in_spanish_and_english(client):

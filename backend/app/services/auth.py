@@ -13,7 +13,8 @@ from app.core.security import (
     hash_token,
     verify_password,
 )
-from app.models import PasswordResetToken, User
+from app.models import Notebook, PasswordResetToken, User
+from app.models.user import PLAN_FREE, PLAN_LIMITS
 
 logger = logging.getLogger(__name__)
 
@@ -35,15 +36,26 @@ def get_user_by_email(db: Session, email: str) -> User | None:
 
 
 def register(db: Session, email: str, display_name: str, password: str, language: str) -> User:
+    """Create the account on the free plan together with its personal notebook."""
     if get_user_by_email(db, email):
         raise EmailAlreadyRegistered
+    limits = PLAN_LIMITS[PLAN_FREE]
     user = User(
         email=email.lower(),
         display_name=display_name.strip(),
         password_hash=hash_password(password),
         language=language,
+        plan=PLAN_FREE,
+        max_recipes=limits["max_recipes"],
+        max_shared_with=limits["max_shared_with"],
     )
     db.add(user)
+    db.flush()  # gives user.id
+    if language == "en":
+        name = f"{user.display_name}'s notebook"
+    else:
+        name = f"Cuaderno de {user.display_name}"
+    db.add(Notebook(owner_id=user.id, name=name))
     db.commit()
     db.refresh(user)
     return user

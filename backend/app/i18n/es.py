@@ -10,4 +10,19 @@ TEXTS = {
     "reset_code_sent": "Si el correo existe, recibirás un código para cambiar la contraseña.",
     "reset_code_invalid": "El código no es válido o ha caducado.",
     "password_updated": "Contraseña actualizada. Ya puedes iniciar sesión.",
+    "recipe_not_found": "No se ha encontrado la receta.",
+    "notebook_not_found": "No se ha encontrado el cuaderno.",
+    "recipe_limit_reached": (
+        "Has llegado al máximo de recetas de tu plan. "
+        "Pásate al plan individual para seguir añadiendo."
+    ),
+    "invalid_reference": (
+        "Alguna categoría, etiqueta, estación o época no existe, o falta el enlace de la fuente."
+    ),
+    "recipe_deleted": "Receta eliminada.",
+    "favorite_added": "Añadida a favoritos.",
+    "favorite_removed": "Quitada de favoritos.",
+    "pantry_item_removed": "Quitado de la despensa.",
+    "ok": "Hecho.",
+    "shopping_cleared": "Se han quitado {n} productos ya comprados.",
 }

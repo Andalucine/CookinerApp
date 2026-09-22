@@ -12,4 +12,8 @@ class UserPublic(BaseModel):
     email: EmailStr
     display_name: str
     language: str
+    plan: str
+    max_recipes: int | None
+    max_shared_with: int | None
+    notebook_id: int
     created_at: datetime

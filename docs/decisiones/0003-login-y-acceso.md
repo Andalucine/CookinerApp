@@ -1,6 +1,7 @@
 # 0003 — Login con contraseña e identificación digital
 
-**Fecha:** 2026-09-22
+**Fecha:** 2026-09-22  
+**Nota (sesión 4):** la parte de grupos e invitaciones a grupos queda sustituida por la decisión [0004](0004-cuaderno-personal.md): ahora se invita a un cuaderno con rol lector o editor (`notebook_invitations`). El resto sigue vigente.
 
 ## Contexto
 La app la usarán personas con distinta capacitación digital. Hay que decidir cómo entran.
