@@ -10,9 +10,11 @@ class Settings(BaseSettings):
 
     app_name: str = "CookinerApp API"
     app_env: str = "development"
-    secret_key: str = "change-me"
+    secret_key: str = "cambia-esta-clave-por-una-larga-y-aleatoria-de-al-menos-32-caracteres"
     default_language: str = "es"
     database_url: str = "postgresql+psycopg://cookiner:cookiner@localhost:5432/cookinerapp"
+    access_token_expire_minutes: int = 60 * 24 * 30  # 30 días: la app móvil no pide login a diario
+    password_reset_expire_minutes: int = 30
 
 
 @lru_cache
