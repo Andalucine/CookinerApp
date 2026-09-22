@@ -14,7 +14,7 @@ Requisitos: Docker Desktop y git.
 1. Clonar el repositorio y entrar en la carpeta.
 2. Copiar las variables de entorno: `cp .env.example .env` (los valores por defecto sirven para desarrollo).
 3. Arrancar la base de datos y la API: `docker compose up --build`
-4. Aplicar las migraciones (en otra terminal): `docker compose exec api alembic upgrade head`
+4. Aplicar las migraciones (en otra terminal): `docker compose exec api alembic upgrade head` — crea las tablas y precarga estaciones y épocas.
 5. Abrir http://localhost:8000/docs — la documentación interactiva de la API. `GET /health` debe responder `{"status": "ok"}`.
 
 Para parar: `docker compose down`. Para borrar también la base de datos: `docker compose down -v`.
