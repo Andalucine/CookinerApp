@@ -19,7 +19,7 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    
+
     op.create_table(
         "seasons",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -924,11 +924,10 @@ def upgrade() -> None:
     op.create_index(
         op.f("ix_spice_blend_items_blend_id"), "spice_blend_items", ["blend_id"], unique=False
     )
-    
 
 
 def downgrade() -> None:
-    
+
     op.drop_index(op.f("ix_spice_blend_items_blend_id"), table_name="spice_blend_items")
     op.drop_table("spice_blend_items")
     op.drop_index(op.f("ix_shopping_list_items_notebook_id"), table_name="shopping_list_items")
@@ -991,4 +990,3 @@ def downgrade() -> None:
     op.drop_table("spice_equivalence_rules")
     op.drop_table("shopping_sections")
     op.drop_table("seasons")
-    
