@@ -24,8 +24,16 @@ function Navigation() {
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="recipes/index" options={{ title: t("home.recipes") }} />
+      <Stack.Screen name="recipes/categories" options={{ title: t("categories.title") }} />
+      <Stack.Screen name="recipes/search" options={{ title: t("recipes.search") }} />
+      <Stack.Screen name="recipes/list" options={{ title: t("recipes.results") }} />
+      <Stack.Screen name="recipes/[id]" options={{ title: t("recipes.recipe") }} />
+      <Stack.Screen name="recipes/new" options={{ title: t("recipes.new") }} />
+      <Stack.Screen name="recipes/write" options={{ title: t("new.write") }} />
+      <Stack.Screen name="recipes/import" options={{ title: t("new.web") }} />
       <Stack.Screen name="wines/index" options={{ title: t("home.wines") }} />
       <Stack.Screen name="spices/index" options={{ title: t("home.spices") }} />
+      <Stack.Screen name="spices/[id]" options={{ title: t("home.spices") }} />
       <Stack.Screen name="notes/index" options={{ title: t("home.notes") }} />
       <Stack.Screen name="pantry/index" options={{ title: t("home.pantry") }} />
       <Stack.Screen name="shopping-list/index" options={{ title: t("home.shoppingList") }} />

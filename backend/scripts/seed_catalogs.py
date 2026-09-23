@@ -22,6 +22,7 @@ from app.models import (
     Ingredient,
     Occasion,
     PairingRule,
+    RecipeOccasion,
     Season,
     ShoppingSection,
     SpiceBlend,
@@ -60,6 +61,15 @@ def seed_basics(db: Session) -> None:
             {"notebook_id": None, "name_es": es},
             {"name_en": en, "is_preloaded": True},
         )
+    # A preloaded occasion taken out of the list is deleted (recipes just lose it), so that it
+    # disappears from every screen. The notebooks' own occasions are never touched.
+    names = [es for es, _ in basics.OCCASIONS]
+    gone = db.scalars(
+        select(Occasion.id).where(Occasion.notebook_id.is_(None), Occasion.name_es.not_in(names))
+    ).all()
+    if gone:
+        db.execute(delete(RecipeOccasion).where(RecipeOccasion.occasion_id.in_(gone)))
+        db.execute(delete(Occasion).where(Occasion.id.in_(gone)))
     for pos, (code, es, en) in enumerate(basics.SHOPPING_SECTIONS):
         _upsert(
             db, ShoppingSection, {"code": code}, {"name_es": es, "name_en": en, "position": pos}

@@ -12,6 +12,7 @@ from app.schemas.auth import MessageResponse
 from app.schemas.catalog import Named, OccasionOut, SeasonOut, TagOut
 from app.schemas.recipe import (
     AuthorOut,
+    CategoryCount,
     RecipeCategoryOut,
     RecipeCreate,
     RecipeIn,
@@ -62,6 +63,7 @@ def _summary_fields(recipe: Recipe, favorites: set[int]) -> dict:
         "image_url": recipe.image_url,
         "cook_name": recipe.cook_name,
         "source_type": recipe.source_type,
+        "source_name": recipe.source_name,
         "author": AuthorOut.model_validate(recipe.author) if recipe.author else None,
         "added_by": (
             recipe.author.display_name if recipe.author and recipe.author_id != owner_id else None
@@ -78,15 +80,16 @@ def to_summary(recipe: Recipe, favorites: set[int]) -> RecipeSummary:
     return RecipeSummary(**fields)
 
 
-def to_out(recipe: Recipe, favorites: set[int]) -> RecipeOut:
+def to_out(recipe: Recipe, favorites: set[int], role: str) -> RecipeOut:
     fields = _summary_fields(recipe, favorites)
     cats = fields.pop("_categories")
     return RecipeOut(
         **fields,
+        notebook_owner=recipe.notebook.owner.display_name,
+        my_role=role,
         description=recipe.description,
         instructions=recipe.instructions,
         servings=recipe.servings,
-        source_name=recipe.source_name,
         source_url=recipe.source_url,
         youtube_url=recipe.youtube_url,
         language=recipe.language,
@@ -110,30 +113,31 @@ def to_out(recipe: Recipe, favorites: set[int]) -> RecipeOut:
     )
 
 
-def _load(db, user, lang, recipe_id: int, *, edit: bool) -> Recipe:
+def _load(db, user, lang, recipe_id: int, *, edit: bool) -> tuple[Recipe, str]:
     try:
         recipe = recipe_service.get(db, recipe_id)
     except recipe_service.RecipeNotFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, t("recipe_not_found", lang)) from None
     try:
         if edit:
-            permissions.require_edit(db, user, recipe.notebook)
+            role = permissions.require_edit(db, user, recipe.notebook)
         else:
-            permissions.require_view(db, user, recipe.notebook)
+            role = permissions.require_view(db, user, recipe.notebook)
     except permissions.Forbidden:
         # Someone without access must not learn whether the recipe exists
         raise HTTPException(status.HTTP_404_NOT_FOUND, t("recipe_not_found", lang)) from None
-    return recipe
+    return recipe, role
 
 
 @router.post("", response_model=RecipeOut, status_code=status.HTTP_201_CREATED)
 def create_recipe(body: RecipeCreate, db: DbSession, user: CurrentUser, lang: Lang) -> RecipeOut:
     """Add a recipe to your notebook, or to a notebook where you are editor."""
     notebook = user.notebook
+    role = permissions.ROLE_OWNER
     if body.notebook_id and body.notebook_id != notebook.id:
         try:
             notebook = permissions.get_notebook(db, body.notebook_id)
-            permissions.require_edit(db, user, notebook)
+            role = permissions.require_edit(db, user, notebook)
         except (permissions.NotebookNotFound, permissions.Forbidden):
             raise HTTPException(status.HTTP_403_FORBIDDEN, t("forbidden", lang)) from None
     try:
@@ -150,7 +154,7 @@ def create_recipe(body: RecipeCreate, db: DbSession, user: CurrentUser, lang: La
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_CONTENT, t("invalid_reference", lang)
         ) from None
-    return to_out(recipe, set())
+    return to_out(recipe, set(), role)
 
 
 @router.get("", response_model=RecipeSearchResult)
@@ -206,10 +210,27 @@ def search_recipes(
     return RecipeSearchResult(total=total, items=[to_summary(r, starred) for r in recipes])
 
 
+@router.get("/category-counts", response_model=list[CategoryCount])
+def category_counts(
+    db: DbSession,
+    user: CurrentUser,
+    lang: Lang,
+    notebook_id: int | None = Query(default=None, description="Default: your own notebook"),
+) -> list[CategoryCount]:
+    """Numbers for the category tree ("Guisos de pescado (3)"). Categories without recipes
+    are left out."""
+    try:
+        notebook = permissions.resolve_notebook(db, user, notebook_id, edit=False)
+    except (permissions.NotebookNotFound, permissions.Forbidden):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, t("notebook_not_found", lang)) from None
+    counts = recipe_service.category_counts(db, notebook.id)
+    return [CategoryCount(category_id=k, count=v) for k, v in sorted(counts.items())]
+
+
 @router.get("/{recipe_id}", response_model=RecipeOut)
 def get_recipe(recipe_id: int, db: DbSession, user: CurrentUser, lang: Lang) -> RecipeOut:
-    recipe = _load(db, user, lang, recipe_id, edit=False)
-    return to_out(recipe, recipe_service.favorite_ids(db, user.id, [recipe.id]))
+    recipe, role = _load(db, user, lang, recipe_id, edit=False)
+    return to_out(recipe, recipe_service.favorite_ids(db, user.id, [recipe.id]), role)
 
 
 @router.get("/{recipe_id}/spices", response_model=list[RecipeSpiceOut])
@@ -218,7 +239,7 @@ def recipe_spices(
 ) -> list[RecipeSpiceOut]:
     """The ingredients of the recipe that have a spice card, whether I have them in MY pantry
     and, for each substitute, whether I have it: "no tienes comino, pero sí alcaravea"."""
-    recipe = _load(db, user, lang, recipe_id, edit=False)
+    recipe, _ = _load(db, user, lang, recipe_id, edit=False)
     return spice_service.recipe_spices(db, recipe, user.notebook.id)
 
 
@@ -259,7 +280,7 @@ def _recipe_wines(db, user, recipe: Recipe) -> RecipeWinesOut:
 def recipe_wines(recipe_id: int, db: DbSession, user: CurrentUser, lang: Lang) -> RecipeWinesOut:
     """Wines recommended for the recipe with their reason. When it has none, the automatic
     suggestion: wine types from the pairing rules and the notebook's wines of those types."""
-    recipe = _load(db, user, lang, recipe_id, edit=False)
+    recipe, _ = _load(db, user, lang, recipe_id, edit=False)
     check_plan(recipe.notebook, lang)
     return _recipe_wines(db, user, recipe)
 
@@ -272,7 +293,7 @@ def add_recipe_wine(
 ) -> RecipeWinesOut:
     """Recommend a wine of the same notebook for this recipe, with the reason (owner or editor).
     Sending the same wine again updates the reason."""
-    recipe = _load(db, user, lang, recipe_id, edit=True)
+    recipe, _ = _load(db, user, lang, recipe_id, edit=True)
     check_plan(recipe.notebook, lang)
     try:
         wine_service.add_to_recipe(db, user, recipe, body.wine_id, body.reason)
@@ -288,7 +309,7 @@ def remove_recipe_wine(
     recipe_id: int, link_id: int, db: DbSession, user: CurrentUser, lang: Lang
 ) -> MessageResponse:
     """Only the notebook owner or whoever recommended it. The wine stays in the notebook."""
-    recipe = _load(db, user, lang, recipe_id, edit=True)
+    recipe, _ = _load(db, user, lang, recipe_id, edit=True)
     check_plan(recipe.notebook, lang)
     try:
         link = wine_service.get_recipe_wine(db, recipe, link_id)
@@ -305,20 +326,20 @@ def update_recipe(
     recipe_id: int, body: RecipeIn, db: DbSession, user: CurrentUser, lang: Lang
 ) -> RecipeOut:
     """Owner or editor. An editor's changes are recorded as contributions."""
-    recipe = _load(db, user, lang, recipe_id, edit=True)
+    recipe, role = _load(db, user, lang, recipe_id, edit=True)
     try:
         recipe = recipe_service.update(db, recipe, user, body)
     except recipe_service.UnknownReference:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_CONTENT, t("invalid_reference", lang)
         ) from None
-    return to_out(recipe, recipe_service.favorite_ids(db, user.id, [recipe.id]))
+    return to_out(recipe, recipe_service.favorite_ids(db, user.id, [recipe.id]), role)
 
 
 @router.delete("/{recipe_id}", response_model=MessageResponse)
 def delete_recipe(recipe_id: int, db: DbSession, user: CurrentUser, lang: Lang) -> MessageResponse:
     """Only the notebook owner or the recipe's author can delete it."""
-    recipe = _load(db, user, lang, recipe_id, edit=True)
+    recipe, _ = _load(db, user, lang, recipe_id, edit=True)
     if user.id not in (recipe.notebook.owner_id, recipe.author_id):
         raise HTTPException(status.HTTP_403_FORBIDDEN, t("forbidden", lang))
     recipe_service.delete(db, recipe)
@@ -327,7 +348,7 @@ def delete_recipe(recipe_id: int, db: DbSession, user: CurrentUser, lang: Lang) 
 
 @router.post("/{recipe_id}/favorite", response_model=MessageResponse)
 def add_favorite(recipe_id: int, db: DbSession, user: CurrentUser, lang: Lang) -> MessageResponse:
-    recipe = _load(db, user, lang, recipe_id, edit=False)
+    recipe, _ = _load(db, user, lang, recipe_id, edit=False)
     existing = db.scalar(
         select(Favorite).where(Favorite.user_id == user.id, Favorite.recipe_id == recipe.id)
     )

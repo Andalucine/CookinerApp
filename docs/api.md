@@ -1,6 +1,6 @@
 # API
 
-La documentación interactiva la genera FastAPI en http://localhost:8000/docs (Swagger) y http://localhost:8000/redoc. Versión 0.4.0 (sesión 5).
+La documentación interactiva la genera FastAPI en http://localhost:8000/docs (Swagger) y http://localhost:8000/redoc. Versión 0.5.0 (sesión 7).
 
 ## Convenciones
 
@@ -65,7 +65,8 @@ La documentación interactiva la genera FastAPI en http://localhost:8000/docs (S
 |---|---|---|---|
 | POST | `/recipes` | `title`, `description`, `instructions`, `prep_time_minutes`, `servings`, `cook_name`, `source_type` (`own`/`web`/`book`/`family`/`other`), `source_name`, `source_url` (**obligatorio si `source_type` = `web`**), `youtube_url`, `image_url`, `language`, `ingredients[]` (`name`, `quantity`, `unit`, `raw_text`), `category_ids[]` (la primera es la principal), `tag_ids[]`, `season_ids[]`, `occasion_ids[]`, `notebook_id` (opcional: cuaderno ajeno donde se es editor) | 201 · receta completa. Los ingredientes se buscan en el catálogo por nombre o alias y se crean si no existen. 403 si se supera `max_recipes` del plan o no se es editor del cuaderno. 422 si algún id no existe o si una época propia es de otro cuaderno. |
 | GET | `/recipes` | Filtros combinables: `q` (título o descripción), `ingredients` (nombres separados por comas, todos obligatorios, parcial), `max_minutes`, `time` (`quick` ≤ 30 · `medium` 31–60 · `long` > 60), `cook` (cocinero o autor), `source_type`, `source`, `season_id`, `occasion_id`, `category_id` (incluye sus subcategorías), `tag_ids` (comas, todas obligatorias), `favorites=true`, `notebook_id` (cuaderno ajeno con acceso), `all_notebooks=true` (todos los que puedo ver), `limit`, `offset` | `{total, items[]}` con tarjetas: `time_label`, `primary_category`, `author`, `added_by` (nombre si no es el propietario), `is_favorite`. Por defecto busca en el cuaderno propio. |
-| GET | `/recipes/{id}` | — | Receta completa con ingredientes, categorías, etiquetas, estaciones y épocas. |
+| GET | `/recipes/category-counts` | `notebook_id` (opcional) | `[{category_id, count}]`: recetas del cuaderno en cada categoría, contando sus subcategorías (cada receta una vez por categoría). Las categorías sin recetas no aparecen. Para los números del árbol en la app. |
+| GET | `/recipes/{id}` | — | Receta completa con ingredientes, categorías, etiquetas, estaciones y épocas; además `notebook_owner` (nombre del propietario del cuaderno, para "Receta del cuaderno de NOMBRE") y `my_role` (`owner`/`editor`/`viewer`: lo que puede hacer quien pregunta). |
 | PUT | `/recipes/{id}` | Mismo cuerpo que POST (sin `notebook_id`) | Sustituye la receta entera. Propietario o editor; si edita un editor, se guardan contribuciones. |
 | DELETE | `/recipes/{id}` | — | Solo el propietario del cuaderno o el autor de la receta. |
 | POST / DELETE | `/recipes/{id}/favorite` | — | Estrella (idempotente), también en cuadernos ajenos. |

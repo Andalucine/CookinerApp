@@ -7,13 +7,13 @@ SEASONS = [
     ("winter", "Invierno", "Winter"),
 ]
 
+# "Verano" was removed in session 7: it is a season, not an occasion.
 OCCASIONS = [
     ("Navidad", "Christmas"),
     ("Cuaresma", "Lent"),
     ("Semana Santa", "Easter"),
     ("Feria", "Feria"),
     ("Todos los Santos", "All Saints"),
-    ("Verano", "Summer holidays"),
 ]
 
 # (code, name_es, name_en) in the order you walk through a supermarket

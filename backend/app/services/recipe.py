@@ -237,6 +237,24 @@ def category_with_descendants(db: Session, category_id: int) -> list[int]:
     return ids
 
 
+def category_counts(db: Session, notebook_id: int) -> dict[int, int]:
+    """Recipes of the notebook per category, each recipe counted once in every category it
+    belongs to and in all their parent categories (Salado ▸ Pescados ▸ Guisos de pescado)."""
+    parents = dict(db.execute(select(Category.id, Category.parent_id)).all())
+    links = db.execute(
+        select(RecipeCategory.recipe_id, RecipeCategory.category_id)
+        .join(Recipe, Recipe.id == RecipeCategory.recipe_id)
+        .where(Recipe.notebook_id == notebook_id)
+    ).all()
+    recipes_in: dict[int, set[int]] = {}
+    for recipe_id, category_id in links:
+        current = category_id
+        while current is not None:
+            recipes_in.setdefault(current, set()).add(recipe_id)
+            current = parents.get(current)
+    return {category_id: len(ids) for category_id, ids in recipes_in.items()}
+
+
 def search(db: Session, f: SearchFilters, limit: int = 50, offset: int = 0) -> tuple[int, list]:
     q = select(Recipe.id).where(Recipe.notebook_id.in_(f.notebook_ids))
     if f.text:

@@ -78,6 +78,7 @@ class RecipeSummary(BaseModel):
     image_url: str | None = None
     cook_name: str | None = None
     source_type: str
+    source_name: str | None = None  # "(Directo al Paladar)" next to the cook in the app
     author: AuthorOut | None = None  # None when the author deleted their account
     added_by: str | None = None  # display name when the author is not the notebook owner
     primary_category: RecipeCategoryOut | None = None
@@ -85,10 +86,11 @@ class RecipeSummary(BaseModel):
 
 
 class RecipeOut(RecipeSummary):
+    notebook_owner: str  # display name: "Receta del cuaderno de NOMBRE" when it is not mine
+    my_role: str  # owner | editor | viewer: what the person asking can do with it
     description: str | None = None
     instructions: str | None = None
     servings: int | None = None
-    source_name: str | None = None
     source_url: str | None = None
     youtube_url: str | None = None
     language: str
@@ -104,3 +106,10 @@ class RecipeOut(RecipeSummary):
 class RecipeSearchResult(BaseModel):
     total: int
     items: list[RecipeSummary]
+
+
+class CategoryCount(BaseModel):
+    """How many recipes of the notebook are in a category, counting its subcategories."""
+
+    category_id: int
+    count: int

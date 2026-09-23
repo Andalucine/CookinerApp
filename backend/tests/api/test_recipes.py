@@ -202,3 +202,57 @@ def test_sharing_roles(client, seeded, make_user):
     assert client.delete(f"/recipes/{rid}", headers=pepa_h).status_code == 403
     assert client.delete(f"/recipes/{rid}", headers=ana_h).status_code == 200
     assert client.get(f"/recipes/{rid}", headers=ana_h).status_code == 404
+
+
+def test_recipe_says_whose_notebook_and_my_role(client, seeded, make_user, share):
+    owner_h, owner = make_user("Beatriz")
+    guest_h, _ = make_user("Guillermo")
+    share(owner_h, owner["email"], guest_h, role="viewer")
+    recipe = client.post("/recipes", json=marmitako(seeded), headers=owner_h).json()
+    assert recipe["notebook_owner"] == "Beatriz" and recipe["my_role"] == "owner"
+
+    seen = client.get(f"/recipes/{recipe['id']}", headers=guest_h).json()
+    assert seen["notebook_owner"] == "Beatriz"  # "Receta del cuaderno de Beatriz"
+    assert seen["my_role"] == "viewer"  # the app hides Editar
+
+
+def test_category_counts_include_parent_categories(client, seeded, make_user):
+    headers, _ = make_user()
+    client.post("/recipes", json=marmitako(seeded), headers=headers)
+    client.post(
+        "/recipes",
+        json=marmitako(
+            seeded, title="Atún encebollado", category_ids=[_cat(seeded, "guisos-pescado")]
+        ),
+        headers=headers,
+    )
+    r = client.get("/recipes/category-counts", headers=headers)
+    assert r.status_code == 200, r.text
+    counts = {c["category_id"]: c["count"] for c in r.json()}
+    guisos = seeded.scalar(select(Category).where(Category.slug == "guisos-pescado"))
+    assert counts[guisos.id] == 2
+    assert counts[_cat(seeded, "pescado-azul")] == 1
+    # Each recipe counts once in the parent even if it has two subcategories there
+    top = guisos
+    while top.parent_id is not None:
+        top = seeded.get(Category, top.parent_id)
+    assert counts[top.id] == 2
+    assert (
+        client.get("/recipes/category-counts?notebook_id=999", headers=headers).status_code == 404
+    )
+
+
+def test_list_card_carries_the_source_name(client, seeded, make_user):
+    headers, _ = make_user()
+    body = marmitako(
+        seeded,
+        cook_name="Carmen Tía Alia",
+        source_type="web",
+        source_name="Directo al Paladar",
+        source_url="https://www.directoalpaladar.com/recetas/marmitako",
+    )
+    client.post("/recipes", json=body, headers=headers)
+    card = client.get("/recipes", headers=headers).json()["items"][0]
+    # The app shows "Carmen Tía Alia (Directo al Paladar)"
+    assert card["cook_name"] == "Carmen Tía Alia"
+    assert card["source_name"] == "Directo al Paladar"

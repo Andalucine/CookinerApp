@@ -43,3 +43,27 @@ def test_spices_link_to_their_section_and_substitutes(db_session):
         "Ñora o choricero (pulpa)",
     ]
     assert subs[0].substitute.name == "pimentón de la vera"
+
+
+def test_occasion_taken_out_of_the_list_is_deleted(db_session):
+    from app.models import Occasion, Recipe, RecipeOccasion
+
+    run(db_session)
+    names = db_session.scalars(select(Occasion.name_es).where(Occasion.notebook_id.is_(None))).all()
+    assert "Verano" not in names  # a season, not an occasion (session 7)
+    assert len(names) == 5
+
+    # An old database still has it, linked to a recipe: running the seed again removes both
+    old = Occasion(name_es="Verano", name_en="Summer holidays", is_preloaded=True)
+    db_session.add(old)
+    db_session.flush()
+    recipe = db_session.scalars(select(Recipe)).first()
+    if recipe is not None:
+        db_session.add(RecipeOccasion(recipe_id=recipe.id, occasion_id=old.id))
+    old_id = old.id
+    db_session.commit()
+    run(db_session)
+    assert db_session.scalar(select(Occasion).where(Occasion.id == old_id)) is None
+    assert not db_session.scalars(
+        select(RecipeOccasion).where(RecipeOccasion.occasion_id == old_id)
+    ).all()

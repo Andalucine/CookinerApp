@@ -84,7 +84,7 @@ def save_import(
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_CONTENT, t("invalid_reference", lang)
         ) from None
-    return to_out(recipe, set())
+    return to_out(recipe, set(), permissions.require_edit(db, user, notebook))
 
 
 @router.get("", response_model=list[ImportJobOut])
