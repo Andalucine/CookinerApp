@@ -28,6 +28,22 @@ La documentación interactiva la genera FastAPI en http://localhost:8000/docs (S
 | POST | `/auth/forgot-password` | `email` | 200 siempre. Código de 6 cifras válido 30 minutos (pendiente el envío por correo; en desarrollo sale en el log). |
 | POST | `/auth/reset-password` | `email`, `code`, `new_password` | 200 · contraseña cambiada. 400 si el código no vale. |
 
+### Mi cuaderno y compartir (`/notebooks`)
+
+| Método | Ruta | Cuerpo | Respuesta |
+|---|---|---|---|
+| GET | `/notebooks/mine` | — | Mi cuaderno: `name`, `owner`, `recipe_count`, `shared_with` (personas con acceso), `max_shared_with` del plan (nulo = sin límite). |
+| PATCH | `/notebooks/mine` | `name` | Renombrar mi cuaderno. |
+| GET | `/notebooks/shared-with-me` | — | Cuadernos ajenos a los que tengo acceso, con `owner` y mi `role` (Ajustes). |
+| POST | `/notebooks/mine/invitations` | `role` (`viewer`/`editor`), `email` (opcional: solo esa cuenta podrá usar el código) | 201 · `code` de 8 caracteres (sin 0/O/1/I), válido 7 días, una persona por código. 403 si el plan no permite más personas. |
+| GET | `/notebooks/mine/invitations` | — | Invitaciones pendientes (no usadas ni caducadas). |
+| DELETE | `/notebooks/mine/invitations/{id}` | — | Anular una invitación. |
+| POST | `/notebooks/join` | `code` | "Unirme a un cuaderno". 200 · el cuaderno y mi rol. 400 si el código no vale, caducó, ya se usó, es de otro correo o de mi propio cuaderno; 403 si el cuaderno ya tiene todas las personas de su plan. Si ya tenía acceso, el nuevo código **cambia mi rol**. |
+| GET | `/notebooks/mine/access` | — | Personas con acceso a mi cuaderno y su rol. |
+| PATCH | `/notebooks/mine/access/{user_id}` | `role` | Cambiar el rol de alguien. |
+| DELETE | `/notebooks/mine/access/{user_id}` | — | Quitar el acceso a alguien. |
+| DELETE | `/notebooks/{notebook_id}/access/me` | — | Salir por mí mismo de un cuaderno ajeno. |
+
 ### Catálogos (`/catalog`, sin login)
 
 | Método | Ruta | Descripción |
@@ -70,4 +86,4 @@ La documentación interactiva la genera FastAPI en http://localhost:8000/docs (S
 | DELETE | `/shopping-list/items/{id}` | — | Quitar una línea. |
 | DELETE | `/shopping-list/checked` | — | Limpiar lo ya comprado. |
 
-Pendiente: compartir el cuaderno (invitaciones y accesos), vinos y maridajes, especias (fichas y sustituciones), notas, épocas propias, importación desde webs y YouTube, login con Google/Apple.
+Pendiente: vinos y maridajes, especias (fichas y sustituciones), notas, épocas propias, importación desde webs y YouTube, login con Google/Apple.

@@ -25,4 +25,14 @@ TEXTS = {
     "pantry_item_removed": "Removed from the pantry.",
     "ok": "Done.",
     "shopping_cleared": "{n} bought items removed.",
+    "share_limit_reached": (
+        "Your plan does not allow sharing with more people. "
+        "Move to the individual or family plan to invite someone else."
+    ),
+    "share_limit_reached_owner": "That notebook already has as many people as its plan allows.",
+    "invitation_invalid": "The code is not valid, has expired or is not for your account.",
+    "invitation_own_notebook": "That code belongs to your own notebook.",
+    "invitation_cancelled": "Invitation cancelled.",
+    "access_removed": "Access removed.",
+    "left_notebook": "You have left the notebook.",
 }

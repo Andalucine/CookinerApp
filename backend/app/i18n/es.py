@@ -25,4 +25,14 @@ TEXTS = {
     "pantry_item_removed": "Quitado de la despensa.",
     "ok": "Hecho.",
     "shopping_cleared": "Se han quitado {n} productos ya comprados.",
+    "share_limit_reached": (
+        "Tu plan no permite compartir con más personas. "
+        "Pásate al plan individual o familiar para invitar a alguien más."
+    ),
+    "share_limit_reached_owner": "El cuaderno ya tiene todas las personas que permite su plan.",
+    "invitation_invalid": "El código no es válido, ha caducado o no es para tu cuenta.",
+    "invitation_own_notebook": "Ese código es de tu propio cuaderno.",
+    "invitation_cancelled": "Invitación anulada.",
+    "access_removed": "Acceso retirado.",
+    "left_notebook": "Has salido del cuaderno.",
 }
