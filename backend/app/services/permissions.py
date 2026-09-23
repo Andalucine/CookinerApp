@@ -62,3 +62,31 @@ def accessible_notebook_ids(db: Session, user: User) -> list[int]:
         db.scalars(select(NotebookAccess.notebook_id).where(NotebookAccess.user_id == user.id))
     )
     return ids
+
+
+def resolve_notebook(db: Session, user: User, notebook_id: int | None, *, edit: bool) -> Notebook:
+    """The notebook a request is about (the user's own when omitted), checking the role.
+
+    Raises NotebookNotFound or Forbidden; the API answers 404 in both cases so that nobody
+    learns whether a notebook exists.
+    """
+    if not notebook_id or notebook_id == user.notebook.id:
+        return user.notebook
+    notebook = get_notebook(db, notebook_id)
+    if edit:
+        require_edit(db, user, notebook)
+    else:
+        require_view(db, user, notebook)
+    return notebook
+
+
+def can_delete(user: User, notebook: Notebook, creator_id: int | None) -> bool:
+    """Only the notebook owner or whoever created the item can delete it."""
+    return user.id in (notebook.owner_id, creator_id)
+
+
+def added_by(notebook: Notebook, person: User | None) -> str | None:
+    """Display name for "(añadido por NOMBRE)": only when it is not the notebook owner."""
+    if person is None or person.id == notebook.owner_id:
+        return None
+    return person.display_name

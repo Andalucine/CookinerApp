@@ -1,13 +1,15 @@
-"""Recipes: create, read, update, delete, search and favourites."""
+"""Recipes: create, read, update, delete, search and favourites; their spices and wines."""
 
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import select
 
+from app.api.wines import category_ref, check_plan
+from app.api.wines import to_summary as wine_summary
 from app.core.deps import CurrentUser, DbSession, Lang
 from app.i18n import t
 from app.models import Favorite, Recipe
 from app.schemas.auth import MessageResponse
-from app.schemas.catalog import OccasionOut, SeasonOut, TagOut
+from app.schemas.catalog import Named, OccasionOut, SeasonOut, TagOut
 from app.schemas.recipe import (
     AuthorOut,
     RecipeCategoryOut,
@@ -18,8 +20,18 @@ from app.schemas.recipe import (
     RecipeSearchResult,
     RecipeSummary,
 )
+from app.schemas.spice import RecipeSpiceOut
+from app.schemas.wine import (
+    PairingRuleOut,
+    PairingSuggestion,
+    RecipeWineIn,
+    RecipeWineOut,
+    RecipeWinesOut,
+)
 from app.services import permissions
 from app.services import recipe as recipe_service
+from app.services import spice as spice_service
+from app.services import wine as wine_service
 
 router = APIRouter(prefix="/recipes", tags=["recipes"])
 
@@ -198,6 +210,94 @@ def search_recipes(
 def get_recipe(recipe_id: int, db: DbSession, user: CurrentUser, lang: Lang) -> RecipeOut:
     recipe = _load(db, user, lang, recipe_id, edit=False)
     return to_out(recipe, recipe_service.favorite_ids(db, user.id, [recipe.id]))
+
+
+@router.get("/{recipe_id}/spices", response_model=list[RecipeSpiceOut])
+def recipe_spices(
+    recipe_id: int, db: DbSession, user: CurrentUser, lang: Lang
+) -> list[RecipeSpiceOut]:
+    """The ingredients of the recipe that have a spice card, whether I have them in MY pantry
+    and, for each substitute, whether I have it: "no tienes comino, pero sí alcaravea"."""
+    recipe = _load(db, user, lang, recipe_id, edit=False)
+    return spice_service.recipe_spices(db, recipe, user.notebook.id)
+
+
+def _recipe_wines(db, user, recipe: Recipe) -> RecipeWinesOut:
+    links = wine_service.recipe_wines(db, recipe)
+    starred = wine_service.favorite_ids(db, user.id, [link.wine_id for link in links])
+    recommended = [
+        RecipeWineOut(
+            id=link.id,
+            wine=wine_summary(link.wine, starred),
+            reason=link.reason,
+            origin=link.origin,
+            added_by=permissions.added_by(recipe.notebook, link.added_by),
+        )
+        for link in links
+    ]
+    suggestion = None
+    if not recommended:
+        found = wine_service.suggest(db, recipe)
+        if found is not None:
+            starred = wine_service.favorite_ids(db, user.id, [w.id for w in found.wines])
+            suggestion = PairingSuggestion(
+                based_on=Named.model_validate(found.based_on),
+                wine_types=[
+                    PairingRuleOut(
+                        wine_category=category_ref(r.wine_category),
+                        reason_es=r.reason_es,
+                        reason_en=r.reason_en,
+                    )
+                    for r in found.rules
+                ],
+                my_wines=[wine_summary(w, starred) for w in found.wines],
+            )
+    return RecipeWinesOut(recommended=recommended, suggestion=suggestion)
+
+
+@router.get("/{recipe_id}/wines", response_model=RecipeWinesOut)
+def recipe_wines(recipe_id: int, db: DbSession, user: CurrentUser, lang: Lang) -> RecipeWinesOut:
+    """Wines recommended for the recipe with their reason. When it has none, the automatic
+    suggestion: wine types from the pairing rules and the notebook's wines of those types."""
+    recipe = _load(db, user, lang, recipe_id, edit=False)
+    check_plan(recipe.notebook, lang)
+    return _recipe_wines(db, user, recipe)
+
+
+@router.post(
+    "/{recipe_id}/wines", response_model=RecipeWinesOut, status_code=status.HTTP_201_CREATED
+)
+def add_recipe_wine(
+    recipe_id: int, body: RecipeWineIn, db: DbSession, user: CurrentUser, lang: Lang
+) -> RecipeWinesOut:
+    """Recommend a wine of the same notebook for this recipe, with the reason (owner or editor).
+    Sending the same wine again updates the reason."""
+    recipe = _load(db, user, lang, recipe_id, edit=True)
+    check_plan(recipe.notebook, lang)
+    try:
+        wine_service.add_to_recipe(db, user, recipe, body.wine_id, body.reason)
+    except wine_service.WineInOtherNotebook:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT, t("wine_other_notebook", lang)
+        ) from None
+    return _recipe_wines(db, user, recipe)
+
+
+@router.delete("/{recipe_id}/wines/{link_id}", response_model=MessageResponse)
+def remove_recipe_wine(
+    recipe_id: int, link_id: int, db: DbSession, user: CurrentUser, lang: Lang
+) -> MessageResponse:
+    """Only the notebook owner or whoever recommended it. The wine stays in the notebook."""
+    recipe = _load(db, user, lang, recipe_id, edit=True)
+    check_plan(recipe.notebook, lang)
+    try:
+        link = wine_service.get_recipe_wine(db, recipe, link_id)
+    except wine_service.RecipeWineNotFound:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, t("wine_not_found", lang)) from None
+    if not permissions.can_delete(user, recipe.notebook, link.added_by_id):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, t("forbidden", lang))
+    wine_service.remove_from_recipe(db, link)
+    return MessageResponse(message=t("recipe_wine_removed", lang))
 
 
 @router.put("/{recipe_id}", response_model=RecipeOut)

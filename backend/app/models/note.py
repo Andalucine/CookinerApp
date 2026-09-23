@@ -1,10 +1,12 @@
 """Free notes of a notebook: menus, tricks, suppliers, ideas. Independent from recipes."""
 
 from sqlalchemy import ForeignKey, String, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 from app.models.base import TimestampMixin
+from app.models.notebook import Notebook
+from app.models.user import User
 
 
 class Note(TimestampMixin, Base):
@@ -15,5 +17,11 @@ class Note(TimestampMixin, Base):
         ForeignKey("notebooks.id", ondelete="CASCADE"), nullable=False, index=True
     )
     author_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    # Last person who changed it, to show "(editado por NOMBRE)" when it is not the owner
+    updated_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     content: Mapped[str | None] = mapped_column(Text)
+
+    notebook: Mapped[Notebook] = relationship()
+    author: Mapped[User | None] = relationship(foreign_keys=[author_id])
+    updated_by: Mapped[User | None] = relationship(foreign_keys=[updated_by_id])

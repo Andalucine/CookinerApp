@@ -1,6 +1,6 @@
 # Modelo de datos
 
-Estado: **v2** (migración `initial_schema` regenerada en la sesión 4, decisión 0004: cuaderno personal). Regla: cada cambio en `backend/app/models/` actualiza este documento en el mismo commit. 32 tablas.
+Estado: **v2** (migración `initial_schema` regenerada en las sesiones 4 y 5, decisión 0004: cuaderno personal). Regla: cada cambio en `backend/app/models/` actualiza este documento en el mismo commit. 32 tablas.
 
 ## Esquema general
 
@@ -53,7 +53,7 @@ Límites por plan (`PLAN_LIMITS` en `app/models/user.py`): gratuito 15 recetas /
 | `tags` | Etiquetas cerradas | `kind` (`course`, `method`, `diet`, `difficulty`, `origin`), `code`, `name_es`, `name_en` |
 | `recipe_tags` | Etiquetas de cada receta | — |
 | `seasons` | Las 4 estaciones | `code`, `name_es`, `name_en` |
-| `occasions` | Épocas precargadas (`notebook_id` nulo) o propias del cuaderno | `name_es`, `name_en`, `is_preloaded` |
+| `occasions` | Épocas precargadas (`notebook_id` nulo) o propias del cuaderno (sesión 5: el nombre que escribe el usuario va en `name_es` y `name_en`) | `name_es`, `name_en`, `is_preloaded`, `created_by_id` |
 | `recipe_seasons`, `recipe_occasions` | Varias estaciones y épocas por receta | — |
 | `recipe_contributions` | Lo que un editor añadió, para "(añadido por NOMBRE)" | `field`, `content`, `user_id` |
 
@@ -73,7 +73,7 @@ El tiempo (rápida ≤ 30 · media 31–60 · larga > 60) no se guarda: se calcu
 | Tabla | Para qué | Campos clave |
 |---|---|---|
 | `wine_categories` | Árbol de tipos de dos niveles (Tintos → Tinto joven…) | `parent_id`, `slug`, `name_es`, `name_en`, `serving_temp` |
-| `wines` | Los vinos **del cuaderno** | `notebook_id`, `added_by_id`, `name`, `winery`, `category_id`, facetas `sweetness`, `body`, `ageing`, `country`, `appellation`, `grapes`, `vintage`, `price_range`, `tasting_notes`, `pairing_notes`, `source_url` |
+| `wines` | Los vinos **del cuaderno** | `notebook_id`, `added_by_id`, `updated_by_id` (último que lo editó), `name`, `winery`, `category_id`, facetas `sweetness`, `body`, `ageing`, `country`, `appellation`, `grapes`, `vintage`, `price_range`, `tasting_notes`, `pairing_notes`, `source_url` |
 | `recipe_wines` | Vinos recomendados para una receta **con el motivo** | `reason`, `origin` (`manual`/`imported`) |
 | `pairing_rules` | Categoría de receta → tipo de vino, con motivo (sugerencia automática) | `recipe_category_id`, `wine_category_id`, `reason_es/en` |
 
@@ -81,7 +81,7 @@ El tiempo (rápida ≤ 30 · media 31–60 · larga > 60) no se guarda: se calcu
 
 | Tabla | Para qué | Campos clave |
 |---|---|---|
-| `notes` | Páginas libres del cuaderno | `title`, `content`, `author_id` |
+| `notes` | Páginas libres del cuaderno | `title`, `content`, `author_id`, `updated_by_id` (último que la editó) |
 | `pantry_items` | Lo que hay en casa (sin caducidades) | `ingredient_id` (único por cuaderno), `location` (`fridge`/`freezer`/`pantry`) |
 | `shopping_sections` | Secciones del supermercado, en orden de recorrido | `code`, `name_es`, `name_en`, `position` |
 | `shopping_list_items` | Líneas de la lista de la compra | `text`, `quantity`, `ingredient_id` (si viene del catálogo), `section_id` (la del ingrediente; "Otros" si no la tiene), `is_checked`, `recipe_id` (de qué receta salió) |
@@ -91,11 +91,14 @@ El tiempo (rápida ≤ 30 · media 31–60 · larga > 60) no se guarda: se calcu
 
 | Tabla | Para qué | Campos clave |
 |---|---|---|
-| `import_jobs` | Cada intento de importar desde una URL | `kind` (`recipe`/`wine`), `url`, `status`, `error_message`, `recipe_id` o `wine_id` resultante |
+| `import_jobs` | Cada intento de importar desde una URL (decisión 0005) | `kind` (`recipe`/`wine`), `url`, `status` (`pending` leída y esperando confirmación · `ok` guardada · `error`), `error_message`, `recipe_id` o `wine_id` resultante |
 
 ## Reglas de negocio que el modelo soporta
 
-- Permisos: sobre un cuaderno, el propietario lo puede todo; `editor` añade y edita recetas (queda en `recipe_contributions`); `viewer` solo ve y puede copiar a su cuaderno o marcar favoritos.
+- Permisos: sobre un cuaderno, el propietario lo puede todo; `editor` añade y edita recetas (queda en `recipe_contributions`), vinos, notas y épocas propias (queda en `added_by_id`/`updated_by_id`/`created_by_id`); borrar solo el propietario o quien lo creó; `viewer` solo ve y puede copiar a su cuaderno o marcar favoritos.
+- Sección de vinos: solo si el **propietario** del cuaderno tiene plan `individual` o `family` (`PLANS_WITH_WINES`, sesión 5).
+- Sugerencia automática de vinos: `pairing_rules` de la categoría principal de la receta (si no tiene, la de su categoría madre; después, las demás categorías de la receta), más los `wines` del cuaderno de esos tipos.
+- Una receta solo puede llevar épocas precargadas o del propio cuaderno.
 - Límite de recetas del plan gratuito: `users.max_recipes` contra el número de recetas del cuaderno.
 - Todo lo importado conserva `source_url`.
 - Búsquedas: por ingrediente, tiempo, cocinero (`author_id` o `cook_name`), fuente, estación, época, categoría (incluye subcategorías) y etiquetas.

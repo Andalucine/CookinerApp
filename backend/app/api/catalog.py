@@ -4,14 +4,27 @@ from fastapi import APIRouter, Query
 from sqlalchemy import select
 
 from app.core.deps import DbSession
-from app.models import Category, Ingredient, Occasion, Season, ShoppingSection, Tag
+from app.i18n import t
+from app.models import (
+    Category,
+    Ingredient,
+    Occasion,
+    Season,
+    ShoppingSection,
+    Tag,
+    WineCategory,
+)
+from app.models.wine import AGEING, BODY, PRICE_RANGES, SWEETNESS
 from app.schemas.catalog import (
     CategoryOut,
+    FacetValue,
     IngredientOut,
     OccasionOut,
     SeasonOut,
     ShoppingSectionOut,
     TagOut,
+    WineCategoryOut,
+    WineFacetsOut,
 )
 
 router = APIRouter(prefix="/catalog", tags=["catalog"])
@@ -41,7 +54,7 @@ def seasons(db: DbSession) -> list[SeasonOut]:
 
 @router.get("/occasions", response_model=list[OccasionOut])
 def occasions(db: DbSession) -> list[OccasionOut]:
-    """Preloaded occasions (a notebook's own ones come with the notebook, later)."""
+    """Preloaded occasions. With a notebook's own ones: GET /occasions (login)."""
     q = select(Occasion).where(Occasion.notebook_id.is_(None)).order_by(Occasion.id)
     return [OccasionOut.model_validate(o) for o in db.scalars(q)]
 
@@ -67,3 +80,30 @@ def ingredients(
         .limit(limit)
     )
     return [IngredientOut.model_validate(i) for i in rows]
+
+
+@router.get("/wine-categories", response_model=list[WineCategoryOut])
+def wine_categories(db: DbSession) -> list[WineCategoryOut]:
+    """Wine type tree, two levels (Tintos → Tinto joven...), with serving temperature."""
+    roots = db.scalars(
+        select(WineCategory).where(WineCategory.parent_id.is_(None)).order_by(WineCategory.position)
+    ).all()
+    return [WineCategoryOut.model_validate(r) for r in roots]
+
+
+def _facet(kind: str, codes) -> list[FacetValue]:
+    return [
+        FacetValue(code=c, name_es=t(f"{kind}.{c}", "es"), name_en=t(f"{kind}.{c}", "en"))
+        for c in codes
+    ]
+
+
+@router.get("/wine-facets", response_model=WineFacetsOut)
+def wine_facets() -> WineFacetsOut:
+    """Values of the wine facets (sweetness, body, ageing, price) with their labels."""
+    return WineFacetsOut(
+        sweetness=_facet("wine_sweetness", SWEETNESS),
+        body=_facet("wine_body", BODY),
+        ageing=_facet("wine_ageing", AGEING),
+        price_ranges=list(PRICE_RANGES),
+    )

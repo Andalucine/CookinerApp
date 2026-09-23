@@ -133,23 +133,7 @@ WINE_TREE = [
     ),
 ]
 
-# Facet values, for reference by the API (stored as codes in `wines`)
-SWEETNESS = [
-    "dry",
-    "off_dry",
-    "semi_sweet",
-    "sweet",
-    "brut_nature",
-    "extra_brut",
-    "brut",
-    "extra_dry",
-    "sec",
-    "demi_sec",
-    "doux",
-]
-BODY = ["light", "medium", "full"]
-AGEING = ["young", "oak", "crianza", "reserva", "gran_reserva", "solera"]
-PRICE_RANGES = ["€", "€€", "€€€", "€€€€"]
+# Facet values: defined once in app.models.wine (SWEETNESS, BODY, AGEING, PRICE_RANGES).
 
 # (recipe category slug, [wine category slugs], reason_es, reason_en)
 # Recipe category slugs are level-2 categories (or level-3 where the table is that specific).

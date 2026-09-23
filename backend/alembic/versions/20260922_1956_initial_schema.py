@@ -19,7 +19,6 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-
     op.create_table(
         "seasons",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -331,6 +330,7 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("notebook_id", sa.Integer(), nullable=False),
         sa.Column("author_id", sa.Integer(), nullable=True),
+        sa.Column("updated_by_id", sa.Integer(), nullable=True),
         sa.Column("title", sa.String(length=200), nullable=False),
         sa.Column("content", sa.Text(), nullable=True),
         sa.Column(
@@ -354,6 +354,12 @@ def upgrade() -> None:
             name=op.f("fk_notes_notebook_id_notebooks"),
             ondelete="CASCADE",
         ),
+        sa.ForeignKeyConstraint(
+            ["updated_by_id"],
+            ["users.id"],
+            name=op.f("fk_notes_updated_by_id_users"),
+            ondelete="SET NULL",
+        ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_notes")),
     )
     op.create_index(op.f("ix_notes_notebook_id"), "notes", ["notebook_id"], unique=False)
@@ -364,6 +370,13 @@ def upgrade() -> None:
         sa.Column("name_es", sa.String(length=50), nullable=False),
         sa.Column("name_en", sa.String(length=50), nullable=False),
         sa.Column("is_preloaded", sa.Boolean(), nullable=False),
+        sa.Column("created_by_id", sa.Integer(), nullable=True),
+        sa.ForeignKeyConstraint(
+            ["created_by_id"],
+            ["users.id"],
+            name=op.f("fk_occasions_created_by_id_users"),
+            ondelete="SET NULL",
+        ),
         sa.ForeignKeyConstraint(
             ["notebook_id"],
             ["notebooks.id"],
@@ -502,6 +515,7 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("notebook_id", sa.Integer(), nullable=False),
         sa.Column("added_by_id", sa.Integer(), nullable=True),
+        sa.Column("updated_by_id", sa.Integer(), nullable=True),
         sa.Column("name", sa.String(length=200), nullable=False),
         sa.Column("winery", sa.String(length=200), nullable=True),
         sa.Column("category_id", sa.Integer(), nullable=True),
@@ -546,6 +560,12 @@ def upgrade() -> None:
             ["notebooks.id"],
             name=op.f("fk_wines_notebook_id_notebooks"),
             ondelete="CASCADE",
+        ),
+        sa.ForeignKeyConstraint(
+            ["updated_by_id"],
+            ["users.id"],
+            name=op.f("fk_wines_updated_by_id_users"),
+            ondelete="SET NULL",
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_wines")),
     )
@@ -927,7 +947,6 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-
     op.drop_index(op.f("ix_spice_blend_items_blend_id"), table_name="spice_blend_items")
     op.drop_table("spice_blend_items")
     op.drop_index(op.f("ix_shopping_list_items_notebook_id"), table_name="shopping_list_items")

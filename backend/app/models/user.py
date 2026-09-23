@@ -24,6 +24,11 @@ PLAN_LIMITS: dict[str, dict[str, int | None]] = {
     PLAN_FAMILY: {"max_recipes": None, "max_shared_with": None},
 }
 FAMILY_PLAN_ACCOUNTS = 5
+# The wine section belongs to the paid plans; it follows the plan of the notebook owner
+# (decision, session 5), like the recipe limit.
+PLANS_WITH_WINES = frozenset({PLAN_INDIVIDUAL, PLAN_FAMILY})
+# Same for importing from the web (decision, session 5).
+PLANS_WITH_IMPORT = frozenset({PLAN_INDIVIDUAL, PLAN_FAMILY})
 
 
 class User(TimestampMixin, Base):

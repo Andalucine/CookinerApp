@@ -37,7 +37,8 @@ class RecipeLimitReached(Exception):
 
 
 class UnknownReference(Exception):
-    """A category, tag, season or occasion id that does not exist."""
+    """A category, tag, season or occasion id that does not exist (or an occasion of another
+    notebook)."""
 
 
 def time_label(minutes: int | None) -> str | None:
@@ -101,6 +102,8 @@ def _apply(db: Session, recipe: Recipe, data: RecipeIn) -> None:
     tags = _check_ids(db, Tag, data.tag_ids)
     seasons = _check_ids(db, Season, data.season_ids)
     occasions = _check_ids(db, Occasion, data.occasion_ids)
+    if any(o.notebook_id not in (None, recipe.notebook_id) for o in occasions):
+        raise UnknownReference  # own occasions only work inside their notebook
 
     if recipe.id is not None:
         # Delete the old rows first so the unique (recipe, category) pairs never collide

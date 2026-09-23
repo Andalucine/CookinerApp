@@ -6,6 +6,21 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 from app.models.base import TimestampMixin
+from app.models.notebook import Notebook
+from app.models.user import User
+
+# Facet codes stored in `wines` (labels for the app are in i18n: wine_sweetness.dry...).
+# The seed script and the API both read them from here.
+SWEETNESS = (
+    "dry", "off_dry", "semi_sweet", "sweet",
+    "brut_nature", "extra_brut", "brut", "extra_dry", "sec", "demi_sec", "doux",
+)  # fmt: skip
+BODY = ("light", "medium", "full")
+AGEING = ("young", "oak", "crianza", "reserva", "gran_reserva", "solera")
+PRICE_RANGES = ("€", "€€", "€€€", "€€€€")
+
+ORIGIN_MANUAL = "manual"
+ORIGIN_IMPORTED = "imported"
 
 
 class WineCategory(Base):
@@ -44,6 +59,8 @@ class Wine(TimestampMixin, Base):
         ForeignKey("notebooks.id", ondelete="CASCADE"), nullable=False, index=True
     )
     added_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    # Last person who changed it, to show "(editado por NOMBRE)" when it is not the owner
+    updated_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     name: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
     winery: Mapped[str | None] = mapped_column(String(200))
     category_id: Mapped[int | None] = mapped_column(
@@ -64,6 +81,9 @@ class Wine(TimestampMixin, Base):
     image_url: Mapped[str | None] = mapped_column(String(1000))
 
     category: Mapped[WineCategory | None] = relationship()
+    notebook: Mapped[Notebook] = relationship()
+    added_by: Mapped[User | None] = relationship(foreign_keys=[added_by_id])
+    updated_by: Mapped[User | None] = relationship(foreign_keys=[updated_by_id])
 
 
 class RecipeWine(Base):
@@ -84,6 +104,7 @@ class RecipeWine(Base):
     added_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
 
     wine: Mapped[Wine] = relationship()
+    added_by: Mapped[User | None] = relationship()
 
 
 class PairingRule(Base):

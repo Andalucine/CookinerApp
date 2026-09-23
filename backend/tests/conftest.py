@@ -62,3 +62,23 @@ def make_user(client):
         return {"Authorization": f"Bearer {body['access_token']}"}, body["user"]
 
     return _make
+
+
+@pytest.fixture
+def share(client, db_session):
+    """Give `guest` access to `owner`'s notebook with a role (owner moved to individual plan)."""
+    from sqlalchemy import select
+
+    from app.models import User
+
+    def _share(owner_headers, owner_email, guest_headers, role="editor"):
+        owner = db_session.scalar(select(User).where(User.email == owner_email))
+        owner.plan, owner.max_recipes, owner.max_shared_with = "individual", None, 2
+        db_session.commit()
+        r = client.post("/notebooks/mine/invitations", json={"role": role}, headers=owner_headers)
+        assert r.status_code == 201, r.text
+        r = client.post("/notebooks/join", json={"code": r.json()["code"]}, headers=guest_headers)
+        assert r.status_code == 200, r.text
+        return owner.notebook.id
+
+    return _share

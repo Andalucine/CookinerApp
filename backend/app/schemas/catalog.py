@@ -1,4 +1,5 @@
-"""Read-only catalogue models: categories, tags, seasons, occasions, sections, ingredients."""
+"""Read-only catalogue models: categories, tags, seasons, occasions, sections, ingredients,
+wine types and wine facets."""
 
 from pydantic import BaseModel, ConfigDict
 
@@ -44,3 +45,23 @@ class IngredientOut(BaseModel):
     name_en: str | None = None
     is_spice: bool
     shopping_section_id: int | None = None
+
+
+class WineCategoryOut(Named):
+    slug: str
+    examples_es: str | None = None
+    serving_temp: str | None = None
+    children: list["WineCategoryOut"] = []
+
+
+class FacetValue(BaseModel):
+    code: str
+    name_es: str
+    name_en: str
+
+
+class WineFacetsOut(BaseModel):
+    sweetness: list[FacetValue]
+    body: list[FacetValue]
+    ageing: list[FacetValue]
+    price_ranges: list[str]

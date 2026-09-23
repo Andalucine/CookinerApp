@@ -1,10 +1,15 @@
 """Reference tables shared by all notebooks: ingredients, seasons, occasions, categories,
 tags and shopping sections."""
 
+from typing import TYPE_CHECKING
+
 from sqlalchemy import Boolean, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+
+if TYPE_CHECKING:
+    from app.models.user import User
 
 
 class ShoppingSection(Base):
@@ -50,7 +55,11 @@ class Season(Base):
 
 
 class Occasion(Base):
-    """Occasions/periods: Navidad, Cuaresma... Preloaded ones have notebook_id NULL."""
+    """Occasions/periods: Navidad, Cuaresma... Preloaded ones have notebook_id NULL.
+
+    A notebook can add its own (session 5): the name the user writes goes into both name_es and
+    name_en, since it is not translated.
+    """
 
     __tablename__ = "occasions"
     __table_args__ = (UniqueConstraint("notebook_id", "name_es"),)
@@ -60,6 +69,9 @@ class Occasion(Base):
     name_es: Mapped[str] = mapped_column(String(50), nullable=False)
     name_en: Mapped[str] = mapped_column(String(50), nullable=False)
     is_preloaded: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    created_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+
+    created_by: Mapped["User | None"] = relationship()
 
 
 class Category(Base):
