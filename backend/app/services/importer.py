@@ -517,6 +517,36 @@ def _clean_title(title: str, site: str | None) -> str:
     return title
 
 
+_TITLE_LEAD = re.compile(
+    r"^(?:c[oó]mo\s+(?:hacer|preparar|cocinar)|receta\s+(?:f[aá]cil\s+)?(?:de|del)|"
+    r"la\s+receta\s+(?:de|del)|how\s+to\s+make|recipe\s+for)\s+",
+    re.IGNORECASE,
+)
+_TITLE_TAIL = re.compile(r"\s*(?:[:|–—]|\s-\s|,\s*(?:receta|la receta|recipe)\b).*$", re.IGNORECASE)
+_SMALL_WORDS = {"a", "al", "de", "del", "el", "en", "la", "las", "los", "y", "o", "of", "the"}
+
+
+def short_title(title: str) -> str:
+    """The name of the dish, not the headline of the article (session 7):
+    'Cómo hacer nigiri (o nigirizushi): todo lo que necesitas saber…' → 'Nigiri'."""
+    name = _TITLE_TAIL.sub("", title.strip())
+    name = re.sub(r"\s*\([^)]*\)", "", name)
+    name = _TITLE_LEAD.sub("", name).strip(" .,;")
+    if len(name) < 3:
+        return title.strip()
+    return name[0].upper() + name[1:]
+
+
+def nice_site_name(site: str | None) -> str | None:
+    """'directo al paladar' → 'Directo al Paladar', only when the page wrote it in lowercase."""
+    if not site or site != site.lower() or "." in site:
+        return site
+    words = site.split()
+    return " ".join(
+        w if (i and w in _SMALL_WORDS) else w[:1].upper() + w[1:] for i, w in enumerate(words)
+    )
+
+
 def read_recipe(html: str, url: str) -> RecipePreview:
     reader = _PageReader()
     reader.feed(html)
@@ -531,9 +561,9 @@ def read_recipe(html: str, url: str) -> RecipePreview:
         ingredients, steps, servings = _from_text(reader.blocks)
         found = bool(ingredients)
         return RecipePreview(
-            title=_clean_title(title, site)[:200],
+            title=short_title(_clean_title(title, site))[:200],
             source_url=url,
-            source_name=site,
+            source_name=nice_site_name(site),
             description=_text(reader.meta.get("og:description") or reader.meta.get("description")),
             instructions=_instructions(steps) if found else None,
             servings=servings if found else None,
@@ -558,9 +588,9 @@ def read_recipe(html: str, url: str) -> RecipePreview:
     if isinstance(lines, str):
         lines = [lines]
     return RecipePreview(
-        title=(_text(recipe.get("name")) or _text(reader.title) or url)[:200],
+        title=short_title(_text(recipe.get("name")) or _text(reader.title) or url)[:200],
         source_url=url,
-        source_name=_site_name(reader, recipe, url),
+        source_name=nice_site_name(_site_name(reader, recipe, url)),
         description=_text(recipe.get("description")),
         instructions=_instructions(recipe.get("recipeInstructions")),
         prep_time_minutes=total,

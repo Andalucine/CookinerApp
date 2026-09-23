@@ -85,7 +85,7 @@ export default function SpiceScreen() {
 }
 
 const styles = StyleSheet.create({
-  title: { fontSize: fontSize.title, fontWeight: "800", color: colors.ink },
+  title: { fontSize: fontSize.large, fontWeight: "800", color: colors.ink },
   muted: { fontSize: fontSize.body, color: colors.muted },
   box: {
     gap: spacing.xs,

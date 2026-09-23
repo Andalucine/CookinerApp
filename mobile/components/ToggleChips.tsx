@@ -11,17 +11,38 @@ export function ToggleChips({
   options,
   selected,
   onToggle,
+  anyLabel,
+  onClear,
 }: {
   label: string;
   options: { value: number; label: string; wide?: boolean }[];
   selected: number[];
   onToggle: (value: number) => void;
+  anyLabel?: string; // "Cualquiera": on when nothing is marked; tapping it clears the rest
+  onClear?: () => void;
 }) {
   const wide = wideFlags(options);
+  const none = selected.length === 0;
   return (
     <View style={styles.wrapper}>
       <Text style={styles.label}>{label}</Text>
       <View style={chipStyles.grid}>
+        {anyLabel && onClear ? (
+          <Pressable
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: none }}
+            accessibilityLabel={anyLabel}
+            onPress={onClear}
+            style={({ pressed }) => [
+              chipStyles.chip,
+              chipStyles.wide,
+              none && styles.on,
+              pressed && styles.pressed,
+            ]}
+          >
+            <Text style={[styles.text, none && styles.onText]}>{anyLabel}</Text>
+          </Pressable>
+        ) : null}
         {options.map((option, index) => {
           const on = selected.includes(option.value);
           return (

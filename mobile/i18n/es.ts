@@ -78,9 +78,9 @@ export const es = {
   "search.occasionHint": "Toca otra vez una época para quitarla.",
   "search.submit": "Buscar recetas",
   "search.clear": "Borrar lo escrito",
-  "time.quick": "Rápida (hasta 30')",
-  "time.medium": "Media (30 a 60')",
-  "time.long": "Larga (más de 60')",
+  "time.quick": "Hasta 30'",
+  "time.medium": "De 30 a 60'",
+  "time.long": "Más de 60'",
   // Ficha de receta
   "recipe.fromNotebook": "Receta del cuaderno de {name}",
   "recipe.servings": "{count} raciones",

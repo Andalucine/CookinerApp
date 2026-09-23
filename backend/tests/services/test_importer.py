@@ -173,3 +173,28 @@ def test_site_name_from_the_json_ld_when_everything_else_is_a_domain():
     only_domain = {**RECIPE["@graph"][1], "publisher": {"name": "ejemplo.test"}}
     html = f'<script type="application/ld+json">{json.dumps(only_domain)}</script>'
     assert importer.read_recipe(html, "https://ejemplo.test/x").source_name == "ejemplo.test"
+
+
+@pytest.mark.parametrize(
+    ("headline", "name"),
+    [
+        (
+            "Cómo hacer nigiri (o nigirizushi): todo lo que necesitas saber para hacerlos en casa",
+            "Nigiri",
+        ),
+        ("Receta de lentejas con chorizo", "Lentejas con chorizo"),
+        ("Salmorejo cordobés, receta tradicional paso a paso", "Salmorejo cordobés"),
+        ("Tarta de queso | La mejor del mundo", "Tarta de queso"),
+        ("Marmitako", "Marmitako"),
+        ("Cómo hacer", "Cómo hacer"),  # nothing sensible left: keep it
+    ],
+)
+def test_the_title_is_the_name_of_the_dish(headline, name):
+    assert importer.short_title(headline) == name
+
+
+def test_site_name_written_in_lowercase_is_capitalised():
+    assert importer.nice_site_name("directo al paladar") == "Directo al Paladar"
+    assert importer.nice_site_name("Recetas de Rechupete") == "Recetas de Rechupete"
+    assert importer.nice_site_name("javirecetas.com") == "javirecetas.com"
+    assert importer.nice_site_name(None) is None

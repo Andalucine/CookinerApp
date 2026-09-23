@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
   },
   bannerText: { flex: 1, fontSize: fontSize.body, fontWeight: "700", color: colors.ink },
   titleRow: { flexDirection: "row", alignItems: "flex-start", gap: spacing.s },
-  title: { flex: 1, fontSize: fontSize.title, fontWeight: "800", color: colors.ink },
+  title: { flex: 1, fontSize: fontSize.large, fontWeight: "800", color: colors.ink },
   star: { minWidth: 48, minHeight: 48, alignItems: "center", justifyContent: "center" },
   facts: { fontSize: fontSize.body, color: colors.muted },
   addedBy: { fontSize: fontSize.small, color: colors.muted, fontStyle: "italic" },

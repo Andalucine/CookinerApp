@@ -264,6 +264,8 @@ export function RecipeForm({
             }))}
             selected={seasonIds}
             onToggle={toggle(seasonIds, setSeasonIds)}
+            anyLabel={t("search.any")}
+            onClear={() => setSeasonIds([])}
           />
           <ToggleChips
             label={t("search.occasion")}
