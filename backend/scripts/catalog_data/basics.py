@@ -7,12 +7,11 @@ SEASONS = [
     ("winter", "Invierno", "Winter"),
 ]
 
-# "Verano" was removed in session 7: it is a season, not an occasion.
+# Session 7: "Verano" removed (it is a season) and "Feria" removed.
 OCCASIONS = [
     ("Navidad", "Christmas"),
     ("Cuaresma", "Lent"),
     ("Semana Santa", "Easter"),
-    ("Feria", "Feria"),
     ("Todos los Santos", "All Saints"),
 ]
 

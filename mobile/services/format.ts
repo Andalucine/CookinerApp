@@ -101,3 +101,13 @@ export function signature(recipe: {
   if (cook && site) return `${cook} (${site})`;
   return cook ?? site;
 }
+
+/** The time button a recipe belongs to (same limits as the search): up to 30', 30 to 60', more. */
+export function timeBucket(minutes: number | null | undefined): "quick" | "medium" | "long" | null {
+  if (minutes == null || minutes <= 0) return null;
+  if (minutes <= 30) return "quick";
+  return minutes <= 60 ? "medium" : "long";
+}
+
+/** Minutes written when a time button is chosen and the recipe had none that fitted. */
+export const BUCKET_MINUTES = { quick: 30, medium: 60, long: 90 } as const;

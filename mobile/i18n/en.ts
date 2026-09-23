@@ -121,6 +121,7 @@ export const en: Record<keyof typeof es, string> = {
   "form.steps": "One step per line",
   "form.stepsHint": "They are numbered when saved.",
   "form.minutes": "Time (minutes)",
+  "form.timeHint": "It is marked from the minutes. If you don't know them, choose a button.",
   "form.servings": "Servings",
   "form.category": "Category and when",
   "form.noCategory": "No category",

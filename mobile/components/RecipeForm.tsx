@@ -9,7 +9,7 @@ import { type TextKey, useI18n } from "../i18n";
 import * as catalog from "../services/catalog.ts";
 import type { CategoryNode } from "../services/categoryTree.ts";
 import { errorText } from "../services/errors.ts";
-import { localName } from "../services/format.ts";
+import { BUCKET_MINUTES, localName, timeBucket } from "../services/format.ts";
 import { ingredientsToLines, linesToIngredients } from "../services/ingredientParser.ts";
 import type { RecipeInput, SourceType } from "../services/recipes.ts";
 import { useLoad } from "../services/useLoad.ts";
@@ -223,6 +223,28 @@ export function RecipeForm({
             error={errors.servings}
           />
         </View>
+        <Chips
+          label={t("search.time")}
+          hint={t("form.timeHint")}
+          value={timeBucket(Number(form.minutes) || null) ?? ""}
+          allowNone
+          onChange={(bucket) =>
+            setForm((f) => ({
+              ...f,
+              // Keep the exact minutes when they already fit; otherwise write the button's time
+              minutes: !bucket
+                ? ""
+                : timeBucket(Number(f.minutes) || null) === bucket
+                  ? f.minutes
+                  : String(BUCKET_MINUTES[bucket as keyof typeof BUCKET_MINUTES]),
+            }))
+          }
+          options={[
+            { value: "quick", label: t("time.quick") },
+            { value: "medium", label: t("time.medium") },
+            { value: "long", label: t("time.long"), wide: true },
+          ]}
+        />
       </View>
       <TextField
         label={t("search.cook")}

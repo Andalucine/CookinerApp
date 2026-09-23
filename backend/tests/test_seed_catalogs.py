@@ -51,7 +51,8 @@ def test_occasion_taken_out_of_the_list_is_deleted(db_session):
     run(db_session)
     names = db_session.scalars(select(Occasion.name_es).where(Occasion.notebook_id.is_(None))).all()
     assert "Verano" not in names  # a season, not an occasion (session 7)
-    assert len(names) == 5
+    assert "Feria" not in names
+    assert sorted(names) == ["Cuaresma", "Navidad", "Semana Santa", "Todos los Santos"]
 
     # An old database still has it, linked to a recipe: running the seed again removes both
     old = Occasion(name_es="Verano", name_en="Summer holidays", is_preloaded=True)

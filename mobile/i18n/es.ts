@@ -127,6 +127,7 @@ export const es = {
   "form.steps": "Un paso por línea",
   "form.stepsHint": "Se numeran solos al guardar.",
   "form.minutes": "Tiempo (minutos)",
+  "form.timeHint": "Se marca solo con los minutos. Si no los sabes, elige un botón.",
   "form.servings": "Raciones",
   "form.category": "Categoría y cuándo",
   "form.noCategory": "Sin categoría",

@@ -9,6 +9,7 @@ import {
   signature,
   siteName,
   splitSteps,
+  timeBucket,
   youtubeId,
 } from "../services/format.ts";
 
@@ -85,4 +86,13 @@ test("signature: the cook and, for a web recipe, the website in brackets", () =>
   assert.equal(signature({ ...web, cook_name: null }), "Directo al Paladar");
   assert.equal(signature({ cook_name: "abuela Carmen", source_type: "family" }), "abuela Carmen");
   assert.equal(signature({ cook_name: null, source_type: "own" }), null);
+});
+
+test("time button from the minutes of the recipe", () => {
+  assert.equal(timeBucket(25), "quick");
+  assert.equal(timeBucket(30), "quick");
+  assert.equal(timeBucket(31), "medium");
+  assert.equal(timeBucket(60), "medium");
+  assert.equal(timeBucket(75), "long");
+  assert.equal(timeBucket(null), null);
 });
