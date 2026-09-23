@@ -26,6 +26,14 @@ node_modules/
 *.mobileprovision
 mobile/ios/
 mobile/android/
+mobile/dist/
+mobile/web-build/
+mobile/expo-env.d.ts
+.kotlin/
+*.orig.*
+.metro-health-check*
+*.tsbuildinfo
+*.pem
 
 # Bases de datos y volúmenes
 *.db

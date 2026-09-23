@@ -13,7 +13,7 @@
 
 ## Piezas
 
-- **mobile/** — la app que usan las personas. Solo habla con la API; no accede a la base de datos ni a webs externas.
+- **mobile/** — la app que usan las personas (Expo SDK 57, Expo Router; decisión 0006). Solo habla con la API; no accede a la base de datos ni a webs externas. En desarrollo busca la API en el mismo ordenador que sirve la app, puerto 8000.
 - **backend/app/api/** — rutas HTTP. Reciben la petición, validan con `schemas/`, llaman a `services/` y devuelven la respuesta.
 - **backend/app/services/** — lógica de negocio: permisos de edición, búsqueda por ingredientes, importación de recetas y vinos desde webs.
 - **backend/app/models/** — tablas de PostgreSQL (SQLAlchemy). Cambiarlas exige una migración en `alembic/versions/`.

@@ -19,6 +19,15 @@ Requisitos: Docker Desktop y git.
 
 Para parar: `docker compose down`. Para borrar también la base de datos: `docker compose down -v`.
 
+## Arrancar la app móvil
+
+Requisitos: Node.js 20 o posterior, y la app **Expo Go** en el móvil (misma wifi que el ordenador). Con la API en marcha:
+
+1. `cd mobile` y `npm install` (la primera vez).
+2. `npx expo start` y escanear el código QR con la cámara del iPhone (o desde Expo Go en Android).
+
+Detalles en `mobile/LEEME.md`.
+
 ## Estructura del repositorio
 
 ```
