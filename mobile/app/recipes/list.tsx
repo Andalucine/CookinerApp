@@ -1,6 +1,7 @@
 /**
  * Lista de recetas: what a category, a search or "Mis favoritas" found. The filters arrive as
- * route parameters with the API's names; `title` is the heading.
+ * route parameters with the API's names; `title` is the heading. With `notebook_id` (and its
+ * owner's name) the list is of someone else's notebook and shows its notice.
  */
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
@@ -9,6 +10,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { BigButton } from "../../components/BigButton.tsx";
 import { LoadError, Loading } from "../../components/LoadState.tsx";
 import { Message } from "../../components/Message.tsx";
+import { NotebookBanner } from "../../components/NotebookBanner.tsx";
 import { RecipeCard } from "../../components/RecipeCard.tsx";
 import { Screen } from "../../components/Screen.tsx";
 import { type Auth, SignedIn } from "../../components/SignedIn.tsx";
@@ -17,6 +19,7 @@ import { useI18n } from "../../i18n";
 import { errorText } from "../../services/errors.ts";
 import { cleanFilters, type RecipeFilters } from "../../services/recipeQuery.ts";
 import * as recipes from "../../services/recipes.ts";
+import { type OtherNotebook, readNotebook } from "../../services/sharedNotebook.ts";
 import { useLoad } from "../../services/useLoad.ts";
 
 const PAGE = 30;
@@ -25,10 +28,12 @@ function RecipeList({
   auth,
   filters,
   title,
+  notebook,
 }: {
   auth: Auth;
   filters: RecipeFilters;
   title: string;
+  notebook: OtherNotebook | null;
 }) {
   const { t } = useI18n();
   const key = JSON.stringify(filters);
@@ -80,6 +85,7 @@ function RecipeList({
   return (
     <Screen>
       <Stack.Screen options={{ title }} />
+      <NotebookBanner notebook={notebook} />
       {body}
     </Screen>
   );
@@ -89,10 +95,13 @@ export default function RecipeListScreen() {
   const params = useLocalSearchParams();
   const { t } = useI18n();
   const filters = cleanFilters(params);
+  const notebook = readNotebook(params);
   const title =
     typeof params.title === "string" && params.title ? params.title : t("recipes.results");
   return (
-    <SignedIn>{(auth) => <RecipeList auth={auth} filters={filters} title={title} />}</SignedIn>
+    <SignedIn>
+      {(auth) => <RecipeList auth={auth} filters={filters} title={title} notebook={notebook} />}
+    </SignedIn>
   );
 }
 

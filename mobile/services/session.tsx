@@ -17,6 +17,7 @@ type Session = {
   user: auth.User | null;
   signIn: (token: string, user: auth.User) => Promise<void>;
   signOut: () => Promise<void>;
+  updateUser: (user: auth.User) => void; // after changing something in Mi cuenta
 };
 
 const SessionContext = createContext<Session | null>(null);
@@ -43,6 +44,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
+  const updateUser = useCallback(
+    (newUser: auth.User) => {
+      setUser(newUser);
+      setLanguage(newUser.language);
+    },
+    [setLanguage],
+  );
+
   // At start-up: if there is a saved token and it still works, go straight in.
   useEffect(() => {
     (async () => {
@@ -66,7 +75,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <SessionContext.Provider value={{ ready, token, user, signIn, signOut }}>
+    <SessionContext.Provider value={{ ready, token, user, signIn, signOut, updateUser }}>
       {children}
     </SessionContext.Provider>
   );

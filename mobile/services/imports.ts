@@ -15,10 +15,11 @@ export type ImportPreview = {
 
 type Auth = { token: string; language: string };
 
-export function readPage({ token, language }: Auth, url: string) {
+/** `notebookId`: someone else's notebook where I am editor (default: mine). */
+export function readPage({ token, language }: Auth, url: string, notebookId?: number) {
   return api<ImportPreview>("/imports/recipe", {
     method: "POST",
-    body: { url: url.trim() },
+    body: notebookId ? { url: url.trim(), notebook_id: notebookId } : { url: url.trim() },
     token,
     language,
   });

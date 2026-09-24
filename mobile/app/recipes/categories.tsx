@@ -1,12 +1,13 @@
 /**
  * Categorías: the tree Salado · Dulce · Bebidas, one level per screen with big rows and the
  * number of recipes. A category with subcategories opens the next level (with "Todas las
- * recetas de…" first); one without opens the list.
+ * recetas de…" first); one without opens the list. Also for someone else's notebook.
  */
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 
 import { LoadError, Loading } from "../../components/LoadState.tsx";
+import { NotebookBanner } from "../../components/NotebookBanner.tsx";
 import { RowButton } from "../../components/RowButton.tsx";
 import { Screen } from "../../components/Screen.tsx";
 import { type Auth, SignedIn } from "../../components/SignedIn.tsx";
@@ -16,17 +17,27 @@ import * as catalog from "../../services/catalog.ts";
 import { type CategoryNode, countLookup, findCategory } from "../../services/categoryTree.ts";
 import { localName } from "../../services/format.ts";
 import * as recipes from "../../services/recipes.ts";
+import { notebookParams, type OtherNotebook, readNotebook } from "../../services/sharedNotebook.ts";
 import { useLoad } from "../../services/useLoad.ts";
 
-function Categories({ auth, parentId }: { auth: Auth; parentId: number | null }) {
+function Categories({
+  auth,
+  parentId,
+  notebook,
+}: {
+  auth: Auth;
+  parentId: number | null;
+  notebook: OtherNotebook | null;
+}) {
   const { t, language } = useI18n();
+  const carry = notebookParams(notebook);
   const data = useLoad(async () => {
     const [tree, counts] = await Promise.all([
       catalog.categories(auth.language),
-      recipes.categoryCounts(auth),
+      recipes.categoryCounts(auth, notebook?.id),
     ]);
     return { tree, count: countLookup(counts) };
-  }, [auth.token, auth.language]);
+  }, [auth.token, auth.language, notebook?.id]);
 
   if (data.loading && !data.data) return <Loading />;
   if (data.error || !data.data) {
@@ -44,11 +55,11 @@ function Categories({ auth, parentId }: { auth: Auth; parentId: number | null })
 
   function open(node: CategoryNode) {
     if (node.children.length) {
-      router.push({ pathname: "/recipes/categories", params: { parent: String(node.id) } });
+      router.push({ pathname: "/recipes/categories", params: { ...carry, parent: String(node.id) } });
     } else {
       router.push({
         pathname: "/recipes/list",
-        params: { category_id: String(node.id), title: name(node) },
+        params: { ...carry, category_id: String(node.id), title: name(node) },
       });
     }
   }
@@ -56,10 +67,13 @@ function Categories({ auth, parentId }: { auth: Auth; parentId: number | null })
   return (
     <Screen>
       <Stack.Screen options={{ title: found ? name(found.node) : t("categories.title") }} />
+      <NotebookBanner notebook={notebook} />
       {found ? (
         <Text style={styles.path}>{found.path.map(name).join(" ▸ ")}</Text>
       ) : (
-        <Text style={styles.intro}>{t("categories.intro")}</Text>
+        <Text style={styles.intro}>
+          {notebook ? t("categories.introShared") : t("categories.intro")}
+        </Text>
       )}
       <View style={styles.list}>
         {found ? (
@@ -70,7 +84,11 @@ function Categories({ auth, parentId }: { auth: Auth; parentId: number | null })
             onPress={() =>
               router.push({
                 pathname: "/recipes/list",
-                params: { category_id: String(found.node.id), title: name(found.node) },
+                params: {
+                  ...carry,
+                  category_id: String(found.node.id),
+                  title: name(found.node),
+                },
               })
             }
           />
@@ -91,9 +109,14 @@ function Categories({ auth, parentId }: { auth: Auth; parentId: number | null })
 }
 
 export default function CategoriesScreen() {
-  const { parent } = useLocalSearchParams<{ parent?: string }>();
-  const parentId = parent ? Number(parent) : null;
-  return <SignedIn>{(auth) => <Categories auth={auth} parentId={parentId} />}</SignedIn>;
+  const params = useLocalSearchParams<{ parent?: string }>();
+  const parentId = params.parent ? Number(params.parent) : null;
+  const notebook = readNotebook(params);
+  return (
+    <SignedIn>
+      {(auth) => <Categories auth={auth} parentId={parentId} notebook={notebook} />}
+    </SignedIn>
+  );
 }
 
 const styles = StyleSheet.create({

@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class UserPublic(BaseModel):
@@ -17,3 +17,9 @@ class UserPublic(BaseModel):
     max_shared_with: int | None
     notebook_id: int
     created_at: datetime
+
+
+class UserUpdate(BaseModel):
+    """What the person can change from Mi cuenta (for now, the language)."""
+
+    language: str = Field(pattern="^(es|en)$")

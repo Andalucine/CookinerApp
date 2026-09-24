@@ -1,13 +1,15 @@
 /**
  * Buscar recetas: by one or more ingredients, words of the title, time, cook, source, season
- * and occasion. "Buscar recetas" opens the list with those filters.
+ * and occasion. "Buscar recetas" opens the list with those filters. Also for someone else's
+ * notebook (its own occasions included).
  */
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 
 import { BigButton } from "../../components/BigButton.tsx";
 import { Chips } from "../../components/Chips.tsx";
+import { NotebookBanner } from "../../components/NotebookBanner.tsx";
 import { Screen } from "../../components/Screen.tsx";
 import { type Auth, SignedIn } from "../../components/SignedIn.tsx";
 import { TextField } from "../../components/TextField.tsx";
@@ -16,11 +18,12 @@ import { useI18n } from "../../i18n";
 import * as catalog from "../../services/catalog.ts";
 import { localName } from "../../services/format.ts";
 import { type RecipeFilters, splitIngredients } from "../../services/recipeQuery.ts";
+import { notebookParams, type OtherNotebook, readNotebook } from "../../services/sharedNotebook.ts";
 import { useLoad } from "../../services/useLoad.ts";
 
 const EMPTY = { ingredients: "", q: "", time: "", cook: "", source: "", season: "", occasion: "" };
 
-function Search({ auth }: { auth: Auth }) {
+function Search({ auth, notebook }: { auth: Auth; notebook: OtherNotebook | null }) {
   const { t, language } = useI18n();
   const [form, setForm] = useState(EMPTY);
   const set = (field: keyof typeof EMPTY) => (value: string) =>
@@ -28,10 +31,10 @@ function Search({ auth }: { auth: Auth }) {
   const lists = useLoad(async () => {
     const [seasons, occasions] = await Promise.all([
       catalog.seasons(auth.language),
-      catalog.occasions(auth.token, auth.language),
+      catalog.occasions(auth.token, auth.language, notebook?.id),
     ]);
     return { seasons, occasions };
-  }, [auth.token, auth.language]);
+  }, [auth.token, auth.language, notebook?.id]);
 
   function submit() {
     const filters: RecipeFilters = {
@@ -43,7 +46,10 @@ function Search({ auth }: { auth: Auth }) {
       season_id: form.season || undefined,
       occasion_id: form.occasion || undefined,
     };
-    const params: Record<string, string> = { title: t("recipes.results") };
+    const params: Record<string, string> = {
+      ...notebookParams(notebook), // includes notebook_id, the filter the API needs
+      title: t("recipes.results"),
+    };
     for (const [key, value] of Object.entries(filters)) if (value) params[key] = value;
     router.push({ pathname: "/recipes/list", params });
   }
@@ -51,6 +57,7 @@ function Search({ auth }: { auth: Auth }) {
   const any = { value: "", label: t("search.any"), wide: true };
   return (
     <Screen>
+      <NotebookBanner notebook={notebook} />
       <TextField
         label={t("search.ingredients")}
         hint={t("search.ingredientsHint")}
@@ -123,7 +130,8 @@ function Search({ auth }: { auth: Auth }) {
 }
 
 export default function SearchScreen() {
-  return <SignedIn>{(auth) => <Search auth={auth} />}</SignedIn>;
+  const notebook = readNotebook(useLocalSearchParams());
+  return <SignedIn>{(auth) => <Search auth={auth} notebook={notebook} />}</SignedIn>;
 }
 
 const styles = StyleSheet.create({ buttons: { gap: spacing.s, marginTop: spacing.s } });

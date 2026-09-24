@@ -11,6 +11,7 @@ import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { BigButton } from "../../components/BigButton.tsx";
 import { LoadError, Loading } from "../../components/LoadState.tsx";
+import { NotebookBanner } from "../../components/NotebookBanner.tsx";
 import { Message } from "../../components/Message.tsx";
 import { Screen } from "../../components/Screen.tsx";
 import { SectionTitle } from "../../components/SectionTitle.tsx";
@@ -88,14 +89,18 @@ function RecipeView({ auth, id }: { auth: Auth; id: number }) {
   return (
     <Screen>
       <Stack.Screen options={{ title: t("recipes.recipe") }} />
-      {recipe.notebook_id !== auth.user.notebook_id ? (
-        <View style={styles.banner}>
-          <Ionicons name="people-outline" size={22} color={colors.ink} />
-          <Text style={styles.bannerText}>
-            {t("recipe.fromNotebook", { name: recipe.notebook_owner })}
-          </Text>
-        </View>
-      ) : null}
+      <NotebookBanner
+        notebook={
+          recipe.notebook_id !== auth.user.notebook_id
+            ? {
+                id: recipe.notebook_id,
+                owner: recipe.notebook_owner,
+                role: recipe.my_role === "editor" ? "editor" : "viewer",
+              }
+            : null
+        }
+        title={t("recipe.fromNotebook", { name: recipe.notebook_owner })}
+      />
 
       <View style={styles.titleRow}>
         <Text style={styles.title} accessibilityRole="header">
@@ -275,17 +280,6 @@ export default function RecipeScreen() {
 }
 
 const styles = StyleSheet.create({
-  banner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.s,
-    padding: spacing.m,
-    borderRadius: radius.m,
-    backgroundColor: colors.accentSoft,
-    borderWidth: 2,
-    borderColor: colors.accent,
-  },
-  bannerText: { flex: 1, fontSize: fontSize.body, fontWeight: "700", color: colors.ink },
   titleRow: { flexDirection: "row", alignItems: "flex-start", gap: spacing.s },
   title: { flex: 1, fontSize: fontSize.large, fontWeight: "800", color: colors.ink },
   star: { minWidth: 48, minHeight: 48, alignItems: "center", justifyContent: "center" },

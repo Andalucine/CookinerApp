@@ -1,4 +1,4 @@
-"""Registration, login, current user and password reset."""
+"""Registration, login, current user (and its language) and password reset."""
 
 from fastapi import APIRouter, HTTPException, status
 
@@ -13,7 +13,7 @@ from app.schemas.auth import (
     ResetPasswordRequest,
     TokenResponse,
 )
-from app.schemas.user import UserPublic
+from app.schemas.user import UserPublic, UserUpdate
 from app.services import auth as auth_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -47,6 +47,15 @@ def login(body: LoginRequest, db: DbSession, lang: Lang) -> TokenResponse:
 
 @router.get("/me", response_model=UserPublic)
 def me(user: CurrentUser) -> UserPublic:
+    return UserPublic.model_validate(user)
+
+
+@router.patch("/me", response_model=UserPublic)
+def update_me(body: UserUpdate, db: DbSession, user: CurrentUser) -> UserPublic:
+    """Mi cuenta: change the language (the app's texts and the API messages follow it)."""
+    user.language = body.language
+    db.commit()
+    db.refresh(user)
     return UserPublic.model_validate(user)
 
 

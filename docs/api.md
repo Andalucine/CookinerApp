@@ -1,6 +1,6 @@
 # API
 
-La documentación interactiva la genera FastAPI en http://localhost:8000/docs (Swagger) y http://localhost:8000/redoc. Versión 0.5.0 (sesión 7).
+La documentación interactiva la genera FastAPI en http://localhost:8000/docs (Swagger) y http://localhost:8000/redoc. Versión 0.6.0 (sesión 8).
 
 ## Convenciones
 
@@ -27,6 +27,7 @@ La documentación interactiva la genera FastAPI en http://localhost:8000/docs (S
 | POST | `/auth/register` | `email`, `display_name`, `password` (mín. 8), `language` | 201 · `access_token` + `user` (con `plan`, `max_recipes`, `max_shared_with`, `notebook_id`). Crea la cuenta en el plan gratuito **y su cuaderno**. 409 si el correo ya existe. |
 | POST | `/auth/login` | `email`, `password` | 200 · `access_token` + `user`. 401 si no coinciden. |
 | GET | `/auth/me` | — | Datos del usuario conectado. |
+| PATCH | `/auth/me` | `language` (`es`/`en`) | Cambia el idioma de la cuenta desde Mi cuenta (sesión 8). |
 | POST | `/auth/forgot-password` | `email` | 200 siempre. Código de 6 cifras válido 30 minutos (pendiente el envío por correo; en desarrollo sale en el log). |
 | POST | `/auth/reset-password` | `email`, `code`, `new_password` | 200 · contraseña cambiada. 400 si el código no vale. |
 
@@ -36,7 +37,7 @@ La documentación interactiva la genera FastAPI en http://localhost:8000/docs (S
 |---|---|---|---|
 | GET | `/notebooks/mine` | — | Mi cuaderno: `name`, `owner`, `recipe_count`, `shared_with` (personas con acceso), `max_shared_with` del plan (nulo = sin límite). |
 | PATCH | `/notebooks/mine` | `name` | Renombrar mi cuaderno. |
-| GET | `/notebooks/shared-with-me` | — | Cuadernos ajenos a los que tengo acceso, con `owner` y mi `role` (Ajustes). |
+| GET | `/notebooks/shared-with-me` | — | Cuadernos ajenos a los que tengo acceso, con `owner` y mi `role` (Mi cuenta). |
 | POST | `/notebooks/mine/invitations` | `role` (`viewer`/`editor`), `email` (opcional: solo esa cuenta podrá usar el código) | 201 · `code` de 8 caracteres (sin 0/O/1/I), válido 7 días, una persona por código. 403 si el plan no permite más personas. |
 | GET | `/notebooks/mine/invitations` | — | Invitaciones pendientes (no usadas ni caducadas). |
 | DELETE | `/notebooks/mine/invitations/{id}` | — | Anular una invitación. |

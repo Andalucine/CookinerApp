@@ -1,13 +1,15 @@
 /**
  * Importar de una web: paste the address → "Leer la página" → the preview, in the same form as
  * writing by hand, to correct what was read badly → Guardar. The link to the source is kept.
+ * With someone else's notebook in the parameters (editors), the recipe is saved there.
  */
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 import { BigButton } from "../../components/BigButton.tsx";
 import { Message } from "../../components/Message.tsx";
+import { NotebookBanner } from "../../components/NotebookBanner.tsx";
 import { RecipeForm } from "../../components/RecipeForm.tsx";
 import { Screen } from "../../components/Screen.tsx";
 import { type Auth, SignedIn } from "../../components/SignedIn.tsx";
@@ -16,8 +18,9 @@ import { colors, fontSize, radius, spacing } from "../../components/theme.ts";
 import { type TextKey, useI18n } from "../../i18n";
 import { errorText } from "../../services/errors.ts";
 import * as imports from "../../services/imports.ts";
+import { type OtherNotebook, readNotebook } from "../../services/sharedNotebook.ts";
 
-function Import({ auth }: { auth: Auth }) {
+function Import({ auth, notebook }: { auth: Auth; notebook: OtherNotebook | null }) {
   const { t } = useI18n();
   const [url, setUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +37,7 @@ function Import({ auth }: { auth: Auth }) {
     setMessage(null);
     setBusy(true);
     try {
-      setPreview(await imports.readPage(auth, url));
+      setPreview(await imports.readPage(auth, url, notebook?.id));
     } catch (e) {
       setMessage(errorText(e, t));
     } finally {
@@ -45,6 +48,7 @@ function Import({ auth }: { auth: Auth }) {
   if (preview) {
     return (
       <Screen>
+        <NotebookBanner notebook={notebook} />
         <View style={styles.check}>
           <Text style={styles.checkTitle}>{t("import.checkTitle")}</Text>
           <Text style={styles.body}>{t("import.checkText")}</Text>
@@ -72,6 +76,7 @@ function Import({ auth }: { auth: Auth }) {
 
   return (
     <Screen>
+      <NotebookBanner notebook={notebook} />
       <Text style={styles.body}>{t("import.intro")}</Text>
       <TextField
         label={t("import.url")}
@@ -93,7 +98,8 @@ function Import({ auth }: { auth: Auth }) {
 }
 
 export default function ImportScreen() {
-  return <SignedIn>{(auth) => <Import auth={auth} />}</SignedIn>;
+  const notebook = readNotebook(useLocalSearchParams());
+  return <SignedIn>{(auth) => <Import auth={auth} notebook={notebook} />}</SignedIn>;
 }
 
 const styles = StyleSheet.create({

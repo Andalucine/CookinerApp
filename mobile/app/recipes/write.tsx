@@ -1,6 +1,7 @@
 /**
  * Escribir a mano (new recipe) and Editar (with ?id=). Saving a new recipe opens it; saving
  * an edit goes back to it. Borrar only for the notebook owner or whoever wrote the recipe.
+ * A new recipe goes to someone else's notebook when it arrives with its parameters (editors).
  */
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
@@ -9,6 +10,7 @@ import { Alert, StyleSheet, View } from "react-native";
 import { BigButton } from "../../components/BigButton.tsx";
 import { LoadError, Loading } from "../../components/LoadState.tsx";
 import { Message } from "../../components/Message.tsx";
+import { NotebookBanner } from "../../components/NotebookBanner.tsx";
 import { emptyRecipe, RecipeForm } from "../../components/RecipeForm.tsx";
 import { Screen } from "../../components/Screen.tsx";
 import { type Auth, SignedIn } from "../../components/SignedIn.tsx";
@@ -16,6 +18,7 @@ import { spacing } from "../../components/theme.ts";
 import { useI18n } from "../../i18n";
 import { errorText } from "../../services/errors.ts";
 import * as recipes from "../../services/recipes.ts";
+import { type OtherNotebook, readNotebook } from "../../services/sharedNotebook.ts";
 import { useLoad } from "../../services/useLoad.ts";
 
 /** The saved recipe → what the form edits. */
@@ -49,16 +52,21 @@ function toInput(recipe: recipes.Recipe): recipes.RecipeInput {
   };
 }
 
-function NewRecipe({ auth }: { auth: Auth }) {
+function NewRecipe({ auth, notebook }: { auth: Auth; notebook: OtherNotebook | null }) {
   const { t } = useI18n();
   return (
     <Screen>
+      <NotebookBanner notebook={notebook} />
       <RecipeForm
         auth={auth}
         initial={emptyRecipe(auth.language)}
+        notebookId={notebook?.id}
         submitLabel={t("form.save")}
         onSubmit={async (input) => {
-          const saved = await recipes.create(auth, input);
+          const saved = await recipes.create(
+            auth,
+            notebook ? { ...input, notebook_id: notebook.id } : input,
+          );
           router.replace(`/recipes/${saved.id}`);
         }}
       />
@@ -134,10 +142,17 @@ function EditRecipe({ auth, id }: { auth: Auth; id: number }) {
 }
 
 export default function WriteScreen() {
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  const params = useLocalSearchParams<{ id?: string }>();
+  const notebook = readNotebook(params);
   return (
     <SignedIn>
-      {(auth) => (id ? <EditRecipe auth={auth} id={Number(id)} /> : <NewRecipe auth={auth} />)}
+      {(auth) =>
+        params.id ? (
+          <EditRecipe auth={auth} id={Number(params.id)} />
+        ) : (
+          <NewRecipe auth={auth} notebook={notebook} />
+        )
+      }
     </SignedIn>
   );
 }

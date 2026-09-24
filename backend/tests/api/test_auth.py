@@ -98,3 +98,18 @@ def test_forgot_password_unknown_email_gives_same_answer(client):
     r = client.post("/auth/forgot-password", json={"email": "nadie@example.com"})
     assert r.status_code == 200
     assert "código" in r.json()["message"]
+
+
+def test_change_my_language(client, make_user):
+    headers, user = make_user()
+    assert user["language"] == "es"
+    r = client.patch("/auth/me", json={"language": "en"}, headers=headers)
+    assert r.status_code == 200
+    assert r.json()["language"] == "en"
+    assert client.get("/auth/me", headers=headers).json()["language"] == "en"
+
+
+def test_change_my_language_only_accepts_es_or_en(client, make_user):
+    headers, _ = make_user()
+    assert client.patch("/auth/me", json={"language": "fr"}, headers=headers).status_code == 422
+    assert client.patch("/auth/me", json={"language": "en"}).status_code == 401

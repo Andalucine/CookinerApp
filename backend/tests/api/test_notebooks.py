@@ -124,3 +124,38 @@ def test_email_lock_expiry_limit_and_removal(client, seeded, make_user):
     assert client.delete(f"/notebooks/mine/access/{pepa['id']}", headers=ana_h).status_code == 404
     code = client.post("/notebooks/mine/invitations", json={}, headers=ana_h).json()["code"]
     assert client.post("/notebooks/join", json={"code": code}, headers=juan_h).status_code == 200
+
+
+def test_the_app_browses_a_shared_notebook(client, seeded, make_user, share):
+    """What the app does after 'Unirme' (session 8): portada, categories and search of the other
+    notebook with ?notebook_id=; a viewer cannot add; an editor adds to that notebook."""
+    ana_h, ana = make_user("Ana")
+    luis_h, luis = make_user("Luis")  # free plan: he can still join
+    nb = share(ana_h, "ana@example.com", luis_h, role="viewer")
+    assert nb == ana["notebook_id"]
+    client.post("/recipes", json=marmitako(seeded), headers=ana_h)
+
+    # Portada and lists of Ana's notebook, seen by Luis
+    r = client.get(f"/recipes?notebook_id={nb}", headers=luis_h)
+    assert r.status_code == 200 and r.json()["total"] == 1
+    assert r.json()["items"][0]["notebook_id"] == nb
+    # his own notebook is still empty (the Recetas door of Inicio)
+    assert client.get("/recipes", headers=luis_h).json()["total"] == 0
+    counts = client.get(f"/recipes/category-counts?notebook_id={nb}", headers=luis_h).json()
+    assert sum(c["count"] for c in counts) >= 1
+
+    # A viewer cannot add a recipe there (the app does not even show him Nueva receta)
+    body = {**marmitako(seeded, title="Lentejas"), "notebook_id": nb}
+    assert client.post("/recipes", json=body, headers=luis_h).status_code == 403
+
+    # As editor he can, and it stays in Ana's notebook marked as added by him
+    client.patch(f"/notebooks/mine/access/{luis['id']}", json={"role": "editor"}, headers=ana_h)
+    r = client.post("/recipes", json=body, headers=luis_h)
+    assert r.status_code == 201, r.text
+    assert r.json()["notebook_id"] == nb
+    items = client.get("/recipes", headers=ana_h).json()["items"]
+    assert {i["title"]: i["added_by"] for i in items}["Lentejas"] == "Luis"
+
+    # Someone without access gets 404 (nobody learns whether the notebook exists)
+    eva_h, _ = make_user("Eva")
+    assert client.get(f"/recipes?notebook_id={nb}", headers=eva_h).status_code == 404
