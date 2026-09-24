@@ -1145,6 +1145,42 @@ def upgrade() -> None:
         unique=False,
     )
     op.create_table(
+        "notebook_ingredient_sections",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("notebook_id", sa.Integer(), nullable=False),
+        sa.Column("ingredient_id", sa.Integer(), nullable=False),
+        sa.Column("section_id", sa.Integer(), nullable=False),
+        sa.ForeignKeyConstraint(
+            ["ingredient_id"],
+            ["ingredients.id"],
+            name=op.f("fk_notebook_ingredient_sections_ingredient_id_ingredients"),
+            ondelete="CASCADE",
+        ),
+        sa.ForeignKeyConstraint(
+            ["notebook_id"],
+            ["notebooks.id"],
+            name=op.f("fk_notebook_ingredient_sections_notebook_id_notebooks"),
+            ondelete="CASCADE",
+        ),
+        sa.ForeignKeyConstraint(
+            ["section_id"],
+            ["shopping_sections.id"],
+            name=op.f("fk_notebook_ingredient_sections_section_id_shopping_sections"),
+        ),
+        sa.PrimaryKeyConstraint("id", name=op.f("pk_notebook_ingredient_sections")),
+        sa.UniqueConstraint(
+            "notebook_id",
+            "ingredient_id",
+            name=op.f("uq_notebook_ingredient_sections_notebook_id_ingredient_id"),
+        ),
+    )
+    op.create_index(
+        op.f("ix_notebook_ingredient_sections_notebook_id"),
+        "notebook_ingredient_sections",
+        ["notebook_id"],
+        unique=False,
+    )
+    op.create_table(
         "spice_blend_items",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("blend_id", sa.Integer(), nullable=False),
@@ -1182,6 +1218,11 @@ def downgrade() -> None:
     op.drop_index(op.f("ix_spice_blend_items_blend_id"), table_name="spice_blend_items")
     op.drop_table("spice_blend_items")
     op.drop_index(op.f("ix_shopping_list_items_notebook_id"), table_name="shopping_list_items")
+    op.drop_index(
+        op.f("ix_notebook_ingredient_sections_notebook_id"),
+        table_name="notebook_ingredient_sections",
+    )
+    op.drop_table("notebook_ingredient_sections")
     op.drop_table("shopping_list_items")
     op.drop_index(op.f("ix_recipe_wines_wine_id"), table_name="recipe_wines")
     op.drop_index(op.f("ix_recipe_wines_recipe_id"), table_name="recipe_wines")

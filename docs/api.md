@@ -1,6 +1,6 @@
 # API
 
-La documentación interactiva la genera FastAPI en http://localhost:8000/docs (Swagger) y http://localhost:8000/redoc. Versión 0.6.0 (sesión 8).
+La documentación interactiva la genera FastAPI en http://localhost:8000/docs (Swagger) y http://localhost:8000/redoc. Versión 0.7.0 (sesión 9).
 
 ## Convenciones
 
@@ -90,11 +90,12 @@ La documentación interactiva la genera FastAPI en http://localhost:8000/docs (S
 | Método | Ruta | Cuerpo | Respuesta |
 |---|---|---|---|
 | GET | `/shopping-list` | — | `sections[]` en orden de supermercado, cada una con sus `items[]`; `total` y `pending`. |
-| POST | `/shopping-list/items` | `text`, `quantity`, `ingredient_name` | 201. Se coloca en la sección del ingrediente; si es nuevo, en "Otros". |
+| POST | `/shopping-list/items` | `text`, `quantity`, `ingredient_name` | 201. Se coloca en la sección que el cuaderno eligió para ese ingrediente, si la eligió; si no, en la del catálogo (plurales incluidos: "patatas" → patata); si es nuevo, en "Otros". |
 | POST | `/shopping-list/from-recipe/{recipe_id}` | — | "Añadir lo que me falta": ingredientes de la receta que no están en la despensa ni ya pendientes. |
 | POST | `/shopping-list/items/{id}/check` · `/uncheck` | — | Marcar como comprado / desmarcar. |
+| PATCH | `/shopping-list/items/{id}` | `section_code` | Llevar la línea a otra sección (sesión 9). El cuaderno lo recuerda para ese ingrediente y mueve también sus otras líneas pendientes. 404 si la sección no existe. |
 | DELETE | `/shopping-list/items/{id}` | — | Quitar una línea. |
-| DELETE | `/shopping-list/checked` | — | Limpiar lo ya comprado. |
+| DELETE | `/shopping-list/checked` | `to_pantry` (opcional) | Limpiar lo ya comprado. Con `to_pantry=true` (sesión 9), antes lo apunta en la despensa: congelados al congelador; frutas y verduras, carnes, pescados y lácteos a la nevera; lo demás a la despensa. |
 
 ### Especias (`/spices`, sin login)
 

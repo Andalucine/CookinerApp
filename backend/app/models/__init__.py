@@ -4,7 +4,7 @@ from app.models.favorite import Favorite
 from app.models.import_job import ImportJob
 from app.models.note import Note
 from app.models.notebook import Notebook, NotebookAccess, NotebookInvitation
-from app.models.pantry import PantryItem, ShoppingListItem
+from app.models.pantry import NotebookIngredientSection, PantryItem, ShoppingListItem
 from app.models.recipe import (
     Recipe,
     RecipeCategory,
@@ -43,6 +43,7 @@ __all__ = [
     "NotebookSpice",
     "NotebookSpicePairing",
     "NotebookSubstitution",
+    "NotebookIngredientSection",
     "NotebookInvitation",
     "Occasion",
     "PairingRule",

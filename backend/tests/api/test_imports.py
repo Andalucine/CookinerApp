@@ -44,9 +44,10 @@ def test_preview_then_save_keeps_the_source(client, seeded, make_user, fake_web)
     draft = preview["recipe"]
     assert draft["source_type"] == "web" and draft["source_url"] == URL
     assert draft["source_name"] == "Cocina de Prueba" and draft["cook_name"] == "Marta Prueba"
-    # Names matched against the catalogue: "ajo picados" → ajo, "Sal" → sal
+    # Names matched against the catalogue: "ajo picados" → ajo, "Sal" → sal and, with the
+    # everyday catalogue (session 9), "lentejas pardinas" → lenteja
     names = [i["name"] for i in draft["ingredients"]]
-    assert names == ["lentejas pardinas", "ajo", "pimentón dulce", "sal"]
+    assert names == ["lenteja", "ajo", "pimentón dulce", "sal"]
     # Nothing saved yet
     assert client.get("/recipes", headers=h).json()["total"] == 0
 

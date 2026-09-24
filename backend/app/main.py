@@ -27,7 +27,7 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s:     %(name)s: %(m
 
 app = FastAPI(
     title=settings.app_name,
-    version="0.6.0",
+    version="0.7.0",
     description="API de CookinerApp, el cuaderno de cocina personal.",
 )
 

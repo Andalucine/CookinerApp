@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.models import (
     Notebook,
+    NotebookIngredientSection,
     PantryItem,
     Recipe,
     RecipeIngredient,
@@ -92,7 +93,17 @@ def shopping_items(db: Session, notebook_id: int) -> list[ShoppingListItem]:
     ).all()
 
 
-def _section_for(db: Session, ingredient) -> int | None:
+def _section_for(db: Session, ingredient, notebook_id: int | None = None) -> int | None:
+    """The notebook's own choice first (session 9), then the catalogue, then "Otros"."""
+    if ingredient is not None and notebook_id is not None:
+        own = db.scalar(
+            select(NotebookIngredientSection.section_id).where(
+                NotebookIngredientSection.notebook_id == notebook_id,
+                NotebookIngredientSection.ingredient_id == ingredient.id,
+            )
+        )
+        if own is not None:
+            return own
     if ingredient is not None and ingredient.shopping_section_id is not None:
         return ingredient.shopping_section_id
     other = db.scalar(select(ShoppingSection).where(ShoppingSection.code == "other"))
@@ -114,7 +125,7 @@ def add_shopping_item(
         ingredient_id=ingredient.id,
         text=text.strip(),
         quantity=quantity,
-        section_id=_section_for(db, ingredient),
+        section_id=_section_for(db, ingredient, notebook.id),
         recipe_id=recipe_id,
         added_by_id=user.id,
     )
@@ -142,7 +153,7 @@ def add_missing_from_recipe(db: Session, notebook: Notebook, user: User, recipe:
             ingredient_id=ing.id,
             text=ing.name,
             quantity=ri.raw_text,
-            section_id=_section_for(db, ing),
+            section_id=_section_for(db, ing, notebook.id),
             recipe_id=recipe.id,
             added_by_id=user.id,
         )
@@ -170,9 +181,71 @@ def remove_shopping_item(db: Session, notebook_id: int, item_id: int) -> bool:
     return True
 
 
-def clear_checked(db: Session, notebook_id: int) -> int:
+def move_item(db: Session, notebook_id: int, item_id: int, section_code: str):
+    """Put a line in another section. The notebook remembers it for that ingredient, and the
+    other pending lines of the same ingredient move too. None if the item or section is not
+    found."""
+    item = db.get(ShoppingListItem, item_id)
+    section = db.scalar(select(ShoppingSection).where(ShoppingSection.code == section_code))
+    if item is None or item.notebook_id != notebook_id or section is None:
+        return None
+    item.section_id = section.id
+    if item.ingredient_id is not None:
+        own = db.scalar(
+            select(NotebookIngredientSection).where(
+                NotebookIngredientSection.notebook_id == notebook_id,
+                NotebookIngredientSection.ingredient_id == item.ingredient_id,
+            )
+        )
+        if own is None:
+            db.add(
+                NotebookIngredientSection(
+                    notebook_id=notebook_id,
+                    ingredient_id=item.ingredient_id,
+                    section_id=section.id,
+                )
+            )
+        else:
+            own.section_id = section.id
+        for other in shopping_items(db, notebook_id):
+            if other.ingredient_id == item.ingredient_id and not other.is_checked:
+                other.section_id = section.id
+    db.commit()
+    db.refresh(item)
+    return item
+
+
+# Where what was bought is kept at home, by its supermarket section (session 9)
+_LOCATION_BY_SECTION = {
+    "frozen": "freezer",
+    "produce": "fridge",
+    "meat": "fridge",
+    "fish": "fridge",
+    "dairy": "fridge",
+}
+
+
+def clear_checked(db: Session, notebook_id: int, to_pantry: bool = False) -> tuple[int, int]:
+    """Remove what was already bought. With `to_pantry`, each bought ingredient is noted in
+    the pantry first (fridge, freezer or pantry by its section). Returns (removed, noted)."""
     items = [i for i in shopping_items(db, notebook_id) if i.is_checked]
+    noted = 0
+    if to_pantry:
+        have = {p.ingredient_id for p in list_items(db, notebook_id)}
+        for item in items:
+            if item.ingredient_id is None or item.ingredient_id in have:
+                continue
+            code = item.section.code if item.section else None
+            db.add(
+                PantryItem(
+                    notebook_id=notebook_id,
+                    ingredient_id=item.ingredient_id,
+                    location=_LOCATION_BY_SECTION.get(code, "pantry"),
+                )
+            )
+            have.add(item.ingredient_id)
+            noted += 1
     for item in items:
         db.delete(item)
     db.commit()
-    return len(items)
+    return len(items), noted

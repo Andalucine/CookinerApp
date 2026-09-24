@@ -25,6 +25,7 @@ TEXTS = {
     "pantry_item_removed": "Removed from the pantry.",
     "ok": "Done.",
     "shopping_cleared": "{n} bought items removed.",
+    "shopping_cleared_pantry": "{n} bought items removed; {m} are now in your pantry.",
     "share_limit_reached": (
         "Your plan does not allow sharing with more people. "
         "Move to the individual or family plan to invite someone else."

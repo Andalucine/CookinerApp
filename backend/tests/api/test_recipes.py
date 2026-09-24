@@ -36,10 +36,12 @@ def marmitako(db, **overrides):
 
 def test_create_recipe_links_catalogue_and_creates_new_ingredients(client, seeded, make_user):
     headers, user = make_user()
-    before = seeded.scalar(select(Ingredient).where(Ingredient.name == "bonito"))
+    before = seeded.scalar(select(Ingredient).where(Ingredient.name == "espelette"))
     assert before is None
+    body = marmitako(seeded)
+    body["ingredients"] = [*body["ingredients"], {"name": "Espelette"}]
 
-    r = client.post("/recipes", json=marmitako(seeded), headers=headers)
+    r = client.post("/recipes", json=body, headers=headers)
     assert r.status_code == 201, r.text
     body = r.json()
     assert body["notebook_id"] == user["notebook_id"]
@@ -47,16 +49,19 @@ def test_create_recipe_links_catalogue_and_creates_new_ingredients(client, seede
     assert body["primary_category"]["slug"] == "guisos-pescado"
     assert [c["slug"] for c in body["categories"]] == ["guisos-pescado", "pescado-azul"]
     assert [i["name"] for i in body["ingredients"]] == [
-        "bonito", "patata", "pimentón dulce", "cebolla", "sal"
+        "bonito", "patata", "pimentón dulce", "cebolla", "sal", "espelette"
     ]  # fmt: skip
     assert body["added_by"] is None  # the owner wrote it
     assert body["author"]["display_name"] == "Ana"
     # "Pimentón dulce" matched the spice from the catalogue instead of creating a duplicate
     pimenton = seeded.scalar(select(Ingredient).where(Ingredient.name == "pimentón dulce"))
     assert pimenton.is_spice
-    # new ingredient created in the global catalogue, in section "other"
+    # bonito is in the everyday catalogue (session 9); a new ingredient is created in the
+    # global catalogue, in section "other"
     bonito = seeded.scalar(select(Ingredient).where(Ingredient.name == "bonito"))
-    assert bonito.shopping_section.code == "other"
+    assert bonito.shopping_section.code == "fish"
+    new = seeded.scalar(select(Ingredient).where(Ingredient.name == "espelette"))
+    assert new.shopping_section.code == "other"
 
 
 def test_web_recipe_requires_source_url(client, seeded, make_user):

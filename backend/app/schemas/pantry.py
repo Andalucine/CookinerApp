@@ -46,6 +46,10 @@ class ShoppingItemIn(BaseModel):
     )
 
 
+class ShoppingItemMove(BaseModel):
+    section_code: str = Field(min_length=1, max_length=20, description="produce, meat… other")
+
+
 class ShoppingItemOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

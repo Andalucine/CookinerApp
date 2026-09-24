@@ -1,6 +1,6 @@
 # Modelo de datos
 
-Estado: **v2** (migración `initial_schema` regenerada en las sesiones 4, 5 y 8, decisión 0004: cuaderno personal). Regla: cada cambio en `backend/app/models/` actualiza este documento en el mismo commit. 37 tablas.
+Estado: **v2** (migración `initial_schema` regenerada en las sesiones 4, 5, 8 y 9, decisión 0004: cuaderno personal). Regla: cada cambio en `backend/app/models/` actualiza este documento en el mismo commit. 38 tablas.
 
 ## Esquema general
 
@@ -13,6 +13,7 @@ users ──< notebooks (1 por cuenta) ──< recipes ──< recipe_ingredient
   │            ├─< notes                  ├─< recipe_occasions >── occasions
   │            ├─< pantry_items           ├─< recipe_contributions
   │            ├─< shopping_list_items    └─< recipe_wines >── wines
+  │            ├─< notebook_ingredient_sections
   │            └─< import_jobs
   ├─< favorites (receta o vino)
   ├─< auth_identities                     ingredients (especias) ──< spice_substitutions
@@ -97,6 +98,7 @@ El catálogo de especias, sustituciones y mezclas nunca se modifica: al editar u
 | `notes` | Páginas libres del cuaderno | `title`, `content`, `kind` (de qué trata, opcional: `recipes`, `wines`, `spices`, `celebrations`, `shopping`, `ideas`; sesión 9), `author_id`, `updated_by_id` (último que la editó) |
 | `pantry_items` | Lo que hay en casa (sin caducidades) | `ingredient_id` (único por cuaderno), `location` (`fridge`/`freezer`/`pantry`) |
 | `shopping_sections` | Secciones del supermercado, en orden de recorrido | `code`, `name_es`, `name_en`, `position` |
+| `notebook_ingredient_sections` | Sección de la lista de la compra que un cuaderno eligió para un ingrediente (sesión 9); el catálogo global no cambia | `notebook_id`, `ingredient_id` (únicos juntos), `section_id` |
 | `shopping_list_items` | Líneas de la lista de la compra | `text`, `quantity`, `ingredient_id` (si viene del catálogo), `section_id` (la del ingrediente; "Otros" si no la tiene), `is_checked`, `recipe_id` (de qué receta salió) |
 | `favorites` | Estrella en una receta **o** un vino (nunca ambos) | `user_id`, `recipe_id`, `wine_id` |
 
@@ -116,7 +118,7 @@ El catálogo de especias, sustituciones y mezclas nunca se modifica: al editar u
 - Todo lo importado conserva `source_url`.
 - Búsquedas: por ingrediente, tiempo, cocinero (`author_id` o `cook_name`), fuente, estación, época, categoría (incluye subcategorías) y etiquetas.
 - "¿Qué puedo cocinar?": recetas cuyos ingredientes están todos en `pantry_items`, o a las que falta uno solo.
-- Lista de la compra: la sección la da `ingredients.shopping_section_id`; si no la tiene, "Otros".
+- Lista de la compra: la sección la da primero `notebook_ingredient_sections` (lo que el cuaderno eligió), después `ingredients.shopping_section_id`; si no la tiene, "Otros". El catálogo trae unos 330 ingredientes de todos los días con su sección y sus plurales (`scripts/catalog_data/ingredients.py`, sesión 9).
 
 ## Convenciones
 

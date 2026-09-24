@@ -68,3 +68,30 @@ def test_occasion_taken_out_of_the_list_is_deleted(db_session):
     assert not db_session.scalars(
         select(RecipeOccasion).where(RecipeOccasion.occasion_id == old_id)
     ).all()
+
+
+def test_everyday_ingredients_have_their_section_and_plurals(db_session):
+    from app.models import ShoppingSection
+    from app.services.recipe import get_or_create_ingredient
+    from scripts.seed_catalogs import plural_es
+
+    assert plural_es("limón") == "limones" and plural_es("nuez") == "nueces"
+    assert plural_es("pechuga de pollo") == "pechugas de pollo"
+    assert plural_es("judía verde") == "judías verdes"
+
+    # an old database: an import created "patatas" in Otros before the catalogue existed
+    run(db_session)
+    other = db_session.scalar(select(ShoppingSection).where(ShoppingSection.code == "other"))
+    old = Ingredient(name="garbanzos", shopping_section_id=other.id)
+    db_session.add(old)
+    db_session.flush()
+    run(db_session)
+    assert old.shopping_section.code == "grains"  # moved out of Otros, not merged
+
+    for written, section in (
+        ("Patatas", "produce"), ("limones", "produce"), ("pechugas de pollo", "meat"),
+        ("potatoes", "produce"), ("mejillones", "fish"), ("huevos", "dairy"),
+        ("aove", "oils"), ("pan rallado", "bakery"), ("macarrones", "grains"),
+    ):  # fmt: skip
+        found = get_or_create_ingredient(db_session, written)
+        assert found.shopping_section.code == section, written

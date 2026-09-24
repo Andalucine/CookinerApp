@@ -1,6 +1,6 @@
 """Lista de la compra of the user's notebook, grouped by supermarket section."""
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import select
 
 from app.core.deps import CurrentUser, DbSession, Lang
@@ -9,6 +9,7 @@ from app.models import ShoppingSection
 from app.schemas.auth import MessageResponse
 from app.schemas.pantry import (
     ShoppingItemIn,
+    ShoppingItemMove,
     ShoppingItemOut,
     ShoppingListOut,
     ShoppingSectionGroup,
@@ -82,6 +83,17 @@ def uncheck_item(item_id: int, db: DbSession, user: CurrentUser, lang: Lang) -> 
     return MessageResponse(message=t("ok", lang))
 
 
+@router.patch("/items/{item_id}", response_model=ShoppingItemOut)
+def move_item(
+    item_id: int, body: ShoppingItemMove, db: DbSession, user: CurrentUser, lang: Lang
+) -> ShoppingItemOut:
+    """Put a line in another section; the notebook remembers it for that ingredient."""
+    item = pantry_service.move_item(db, user.notebook.id, item_id, body.section_code)
+    if item is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, t("not_found", lang))
+    return ShoppingItemOut.model_validate(item)
+
+
 @router.delete("/items/{item_id}", response_model=MessageResponse)
 def remove_item(item_id: int, db: DbSession, user: CurrentUser, lang: Lang) -> MessageResponse:
     if not pantry_service.remove_shopping_item(db, user.notebook.id, item_id):
@@ -90,7 +102,14 @@ def remove_item(item_id: int, db: DbSession, user: CurrentUser, lang: Lang) -> M
 
 
 @router.delete("/checked", response_model=MessageResponse)
-def clear_checked(db: DbSession, user: CurrentUser, lang: Lang) -> MessageResponse:
-    """Remove everything already bought."""
-    n = pantry_service.clear_checked(db, user.notebook.id)
+def clear_checked(
+    db: DbSession,
+    user: CurrentUser,
+    lang: Lang,
+    to_pantry: bool = Query(default=False, description="Note what was bought in the pantry"),
+) -> MessageResponse:
+    """Remove everything already bought (and, if asked, note it in the pantry first)."""
+    n, noted = pantry_service.clear_checked(db, user.notebook.id, to_pantry)
+    if to_pantry:
+        return MessageResponse(message=t("shopping_cleared_pantry", lang).format(n=n, m=noted))
     return MessageResponse(message=t("shopping_cleared", lang).format(n=n))

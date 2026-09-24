@@ -13,7 +13,7 @@ La app busca la API en el mismo Mac que sirve la app, puerto 8000 (`services/api
 
 ## Comprobaciones
 
-- `npm test` — tests de la lógica que no depende del teléfono (textos en los dos idiomas, dirección de la API, validaciones, formato de tiempos y cantidades, filtros de búsqueda, árbol de categorías, vídeos de YouTube, cuaderno ajeno, códigos de invitación, formulario y tipos de notas, reglas de equivalencia, líneas de una mezcla y de los sustitutos, filtros de vinos), con el sistema de tests de Node.
+- `npm test` — tests de la lógica que no depende del teléfono (textos en los dos idiomas, dirección de la API, validaciones, formato de tiempos y cantidades, filtros de búsqueda, árbol de categorías, vídeos de YouTube, cuaderno ajeno, códigos de invitación, formulario y tipos de notas, despensa y lista de la compra, reglas de equivalencia, líneas de una mezcla y de los sustitutos, filtros de vinos), con el sistema de tests de Node.
 - Las dos comprobaciones se repiten solas en GitHub en cada commit que cambie `mobile/` (`.github/workflows/mobile.yml`).
 - `npm run typecheck` — comprobación de tipos de todo el código.
 
@@ -27,7 +27,9 @@ app/          Pantallas (Expo Router): (auth)/ entrar, crear cuenta, recuperar c
               spice (especia propia), substitutions (sustitutos propios) y ficha [id];
               wines/: portada, categories (tipos), search, list, ficha [id], new, write, import y
               recommend (vino para una receta); notes/: portada con buscador, ficha [id] y
-              write (nueva y editar); share/: compartir mi cuaderno;
+              write (nueva y editar); pantry/: mi despensa en tres bloques y cook
+              (¿qué puedo cocinar?); shopping-list/: lista de la compra por secciones;
+              share/: compartir mi cuaderno;
               join/: unirme a un cuaderno; settings/: mi cuenta)
 components/   Piezas reutilizables y colores (theme.ts)
 services/     Llamadas a la API, sesión (token en el llavero del teléfono), validaciones

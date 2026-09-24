@@ -25,6 +25,9 @@ TEXTS = {
     "pantry_item_removed": "Quitado de la despensa.",
     "ok": "Hecho.",
     "shopping_cleared": "Se han quitado {n} productos ya comprados.",
+    "shopping_cleared_pantry": (
+        "Se han quitado {n} productos ya comprados; {m} están ahora en tu despensa."
+    ),
     "share_limit_reached": (
         "Tu plan no permite compartir con más personas. "
         "Pásate al plan individual o familiar para invitar a alguien más."

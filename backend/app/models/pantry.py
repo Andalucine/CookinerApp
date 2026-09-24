@@ -61,3 +61,21 @@ class ShoppingListItem(Base):
 
     ingredient: Mapped[Ingredient | None] = relationship()
     section: Mapped[ShoppingSection | None] = relationship()
+
+
+class NotebookIngredientSection(Base):
+    """The section a notebook chose for an ingredient in its shopping list (session 9): what
+    fell in "Otros", or was in the wrong aisle, goes where this notebook buys it from then on.
+    The global catalogue is never changed."""
+
+    __tablename__ = "notebook_ingredient_sections"
+    __table_args__ = (UniqueConstraint("notebook_id", "ingredient_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    notebook_id: Mapped[int] = mapped_column(
+        ForeignKey("notebooks.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    ingredient_id: Mapped[int] = mapped_column(
+        ForeignKey("ingredients.id", ondelete="CASCADE"), nullable=False
+    )
+    section_id: Mapped[int] = mapped_column(ForeignKey("shopping_sections.id"), nullable=False)

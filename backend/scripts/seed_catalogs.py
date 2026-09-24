@@ -32,7 +32,7 @@ from app.models import (
     Tag,
     WineCategory,
 )
-from scripts.catalog_data import basics, categories, pairings, spices, wines
+from scripts.catalog_data import basics, categories, ingredients, pairings, spices, wines
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 log = logging.getLogger("seed")
@@ -137,6 +137,15 @@ def seed_categories(db: Session) -> None:
     log.info("Categorías de recetas: %d", count)
 
 
+def _with_plural(name: str, aliases: str | None) -> str:
+    """The other names plus the plural ("limón" → "limones"), session 9."""
+    names = [a.strip() for a in (aliases or "").split(",") if a.strip()]
+    plural = plural_es(name)
+    if plural != name and plural not in names:
+        names.append(plural)
+    return ", ".join(names)[:300]
+
+
 def seed_ingredients(db: Session) -> dict[str, Ingredient]:
     """Spices and the fresh ingredients the substitution table mentions. Returns name → row."""
     sections = {s.code: s for s in db.scalars(select(ShoppingSection))}
@@ -163,7 +172,11 @@ def seed_ingredients(db: Session) -> dict[str, Ingredient]:
             db,
             Ingredient,
             {"name": name},
-            {"name_en": name_en, "aliases": aliases, "shopping_section_id": sections[section].id},
+            {
+                "name_en": name_en,
+                "aliases": _with_plural(name, aliases),
+                "shopping_section_id": sections[section].id,
+            },
         )
         by_name[name] = row
     log.info("Ingredientes del catálogo (especias y básicos): %d", len(by_name))
@@ -278,11 +291,85 @@ def seed_wines(db: Session) -> None:
     log.info("Reglas de maridaje: %d", n)
 
 
+_ACCENT_OFF = str.maketrans("áéíóú", "aeiou")
+_CONNECTORS = {"de", "del", "en", "a", "al", "para", "con"}
+
+
+def plural_es(name: str) -> str:
+    """Spanish plural of an ingredient name, for matching what people write ("2 kg de
+    patatas", "limones", "judías verdes", "pechugas de pollo"). Only the words before the
+    first "de/en/para..." change."""
+    words = name.split()
+    out, changing = [], True
+    for word in words:
+        if changing and word in _CONNECTORS:
+            changing = False
+        if not changing or len(word) < 2:
+            out.append(word)
+        elif word[-1] in "aeiouáéó":
+            out.append(word + "s")
+        elif word.endswith("z"):
+            out.append(word[:-1] + "ces")
+        elif word[-1] in "ns" and any(v in word[-3:] for v in "áéíóú"):
+            out.append(word.translate(_ACCENT_OFF) + "es")  # limón → limones
+        else:
+            out.append(word + "es")
+    return " ".join(out)
+
+
+def _plural_en(name: str) -> str:
+    """potato → potatoes, cherry → cherries, peach → peaches, egg → eggs."""
+    if name.endswith("s"):
+        return name
+    if name.endswith(("o", "ch", "sh", "x")):
+        return name + "es"
+    if name.endswith("y") and len(name) > 1 and name[-2] not in "aeiou":
+        return name[:-1] + "ies"
+    return name + "s"
+
+
+def seed_everyday_ingredients(db: Session) -> int:
+    """The everyday ingredients with their supermarket section (session 9). An ingredient that
+    an import or a recipe created before under one of these names (so it was in "Otros")
+    moves to its section; nothing is merged or deleted."""
+    sections = {s.code: s for s in db.scalars(select(ShoppingSection))}
+    other = sections["other"].id
+    n = 0
+    for section, lines in ingredients.INGREDIENTS.items():
+        for line in lines:
+            name, name_en, *others = [p.strip() for p in line.split("|")]
+            aliases: list[str] = []
+            for alias in [plural_es(name), *others, name_en, _plural_en(name_en)]:
+                if alias and alias != name and alias not in aliases:
+                    aliases.append(alias)
+            alias_text = ", ".join(aliases)
+            while len(alias_text) > 300:
+                aliases.pop()
+                alias_text = ", ".join(aliases)
+            _upsert(
+                db,
+                Ingredient,
+                {"name": name},
+                {
+                    "name_en": name_en,
+                    "aliases": alias_text,
+                    "shopping_section_id": sections[section].id,
+                },
+            )
+            for old in db.scalars(select(Ingredient).where(Ingredient.name.in_(aliases))):
+                if old.shopping_section_id in (None, other):
+                    old.shopping_section_id = sections[section].id
+            n += 1
+    log.info("Ingredientes de todos los días: %d", n)
+    return n
+
+
 def run(db: Session) -> None:
     seed_basics(db)
     seed_categories(db)
     ingredients = seed_ingredients(db)
     seed_spice_zone(db, ingredients)
+    seed_everyday_ingredients(db)
     seed_wines(db)
     db.commit()
     log.info("Catálogos cargados.")
