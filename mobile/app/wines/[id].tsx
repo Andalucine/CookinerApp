@@ -1,6 +1,6 @@
 /**
  * Ficha de un vino (session 8): name, winery and star; the type with its serving temperature;
- * the facts in tidy tiles (sweetness, body, ageing, price band with its euros, D.O., country,
+ * the facts in tidy tiles (sweetness, body, ageing, the price band in euros, D.O., country,
  * vintage, grapes); the shop and its price when it was imported; tasting notes; what it goes
  * with (its own text, or the pairing rules of its type); "Recomendado para" with the recipes
  * that carry it; the source; Editar for owner and editors.
@@ -47,17 +47,18 @@ function WineScreen({ auth, id }: { auth: Auth; id: number }) {
   const facet = (kind: "wine_sweetness" | "wine_body" | "wine_ageing", code: string | null) =>
     code ? t(`${kind}.${code}` as TextKey) : null;
   const band = PRICE_BANDS.find((b) => b.code === wine.price_range);
-  const facts: { label: string; value: string | null }[] = [
-    { label: t("wineForm.sweetness"), value: facet("wine_sweetness", wine.sweetness) },
-    { label: t("wineForm.body"), value: facet("wine_body", wine.body) },
-    { label: t("wineForm.ageing"), value: facet("wine_ageing", wine.ageing) },
-    { label: t("wineForm.price"), value: band ? `${band.code}  ·  ${t(band.key)}` : null },
-    { label: t("wineForm.appellation"), value: wine.appellation },
-    { label: t("wineForm.country"), value: wine.country },
-    { label: t("wineForm.vintage"), value: wine.vintage ? String(wine.vintage) : null },
-    { label: t("wineForm.grapes"), value: wine.grapes },
+  // The price band and the D.O. explain themselves, so they carry no label (Beatriz, s. 8)
+  const facts: { key: string; label: string | null; value: string | null }[] = [
+    { key: "sweetness", label: t("wineForm.sweetness"), value: facet("wine_sweetness", wine.sweetness) },
+    { key: "body", label: t("wineForm.body"), value: facet("wine_body", wine.body) },
+    { key: "ageing", label: t("wineForm.ageing"), value: facet("wine_ageing", wine.ageing) },
+    { key: "price", label: null, value: band ? t(band.key) : null },
+    { key: "appellation", label: null, value: wine.appellation },
+    { key: "country", label: t("wineForm.country"), value: wine.country },
+    { key: "vintage", label: t("wineForm.vintage"), value: wine.vintage ? String(wine.vintage) : null },
+    { key: "grapes", label: t("wineForm.grapes"), value: wine.grapes },
   ];
-  const shown = facts.filter((f): f is { label: string; value: string } => !!f.value);
+  const shown = facts.filter((f) => !!f.value);
   const pairing =
     wine.pairing_notes ||
     (wine.pairs_with_categories.length ? wine.pairs_with_categories.join(", ") : null);
@@ -105,12 +106,7 @@ function WineScreen({ auth, id }: { auth: Auth; id: number }) {
       {wine.category ? (
         <View style={styles.typeBox}>
           <Ionicons name="wine-outline" size={24} color={colors.ink} />
-          <Text style={styles.typeText}>
-            {[wine.category.parent, wine.category]
-              .filter((x): x is wines.WineCategoryRef => !!x)
-              .map((x) => localName(x, language))
-              .join(" ▸ ")}
-          </Text>
+          <Text style={styles.typeText}>{localName(wine.category, language)}</Text>
           {wine.category.serving_temp ? (
             <Text style={styles.temp}>{wine.category.serving_temp}</Text>
           ) : null}
@@ -121,16 +117,16 @@ function WineScreen({ auth, id }: { auth: Auth; id: number }) {
         <View style={styles.facts}>
           {shown.map((f, index) => (
             <View
-              key={f.label}
+              key={f.key}
               style={[
                 styles.fact,
                 // Grapes take the whole row; the rest go two by two
-                f.label === t("wineForm.grapes") || (index === shown.length - 1 && index % 2 === 0)
+                f.key === "grapes" || (index === shown.length - 1 && index % 2 === 0)
                   ? styles.factWide
                   : styles.factHalf,
               ]}
             >
-              <Text style={styles.factLabel}>{f.label}</Text>
+              {f.label ? <Text style={styles.factLabel}>{f.label}</Text> : null}
               <Text style={styles.factValue}>{f.value}</Text>
             </View>
           ))}
