@@ -33,6 +33,15 @@ def test_reads_a_product_page():
     assert w.warnings == []
 
 
+def test_medium_dry_is_off_dry_not_dry():
+    name = "Barbeito 5 years rainwater reserva medium dry"
+    page = SHOP.replace("Viña Tondonia Reserva 2012", name)
+    w = read_wine(page.replace(" Seco.", ""), "https://www.delatierra.com/x.html")
+    assert w.sweetness == "off_dry" and w.ageing == "reserva"
+    sweet = read_wine(page.replace("medium dry", "medium sweet"), "https://x.test/y.html")
+    assert sweet.sweetness == "semi_sweet"
+
+
 def test_reads_a_fino_and_a_page_without_product_data():
     fino = read_wine(FINO, "https://shop.test/fino")
     assert fino.category_slug == "fino-manzanilla" and fino.price_range == "€"

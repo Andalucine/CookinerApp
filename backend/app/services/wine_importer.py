@@ -88,12 +88,15 @@ _AGEING = [
     (r"\bjoven\b", "young"),
 ]
 
+# Order matters: "medium dry" is off-dry, not dry (session 9: Barbeito Rainwater medium dry)
 _SWEETNESS = [
     (r"\bbrut nature\b", "brut_nature"),
     (r"\bextra brut\b", "extra_brut"),
     (r"\bbrut\b", "brut"),
-    (r"\bsemidulce\b|\bsemi-dulce\b", "semi_sweet"),
-    (r"\bsemiseco\b|\bsemi-seco\b", "off_dry"),
+    (r"\bextra dry\b", "extra_dry"),
+    (r"\bdemi[- ]sec\b", "demi_sec"),
+    (r"\bsemi[- ]?dulce\b|\bmedium sweet\b|\bmedium rich\b|\bsemi[- ]sweet\b", "semi_sweet"),
+    (r"\bsemi[- ]?seco\b|\bmedium dry\b|\boff[- ]dry\b", "off_dry"),
     (r"\bdulce\b|\bsweet\b", "sweet"),
     (r"\bseco\b|\bdry\b", "dry"),
 ]

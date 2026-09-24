@@ -20,7 +20,7 @@ import { SectionTitle } from "../../components/SectionTitle.tsx";
 import { ShopPrice } from "../../components/ShopPrice.tsx";
 import { type Auth, SignedIn } from "../../components/SignedIn.tsx";
 import { colors, fontSize, radius, spacing } from "../../components/theme.ts";
-import { type TextKey, useI18n } from "../../i18n";
+import { useI18n } from "../../i18n";
 import { errorText } from "../../services/errors.ts";
 import { localName, siteName } from "../../services/format.ts";
 import { useLoad } from "../../services/useLoad.ts";
@@ -30,8 +30,12 @@ import * as wines from "../../services/wines.ts";
 function WineScreen({ auth, id }: { auth: Auth; id: number }) {
   const { t, language } = useI18n();
   const data = useLoad(async () => {
-    const [wine, recipes] = await Promise.all([wines.get(auth, id), wines.recipesOf(auth, id)]);
-    return { wine, recipes };
+    const [wine, recipes, facets] = await Promise.all([
+      wines.get(auth, id),
+      wines.recipesOf(auth, id),
+      wines.wineFacets(auth.language),
+    ]);
+    return { wine, recipes, facets };
   }, [auth.token, auth.language, id]);
   const [favoriteError, setFavoriteError] = useState<string | null>(null);
 
@@ -43,15 +47,20 @@ function WineScreen({ auth, id }: { auth: Auth; id: number }) {
       </Screen>
     );
   }
-  const { wine, recipes } = data.data;
-  const facet = (kind: "wine_sweetness" | "wine_body" | "wine_ageing", code: string | null) =>
-    code ? t(`${kind}.${code}` as TextKey) : null;
+  const { wine, recipes, facets } = data.data;
+  // Sweetness, body and ageing are codes ("dry", "reserva"): their names come from the wine
+  // catalogue in the person's language, as in the form (session 9: the card showed the codes)
+  const facet = (kind: "sweetness" | "body" | "ageing", code: string | null) => {
+    if (!code) return null;
+    const value = facets[kind].find((v) => v.code === code);
+    return value ? localName(value, language) : code;
+  };
   const band = PRICE_BANDS.find((b) => b.code === wine.price_range);
   // The price band and the D.O. explain themselves, so they carry no label (Beatriz, s. 8)
   const facts: { key: string; label: string | null; value: string | null }[] = [
-    { key: "sweetness", label: t("wineForm.sweetness"), value: facet("wine_sweetness", wine.sweetness) },
-    { key: "body", label: t("wineForm.body"), value: facet("wine_body", wine.body) },
-    { key: "ageing", label: t("wineForm.ageing"), value: facet("wine_ageing", wine.ageing) },
+    { key: "sweetness", label: t("wineForm.sweetness"), value: facet("sweetness", wine.sweetness) },
+    { key: "body", label: t("wineForm.body"), value: facet("body", wine.body) },
+    { key: "ageing", label: t("wineForm.ageing"), value: facet("ageing", wine.ageing) },
     { key: "price", label: null, value: band ? t(band.key) : null },
     { key: "appellation", label: null, value: wine.appellation },
     { key: "country", label: t("wineForm.country"), value: wine.country },
