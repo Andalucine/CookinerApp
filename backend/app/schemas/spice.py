@@ -93,6 +93,10 @@ class SpiceCard(SpiceSummary):
     substitutions: list[SubstitutionOut]
     has_own_substitutions: bool = False  # the notebook's list replaces the catalogue's
     substitutions_added_by: str | None = None
+    # "Va bien con" (session 8): the notebook's text when it has one, else the catalogue's
+    pairs_with: str | None = None
+    has_own_pairs_with: bool = False
+    pairs_with_added_by: str | None = None
     blend: BlendOut | None = None
     catalog_blend: BlendOut | None = None
     used_in_blends: list[BlendRef] = []
@@ -160,3 +164,10 @@ class RecipeSpiceOut(BaseModel):
     in_my_pantry: bool
     substitutions: list[SubstitutionOut]
     is_blend: bool
+
+
+class PairingIn(BaseModel):
+    """The notebook's "va bien con" for an ingredient: a short list of foods, as text."""
+
+    pairs_with: str = Field(min_length=1, max_length=300)
+    notebook_id: int | None = Field(default=None, description="Default: your own notebook")

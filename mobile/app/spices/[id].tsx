@@ -13,6 +13,7 @@ import { Message } from "../../components/Message.tsx";
 import { Screen } from "../../components/Screen.tsx";
 import { SectionTitle } from "../../components/SectionTitle.tsx";
 import { cap } from "../../components/SpiceRow.tsx";
+import { TextField } from "../../components/TextField.tsx";
 import { colors, fontSize, radius, spacing } from "../../components/theme.ts";
 import { useI18n } from "../../i18n";
 import { errorText } from "../../services/errors.ts";
@@ -28,6 +29,7 @@ export default function SpiceScreen() {
   const data = useLoad(() => spices.card(Number(id), { language, token }), [id, language, token]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [editingPairs, setEditingPairs] = useState<string | null>(null); // the text being edited
 
   if (data.loading && !data.data) return <Loading />;
   if (data.error || !data.data) {
@@ -82,6 +84,24 @@ export default function SpiceScreen() {
     );
   }
 
+  function confirmRestorePairs() {
+    if (!auth) return;
+    confirm(t("pairs.restoreTitle"), t("pairs.restoreText", { name }), t("pairs.restore"), () =>
+      run(() => spices.clearPairsWith(auth, card.id), false),
+    );
+  }
+
+  async function savePairs() {
+    if (!auth || editingPairs === null) return;
+    const text = editingPairs.trim();
+    if (!text) {
+      setMessage(t("pairs.errorEmpty"));
+      return;
+    }
+    await run(() => spices.setPairsWith(auth, card.id, text), false);
+    setEditingPairs(null);
+  }
+
   function confirmDeleteSpice() {
     if (!auth || card.notebook_spice_id === null) return;
     const spiceId = card.notebook_spice_id;
@@ -109,6 +129,70 @@ export default function SpiceScreen() {
           {card.added_by ? t("recipes.addedBy", { name: card.added_by }) : t("ownSpice.mark")}
         </Text>
       ) : null}
+
+      <SectionTitle text={t("pairs.title")} />
+      {card.has_own_pairs_with ? (
+        <Text style={styles.mark}>
+          {card.pairs_with_added_by
+            ? t("recipes.addedBy", { name: card.pairs_with_added_by })
+            : t("pairs.mark")}
+        </Text>
+      ) : null}
+      {editingPairs !== null ? (
+        <View style={styles.actions}>
+          <TextField
+            label={t("pairs.field")}
+            hint={t("pairs.fieldHint")}
+            value={editingPairs}
+            onChangeText={setEditingPairs}
+            multiline
+            autoCapitalize="none"
+            style={styles.pairsField}
+          />
+          <BigButton label={t("pairs.save")} icon="checkmark" loading={busy} onPress={savePairs} />
+          <BigButton
+            label={t("common.cancel")}
+            variant="link"
+            onPress={() => setEditingPairs(null)}
+          />
+        </View>
+      ) : (
+        <>
+          {card.pairs_with ? (
+            <View style={styles.pairs}>
+              {card.pairs_with.split(",").map((food, index) => {
+                const label = food.trim();
+                return label ? (
+                  <View key={index} style={styles.pairChip}>
+                    <Text style={styles.pairText}>{label}</Text>
+                  </View>
+                ) : null;
+              })}
+            </View>
+          ) : (
+            <Text style={styles.muted}>{t("pairs.none")}</Text>
+          )}
+          {token ? (
+            <View style={styles.actions}>
+              <BigButton
+                label={t("pairs.edit")}
+                icon="create-outline"
+                variant="secondary"
+                onPress={() => setEditingPairs(card.pairs_with ?? "")}
+              />
+              {card.has_own_pairs_with ? (
+                <BigButton
+                  label={t("pairs.restore")}
+                  icon="refresh-outline"
+                  variant="link"
+                  loading={busy}
+                  onPress={confirmRestorePairs}
+                />
+              ) : null}
+            </View>
+          ) : null}
+        </>
+      )}
 
       <SectionTitle text={t("spice.substitutes")} />
       {card.has_own_substitutions ? (
@@ -268,6 +352,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   mark: { fontSize: fontSize.small, fontWeight: "600", color: colors.muted },
+  pairs: { flexDirection: "row", flexWrap: "wrap", gap: spacing.s },
+  pairChip: {
+    paddingHorizontal: spacing.m,
+    paddingVertical: spacing.s,
+    borderRadius: radius.l,
+    backgroundColor: colors.accentSoft,
+    borderWidth: 2,
+    borderColor: colors.accent,
+  },
+  pairText: { fontSize: fontSize.body, color: colors.ink },
+  pairsField: { minHeight: 96, paddingTop: spacing.s, textAlignVertical: "top" },
   actions: { gap: spacing.s, marginTop: spacing.s },
   boxRow: { flexDirection: "row", alignItems: "center", gap: spacing.s },
   boxText: { flex: 1, gap: spacing.xs },

@@ -244,7 +244,9 @@ def _first_blend(
     return _blend_out(blend) if blend else None
 
 
-def card(db: Session, ingredient_id: int, notebook: Notebook | None = None) -> SpiceCard:
+def card(
+    db: Session, ingredient_id: int, notebook: Notebook | None = None, lang: str = "es"
+) -> SpiceCard:
     """The card of a spice, or of a fresh ingredient that has substitutions (garlic, onion...),
     or of a blend of the notebook. The notebook's version of a blend comes first, with the
     catalogue's in `catalog_blend`."""
@@ -273,6 +275,7 @@ def card(db: Session, ingredient_id: int, notebook: Notebook | None = None) -> S
     )
     if own_subs_rows:
         subs = [own_service.substitution_out(r, None) for r in own_subs_rows]
+    own_pairing = own_service.pairing_for(db, notebook.id, ingredient.id) if notebook else None
     if not ingredient.is_spice and not subs and blend is None and own is None and own_spice is None:
         raise SpiceNotFound
     used_in = db.scalars(
@@ -294,6 +297,17 @@ def card(db: Session, ingredient_id: int, notebook: Notebook | None = None) -> S
         substitutions_added_by=(
             permissions.added_by(notebook, own_subs_rows[0].created_by)
             if own_subs_rows and notebook
+            else None
+        ),
+        pairs_with=(
+            own_pairing.pairs_with
+            if own_pairing
+            else (ingredient.pairs_with_en if lang == "en" else ingredient.pairs_with_es)
+        ),
+        has_own_pairs_with=own_pairing is not None,
+        pairs_with_added_by=(
+            permissions.added_by(notebook, own_pairing.created_by)
+            if own_pairing and notebook
             else None
         ),
         is_blend=blend is not None or own is not None,

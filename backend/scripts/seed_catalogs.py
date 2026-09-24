@@ -32,7 +32,7 @@ from app.models import (
     Tag,
     WineCategory,
 )
-from scripts.catalog_data import basics, categories, spices, wines
+from scripts.catalog_data import basics, categories, pairings, spices, wines
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 log = logging.getLogger("seed")
@@ -152,6 +152,8 @@ def seed_ingredients(db: Session) -> dict[str, Ingredient]:
                     "aliases": aliases,
                     "is_spice": True,
                     "spice_family": family,
+                    "pairs_with_es": pairings.PAIRINGS.get(name, (None, None))[0],
+                    "pairs_with_en": pairings.PAIRINGS.get(name, (None, None))[1],
                     "shopping_section_id": sections["spices"].id,
                 },
             )

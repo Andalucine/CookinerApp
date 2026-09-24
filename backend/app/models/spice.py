@@ -186,3 +186,23 @@ class NotebookSubstitution(Base):
     created_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
 
     created_by: Mapped["User | None"] = relationship()
+
+
+class NotebookSpicePairing(Base):
+    """The notebook's own "va bien con" for an ingredient (catalogue spice or its own); when it
+    exists it replaces the catalogue's text for that notebook."""
+
+    __tablename__ = "notebook_spice_pairings"
+    __table_args__ = (UniqueConstraint("notebook_id", "ingredient_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    notebook_id: Mapped[int] = mapped_column(
+        ForeignKey("notebooks.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    ingredient_id: Mapped[int] = mapped_column(
+        ForeignKey("ingredients.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    pairs_with: Mapped[str] = mapped_column(String(300), nullable=False)
+    created_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+
+    created_by: Mapped["User | None"] = relationship()

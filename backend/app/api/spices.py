@@ -80,6 +80,6 @@ def spice_card(
     version first), and the blends it is part of. Also works for fresh ingredients with
     substitutions (garlic, onion...)."""
     try:
-        return spice_service.card(db, ingredient_id, _notebook(db, user, lang, notebook_id))
+        return spice_service.card(db, ingredient_id, _notebook(db, user, lang, notebook_id), lang)
     except spice_service.SpiceNotFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, t("spice_not_found", lang)) from None

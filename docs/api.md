@@ -104,7 +104,7 @@ La documentación interactiva la genera FastAPI en http://localhost:8000/docs (S
 | GET | `/spices?family=&q=&notebook_id=` | Lista de especias; `q` busca en nombre, alias e inglés. Indica `has_substitutions` e `is_blend`. Con token, añade las mezclas y las especias del cuaderno (`notebook_blend_id`, `is_own_version`, `notebook_spice_id`, `added_by`) y tiene en cuenta sus sustitutos propios; `notebook_id` para un cuaderno ajeno al que se tiene acceso (sesión 8). |
 | GET | `/spices/rules` | Reglas generales de equivalencia (fresca → seca…). |
 | GET | `/spices/blends` | Las mezclas con su composición (`parts`, `is_optional`). |
-| GET | `/spices/{ingredient_id}?notebook_id=` | Ficha: `substitutions[]` (proporción y nota), `blend` si es mezcla, `used_in_blends[]`. También ajo, cebolla y jengibre fresco. 404 si no tiene ficha. Con token, `blend` es la versión del cuaderno si la tiene y `catalog_blend` la del catálogo; `substitutions` es la lista propia del cuaderno cuando existe (`has_own_substitutions`, `substitutions_added_by`) (sesión 8). |
+| GET | `/spices/{ingredient_id}?notebook_id=` | Ficha: `substitutions[]` (proporción y nota), `blend` si es mezcla, `used_in_blends[]`. También ajo, cebolla y jengibre fresco. 404 si no tiene ficha. Con token, `blend` es la versión del cuaderno si la tiene y `catalog_blend` la del catálogo; `substitutions` es la lista propia del cuaderno cuando existe (`has_own_substitutions`, `substitutions_added_by`); `pairs_with` ("va bien con") en el idioma pedido, o el texto propio del cuaderno (`has_own_pairs_with`) (sesión 8). |
 
 ### Mezclas del cuaderno (`/blends`, sesión 8)
 
@@ -127,6 +127,8 @@ Mezclas propias del cuaderno y versiones propias de las del catálogo. Propietar
 | DELETE | `/notebook-spices/{id}` | — | Borra la especia del cuaderno y su lista de sustitutos. |
 | PUT | `/notebook-spices/{ingredient_id}/substitutions` | `items[]` (`substitute`, `ratio`, `note`), `notebook_id` opcional | La lista propia del cuaderno para ese ingrediente (sustituye a la del catálogo). Si el sustituto es un solo nombre del catálogo, se enlaza (`substitute_id`). 422 si es la propia especia. |
 | DELETE | `/notebook-spices/{ingredient_id}/substitutions?notebook_id=` | — | Vuelve a la lista del catálogo. 404 si no había lista propia. |
+| PUT | `/notebook-spices/{ingredient_id}/pairs-with` | `pairs_with` (texto, alimentos separados por comas), `notebook_id` opcional | El "va bien con" propio del cuaderno para ese ingrediente. |
+| DELETE | `/notebook-spices/{ingredient_id}/pairs-with?notebook_id=` | — | Vuelve al texto del catálogo. 404 si no había texto propio. |
 
 ### Vinos (`/wines`)
 

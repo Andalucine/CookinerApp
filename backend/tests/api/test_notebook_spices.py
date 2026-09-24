@@ -129,3 +129,31 @@ def test_shared_notebook_roles_for_spices(client, seeded, make_user, share):
     eva_h, _ = make_user("Eva")
     assert client.delete(f"/notebook-spices/{spice['id']}", headers=eva_h).status_code == 404
     assert client.delete(f"/notebook-spices/{spice['id']}", headers=ana_h).status_code == 200
+
+
+def test_pairs_with_from_the_catalogue_and_the_notebook(client, seeded, make_user):
+    h, _ = make_user("Ana")
+    comino = _id(seeded, "comino")
+    card = client.get(f"/spices/{comino}").json()
+    assert card["pairs_with"].startswith("garbanzos") and not card["has_own_pairs_with"]
+    assert (
+        client.get(f"/spices/{comino}", headers={"Accept-Language": "en"})
+        .json()["pairs_with"]
+        .startswith("chickpeas")
+    )
+
+    r = client.put(
+        f"/notebook-spices/{comino}/pairs-with",
+        json={"pairs_with": " cordero ,  arroz,,"},
+        headers=h,
+    )
+    assert r.status_code == 200, r.text
+    card = client.get(f"/spices/{comino}", headers=h).json()
+    assert card["pairs_with"] == "cordero, arroz" and card["has_own_pairs_with"]
+    assert (
+        client.get(f"/spices/{comino}").json()["pairs_with"].startswith("garbanzos")
+    )  # catalogue untouched
+
+    assert client.delete(f"/notebook-spices/{comino}/pairs-with", headers=h).status_code == 200
+    assert not client.get(f"/spices/{comino}", headers=h).json()["has_own_pairs_with"]
+    assert client.delete(f"/notebook-spices/{comino}/pairs-with", headers=h).status_code == 404

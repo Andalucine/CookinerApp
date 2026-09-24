@@ -1,6 +1,6 @@
 # Modelo de datos
 
-Estado: **v2** (migración `initial_schema` regenerada en las sesiones 4, 5 y 8, decisión 0004: cuaderno personal). Regla: cada cambio en `backend/app/models/` actualiza este documento en el mismo commit. 36 tablas.
+Estado: **v2** (migración `initial_schema` regenerada en las sesiones 4, 5 y 8, decisión 0004: cuaderno personal). Regla: cada cambio en `backend/app/models/` actualiza este documento en el mismo commit. 37 tablas.
 
 ## Esquema general
 
@@ -20,7 +20,8 @@ users ──< notebooks (1 por cuenta) ──< recipes ──< recipe_ingredient
                                           spice_equivalence_rules
 notebooks ──< notebook_blends ──< notebook_blend_items
           ├─< notebook_spices
-          └─< notebook_substitutions
+          ├─< notebook_substitutions
+          └─< notebook_spice_pairings
                                           pairing_rules: categories → wine_categories
 ```
 
@@ -49,7 +50,7 @@ Límites por plan (`PLAN_LIMITS` en `app/models/user.py`): gratuito 15 recetas /
 | Tabla | Para qué | Campos clave |
 |---|---|---|
 | `recipes` | La receta | `notebook_id`, `author_id`, `title`, `description`, `instructions`, `prep_time_minutes`, `servings`, `cook_name` ("la abuela"), `source_type` (`own`/`web`/`book`/`family`/`other`), `source_name`, `source_url` (**siempre** si viene de la web), `youtube_url`, `image_url`, `language` |
-| `ingredients` | Catálogo **global**, nombre normalizado en minúscula y singular | `name` (único), `name_en`, `aliases`, `is_spice`, `spice_family`, `shopping_section_id` |
+| `ingredients` | Catálogo **global**, nombre normalizado en minúscula y singular | `name` (único), `name_en`, `aliases`, `is_spice`, `spice_family`, `pairs_with_es/en` ("va bien con", solo especias), `shopping_section_id` |
 | `recipe_ingredients` | Ingredientes de cada receta | `quantity`, `unit`, `raw_text`, `position` |
 | `categories` | Árbol de categorías: rama → categoría → subcategoría (`level` 1-3) | `parent_id`, `slug` (único bajo su padre), `name_es`, `name_en`, `examples_es`, `position`, `notebook_id` (nulo = global; preparado para subcategorías propias, no usado en v1) |
 | `recipe_categories` | Una receta en varias categorías | `is_primary` (la que se muestra en la ficha) |
@@ -75,6 +76,8 @@ El tiempo (rápida ≤ 30 · media 31–60 · larga > 60) no se guarda: se calcu
 
 | `notebook_spices` | Especias **añadidas por el cuaderno** (sesión 8), en una de las siete familias | `notebook_id`, `ingredient_id` (único por cuaderno), `family`, `aliases`, `created_by_id` |
 | `notebook_substitutions` | Lista **propia del cuaderno** de sustitutos de un ingrediente (del catálogo o suyo); cuando existe, sustituye a la del catálogo para ese cuaderno | `notebook_id`, `ingredient_id`, `substitute` (texto), `substitute_id` (si es un solo ingrediente del catálogo), `ratio`, `note`, `position`, `created_by_id` |
+
+| `notebook_spice_pairings` | "Va bien con" **propio del cuaderno** para un ingrediente; sustituye al texto del catálogo para ese cuaderno | `notebook_id`, `ingredient_id` (único por cuaderno), `pairs_with`, `created_by_id` |
 
 El catálogo de especias, sustituciones y mezclas nunca se modifica: al editar una mezcla del catálogo se crea la versión del cuaderno, y borrarla es volver a la del catálogo. El nombre de una mezcla nueva entra en `ingredients` como cualquier ingrediente (sin `is_spice`), para que una receta que la use enlace con ella.
 

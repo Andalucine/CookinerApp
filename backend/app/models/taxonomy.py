@@ -38,6 +38,9 @@ class Ingredient(Base):
     # 'herbs', 'seeds', 'barks_roots_flowers', 'peppers_chillies', 'paprikas', 'blends',
     # 'salts_seasonings' — only for spices
     spice_family: Mapped[str | None] = mapped_column(String(30))
+    # "Va bien con": the foods the spice is recommended with (session 8), only for spices
+    pairs_with_es: Mapped[str | None] = mapped_column(String(200))
+    pairs_with_en: Mapped[str | None] = mapped_column(String(200))
     shopping_section_id: Mapped[int | None] = mapped_column(ForeignKey("shopping_sections.id"))
 
     shopping_section: Mapped[ShoppingSection | None] = relationship()

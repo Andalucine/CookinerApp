@@ -78,6 +78,9 @@ export type SpiceCard = SpiceSummary & {
   substitutions: Substitution[]; // the notebook's own list when it has one
   has_own_substitutions: boolean;
   substitutions_added_by: string | null;
+  pairs_with: string | null; // "va bien con": the notebook's text when it has one
+  has_own_pairs_with: boolean;
+  pairs_with_added_by: string | null;
   blend: Blend | null; // the notebook's version when it has one, else the catalogue's
   catalog_blend: Blend | null; // the catalogue's, only when the notebook has a version
   used_in_blends: { ingredient_id: number; name: string; name_en: string | null }[];
@@ -161,6 +164,23 @@ export function setSubstitutions(
 
 export function clearSubstitutions({ token, language }: Auth, ingredientId: number) {
   return api<{ message: string }>(`/notebook-spices/${ingredientId}/substitutions`, {
+    method: "DELETE",
+    token,
+    language,
+  });
+}
+
+export function setPairsWith({ token, language }: Auth, ingredientId: number, text: string) {
+  return api<{ message: string }>(`/notebook-spices/${ingredientId}/pairs-with`, {
+    method: "PUT",
+    body: { pairs_with: text },
+    token,
+    language,
+  });
+}
+
+export function clearPairsWith({ token, language }: Auth, ingredientId: number) {
+  return api<{ message: string }>(`/notebook-spices/${ingredientId}/pairs-with`, {
     method: "DELETE",
     token,
     language,

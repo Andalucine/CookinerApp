@@ -4,7 +4,14 @@ catalogue (`ingredients.is_spice`, `spice_substitutions`) is never changed here.
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session, selectinload
 
-from app.models import Ingredient, Notebook, NotebookSpice, NotebookSubstitution, User
+from app.models import (
+    Ingredient,
+    Notebook,
+    NotebookSpice,
+    NotebookSpicePairing,
+    NotebookSubstitution,
+    User,
+)
 from app.schemas.spice import (
     NotebookSpiceIn,
     NotebookSpiceOut,
@@ -119,6 +126,12 @@ def delete_spice(db: Session, spice: NotebookSpice) -> None:
             NotebookSubstitution.ingredient_id == spice.ingredient_id,
         )
     )
+    db.execute(
+        delete(NotebookSpicePairing).where(
+            NotebookSpicePairing.notebook_id == spice.notebook_id,
+            NotebookSpicePairing.ingredient_id == spice.ingredient_id,
+        )
+    )
     db.delete(spice)
     db.commit()
 
@@ -217,6 +230,47 @@ def clear_substitutions(db: Session, notebook_id: int, ingredient_id: int) -> bo
         delete(NotebookSubstitution).where(
             NotebookSubstitution.notebook_id == notebook_id,
             NotebookSubstitution.ingredient_id == ingredient_id,
+        )
+    )
+    db.commit()
+    return bool(result.rowcount)
+
+
+# --- Own "va bien con" -------------------------------------------------------------------
+
+
+def pairing_for(db: Session, notebook_id: int, ingredient_id: int) -> NotebookSpicePairing | None:
+    return db.scalar(
+        select(NotebookSpicePairing)
+        .options(selectinload(NotebookSpicePairing.created_by))
+        .where(
+            NotebookSpicePairing.notebook_id == notebook_id,
+            NotebookSpicePairing.ingredient_id == ingredient_id,
+        )
+    )
+
+
+def set_pairing(
+    db: Session, user: User, notebook: Notebook, ingredient: Ingredient, text: str
+) -> NotebookSpicePairing:
+    clean = ", ".join(p.strip() for p in " ".join(text.split()).split(",") if p.strip())
+    row = pairing_for(db, notebook.id, ingredient.id)
+    if row is None:
+        row = NotebookSpicePairing(
+            notebook_id=notebook.id, ingredient_id=ingredient.id, created_by_id=user.id
+        )
+        db.add(row)
+    row.pairs_with = clean
+    row.created_by_id = user.id
+    db.commit()
+    return pairing_for(db, notebook.id, ingredient.id)  # type: ignore[return-value]
+
+
+def clear_pairing(db: Session, notebook_id: int, ingredient_id: int) -> bool:
+    result = db.execute(
+        delete(NotebookSpicePairing).where(
+            NotebookSpicePairing.notebook_id == notebook_id,
+            NotebookSpicePairing.ingredient_id == ingredient_id,
         )
     )
     db.commit()

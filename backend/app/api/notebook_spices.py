@@ -12,6 +12,7 @@ from app.schemas.spice import (
     NotebookSpiceCreate,
     NotebookSpiceIn,
     NotebookSpiceOut,
+    PairingIn,
     SubstitutionOut,
     SubstitutionsIn,
 )
@@ -122,3 +123,34 @@ def clear_substitutions(
     if not spice_service.clear_substitutions(db, notebook.id, ingredient_id):
         raise HTTPException(status.HTTP_404_NOT_FOUND, t("spice_not_found", lang))
     return MessageResponse(message=t("substitutions_restored", lang))
+
+
+# --- Own "va bien con" -------------------------------------------------------------------
+
+
+@router.put("/{ingredient_id}/pairs-with", response_model=MessageResponse)
+def set_pairing(
+    ingredient_id: int, body: PairingIn, db: DbSession, user: CurrentUser, lang: Lang
+) -> MessageResponse:
+    """The notebook's "va bien con" for this ingredient; replaces the catalogue's text."""
+    notebook = _notebook(db, user, lang, body.notebook_id, edit=True)
+    ingredient = db.get(Ingredient, ingredient_id)
+    if ingredient is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, t("spice_not_found", lang))
+    spice_service.set_pairing(db, user, notebook, ingredient, body.pairs_with)
+    return MessageResponse(message=t("ok", lang))
+
+
+@router.delete("/{ingredient_id}/pairs-with", response_model=MessageResponse)
+def clear_pairing(
+    ingredient_id: int,
+    db: DbSession,
+    user: CurrentUser,
+    lang: Lang,
+    notebook_id: int | None = Query(default=None, description="Default: your own notebook"),
+) -> MessageResponse:
+    """Back to the catalogue's text."""
+    notebook = _notebook(db, user, lang, notebook_id, edit=True)
+    if not spice_service.clear_pairing(db, notebook.id, ingredient_id):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, t("spice_not_found", lang))
+    return MessageResponse(message=t("ok", lang))

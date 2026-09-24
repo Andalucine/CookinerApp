@@ -1,5 +1,5 @@
 """initial schema (v2: personal notebook, catalogs, pantry, shopping list, notes, favorites,
-notebook blends, notebook spices and substitutions)
+notebook blends, notebook spices, substitutions and pairings)
 
 Revision ID: 0002a1b2c3d4
 Revises:
@@ -162,6 +162,8 @@ def upgrade() -> None:
         sa.Column("aliases", sa.String(length=300), nullable=True),
         sa.Column("is_spice", sa.Boolean(), nullable=False),
         sa.Column("spice_family", sa.String(length=30), nullable=True),
+        sa.Column("pairs_with_es", sa.String(length=200), nullable=True),
+        sa.Column("pairs_with_en", sa.String(length=200), nullable=True),
         sa.Column("shopping_section_id", sa.Integer(), nullable=True),
         sa.ForeignKeyConstraint(
             ["shopping_section_id"],
@@ -538,6 +540,50 @@ def upgrade() -> None:
     op.create_index(
         op.f("ix_notebook_substitutions_notebook_id"),
         "notebook_substitutions",
+        ["notebook_id"],
+        unique=False,
+    )
+    op.create_table(
+        "notebook_spice_pairings",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("notebook_id", sa.Integer(), nullable=False),
+        sa.Column("ingredient_id", sa.Integer(), nullable=False),
+        sa.Column("pairs_with", sa.String(length=300), nullable=False),
+        sa.Column("created_by_id", sa.Integer(), nullable=True),
+        sa.ForeignKeyConstraint(
+            ["created_by_id"],
+            ["users.id"],
+            name=op.f("fk_notebook_spice_pairings_created_by_id_users"),
+            ondelete="SET NULL",
+        ),
+        sa.ForeignKeyConstraint(
+            ["ingredient_id"],
+            ["ingredients.id"],
+            name=op.f("fk_notebook_spice_pairings_ingredient_id_ingredients"),
+            ondelete="CASCADE",
+        ),
+        sa.ForeignKeyConstraint(
+            ["notebook_id"],
+            ["notebooks.id"],
+            name=op.f("fk_notebook_spice_pairings_notebook_id_notebooks"),
+            ondelete="CASCADE",
+        ),
+        sa.PrimaryKeyConstraint("id", name=op.f("pk_notebook_spice_pairings")),
+        sa.UniqueConstraint(
+            "notebook_id",
+            "ingredient_id",
+            name=op.f("uq_notebook_spice_pairings_notebook_id_ingredient_id"),
+        ),
+    )
+    op.create_index(
+        op.f("ix_notebook_spice_pairings_ingredient_id"),
+        "notebook_spice_pairings",
+        ["ingredient_id"],
+        unique=False,
+    )
+    op.create_index(
+        op.f("ix_notebook_spice_pairings_notebook_id"),
+        "notebook_spice_pairings",
         ["notebook_id"],
         unique=False,
     )
@@ -1125,6 +1171,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    op.drop_table("notebook_spice_pairings")
     op.drop_table("notebook_substitutions")
     op.drop_table("notebook_spices")
     op.drop_table("notebook_blend_items")
