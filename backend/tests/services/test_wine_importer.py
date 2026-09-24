@@ -85,3 +85,46 @@ def test_reads_the_data_sheet_of_a_shop_page():
     assert w.tasting_notes.startswith("Eulogio Pomares") and "albariño" in w.tasting_notes
     assert w.category_slug == "blanco-aromatico" and w.grapes == "albariño"
     assert w.vintage == 2024 and w.warnings == []
+
+
+# Session 9: a Madeira page with the shop's grape filter in the sidebar ("Uva" followed by a
+# list of grapes) and "medium dry" in the name.
+MADEIRA = """<html><head><title>Barbeito 5 years rainwater reserva medium dry - Delatierra</title>
+<meta property="og:site_name" content="Delatierra">
+<script type="application/ld+json">{"@context":"https://schema.org/","@type":"Product",
+"name":"Barbeito 5 years rainwater reserva medium dry",
+"description":"Barbeito 5 years rainwater reserva medium dry",
+"brand":{"@type":"Thing","name":"Delatierra"},
+"offers":{"@type":"Offer","priceCurrency":"EUR","price":"13.00"}}</script></head>
+<body><aside><h3>Uva</h3><ul><li><a href="/u1">Mencía</a></li><li><a href="/u2">Garnacha</a></li>
+<li><a href="/u3">Tempranillo</a></li></ul></aside>
+<form><div class="product-description-nofilter"><p>Barbeito lleva desde 1946 elaborando grandes
+vinos en la remota isla de Madeira. Este rainwater, de uva tinta negra, es ligero, fresco y
+delicadamente dulce, perfecto como aperitivo.</p></div>
+<div class="product-profile-features">
+<div class="profile-item"><h4>Bodega</h4><a href="/x">Barbeito</a></div>
+<div class="profile-item"><h4>Origen</h4><a href="/y">Madeira</a>
+<span class="product-country">Portugal</span></div>
+<div class="profile-item"><h4>Tipo de vino</h4><a href="/z">Madeira</a></div>
+<div class="profile-item"><h4>Crianza</h4><span>5 años</span></div>
+</div></form></body></html>"""
+
+
+def test_madeira_with_the_shop_grape_menu_and_medium_dry_in_the_name():
+    w = read_wine(MADEIRA, "https://www.delatierra.com/x.html")
+    assert w.category_slug == "madeira-marsala"  # not cream-medium
+    assert w.sweetness == "off_dry" and w.ageing == "reserva"
+    assert w.grapes == "tinta negra"  # from the page, not "Mencía" from the filter menu
+    assert w.winery == "Barbeito" and w.country == "Portugal" and w.appellation == "Madeira"
+
+
+def test_the_sheet_grape_is_kept_when_the_page_backs_it():
+    page = SHEET.replace(
+        '<div class="profile-item"><h4>Crianza</h4>',
+        '<div class="profile-item"><h4>Uva</h4><a href="/g">Albariño</a></div>'
+        '<div class="profile-item"><h4>Crianza</h4>',
+    )
+    assert read_wine(page, "https://www.delatierra.com/z.html").grapes == "Albariño"
+    # a sheet grape the page never mentions, while the page names another one → the page wins
+    wrong = page.replace('<a href="/g">Albariño</a>', '<a href="/g">Mencía</a>')
+    assert read_wine(wrong, "https://www.delatierra.com/z.html").grapes == "albariño"

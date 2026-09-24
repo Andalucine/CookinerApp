@@ -47,9 +47,10 @@ _TYPE_PATTERNS: list[tuple[str, str]] = [
     (r"\bamontillado\b", "amontillado"),
     (r"\boloroso\b", "oloroso"),
     (r"\bpedro xim[eé]nez\b|\bpx\b", "pedro-ximenez"),
-    (r"\bcream\b|\bmedium\b|\bpale cream\b", "cream-medium"),
+    (r"\bmadeira\b|\bmarsala\b|\brainwater\b", "madeira-marsala"),
+    # "medium dry" / "medium sweet" say how sweet a wine is, not that it is a cream (session 9)
+    (r"\bcream\b|\bpale cream\b|\bmedium\b(?!\s+(?:dry|sweet|rich|seco|dulce))", "cream-medium"),
     (r"\boporto\b|\bport\b|\btawny\b|\bruby\b", "oporto"),
-    (r"\bmadeira\b|\bmarsala\b", "madeira-marsala"),
     (r"\bvermut\b|\bvermouth\b", "vermut"),
     (r"\bmoscatel\b|\bmoscato\b", "moscatel"),
     (r"\bfondill[oó]n\b|\brancio\b", "rancios-fondillon"),
@@ -108,6 +109,11 @@ _GRAPES = [
     "xarel.lo", "xarello", "parellada", "palomino", "pedro ximénez", "pedro ximenez", "moscatel",
     "airén", "airen", "chardonnay", "sauvignon blanc", "riesling", "gewürztraminer", "treixadura",
     "loureiro", "hondarrabi zuri", "listán", "malvasía", "malvasia", "zalema", "touriga nacional",
+    "tinta negra", "sercial", "verdelho", "boal", "bual", "terrantez", "touriga franca",
+    "tinta roriz", "tinta barroca", "garnacha tintorera", "prieto picudo", "listán negro",
+    "listán blanco", "sumoll", "trepat", "callet", "manto negro", "juan garcía", "rufete",
+    "merseguera", "moscatel de alejandría", "pansa blanca", "xarel·lo vermell", "garnacha blanca",
+    "cabernet franc", "nebbiolo", "sangiovese", "tempranillo blanco", "maturana",
 ]  # fmt: skip
 
 _APPELLATION = re.compile(
@@ -123,6 +129,20 @@ _KNOWN_APPELLATIONS = [
     "Montsant", "Empordà", "Costers del Segre", "Terra Alta", "Tarragona", "Ribeiro", "Monterrei",
     "Lanzarote", "Champagne", "Douro", "Vinho Verde", "Chianti", "Barolo", "Bordeaux", "Borgoña",
 ]  # fmt: skip
+
+
+# What a shop's "Tipo de vino" usually says (Blanco, Tinto, Rosado): a family, not a subtype.
+# The name and the description may refine it within that family ("albariño" → aromatic white).
+_GENERIC_TYPES = {"blanco-joven": "blanco-", "tinto-medio": "tinto-", "rosado-fruta": "rosado-"}
+
+
+def _pick_type(from_sheet: str | None, from_words: str | None) -> str | None:
+    if from_sheet is None:
+        return from_words
+    family = _GENERIC_TYPES.get(from_sheet)
+    if family and from_words and from_words.startswith(family):
+        return from_words
+    return from_sheet
 
 
 def _first(patterns: list[tuple[str, str]], text: str) -> str | None:
@@ -172,6 +192,11 @@ def _grapes(text: str) -> str | None:
                 continue
             found.append(grape)
     return ", ".join(found) or None
+
+
+def _mentions_any(grapes: str, text: str) -> bool:
+    low = text.lower()
+    return any(g.strip() and g.strip().lower() in low for g in re.split(r"[,;/]| y ", grapes))
 
 
 def _appellation(text: str) -> str | None:
@@ -266,6 +291,17 @@ class _SheetReader(HTMLParser):
                 open_leaf.append(data)
 
 
+def _is_grape(text: str) -> bool:
+    low = text.lower().strip()
+    return any(low == g or low.startswith(g + " ") for g in _GRAPES)
+
+
+def _looks_like_grape_menu(following: list[str]) -> bool:
+    """The value and the texts after it are all grape names: a shop filter, not a data sheet."""
+    short = [t for t in following if t and len(t) <= 40]
+    return len(short) >= 2 and all(_is_grape(t) for t in short[:2]) and len(following) >= 3
+
+
 def read_sheet(html: str) -> dict[str, str]:
     """{"winery": "Bodegas Zarate", "appellation": "D.O. Rías Baixas", "country": "España"...}
     from the label + value pairs of the page. Values are the text right after a label; a
@@ -282,6 +318,8 @@ def read_sheet(html: str) -> dict[str, str]:
         value = texts[i + 1].strip()
         if not value or len(value) > 120 or _SHEET_LABELS.get(value.lower().rstrip(":")):
             continue
+        if key == "grapes" and _looks_like_grape_menu(texts[i + 1 : i + 4]):
+            continue  # a filter of the shop ("Uva: Albariño · Garnacha · Mencía…"), session 9
         if key == "appellation":
             for country in _COUNTRIES:
                 if value.lower().endswith(" " + country):
@@ -362,15 +400,23 @@ def read_wine(html: str, url: str) -> WinePreview:
     # The sheet's own words about type and ageing count first ("Tipo de vino: Blanco")
     typed = " ".join(x for x in (sheet.get("type"), sheet.get("ageing")) if x)
     clues = " ".join(x for x in (preview.name, preview.tasting_notes, reader.title) if x)
-    preview.category_slug = _first(_TYPE_PATTERNS, preview.name or "") or _first(
-        _TYPE_PATTERNS, f"{typed} {clues}"
+    # The sheet's "Tipo de vino" first, then the name, then the description (session 9:
+    # "Barbeito rainwater medium dry" is a madeira, whatever "medium" suggests)
+    preview.category_slug = _pick_type(
+        _first(_TYPE_PATTERNS, sheet.get("type") or ""),
+        _first(_TYPE_PATTERNS, preview.name or "") or _first(_TYPE_PATTERNS, f"{typed} {clues}"),
     )
     preview.ageing = (
         _first(_AGEING, preview.name or "") or _first(_AGEING, typed) or _first(_AGEING, clues)
     )
     preview.sweetness = _first(_SWEETNESS, f"{typed} {clues}")
     preview.vintage = preview.vintage or _vintage(preview.name, preview.tasting_notes)
-    preview.grapes = preview.grapes or _grapes(clues)
+    # The sheet's grape is kept when the page mentions it; if the page names other grapes and
+    # not that one, the page wins (session 9: a Madeira came out with "Mencía" from a menu)
+    from_text = _grapes(clues)
+    if preview.grapes and from_text and not _mentions_any(preview.grapes, clues):
+        preview.grapes = from_text
+    preview.grapes = preview.grapes or from_text
     preview.appellation = preview.appellation or _appellation(clues)
     preview.country = preview.country or _country(preview.appellation, clues)
 
