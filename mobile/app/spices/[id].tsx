@@ -1,17 +1,18 @@
-/** Ficha de una especia (from a recipe ingredient): what to use instead, with the proportion
- * and a note; how to make it at home if it is a blend; blends it is part of. */
-import { Stack, useLocalSearchParams } from "expo-router";
-import { StyleSheet, Text, View } from "react-native";
+/** Ficha de una especia (from a recipe ingredient or from the spice zone): what to use instead,
+ * with the proportion and a note; how to make it at home if it is a blend; blends it is part of.
+ * Substitutes and blends with a card of their own can be tapped (session 8). */
+import { Ionicons } from "@expo/vector-icons";
+import { router, Stack, useLocalSearchParams } from "expo-router";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { LoadError, Loading } from "../../components/LoadState.tsx";
 import { Screen } from "../../components/Screen.tsx";
 import { SectionTitle } from "../../components/SectionTitle.tsx";
+import { cap } from "../../components/SpiceRow.tsx";
 import { colors, fontSize, radius, spacing } from "../../components/theme.ts";
 import { useI18n } from "../../i18n";
 import * as spices from "../../services/spices.ts";
 import { useLoad } from "../../services/useLoad.ts";
-
-const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 export default function SpiceScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -45,13 +46,30 @@ export default function SpiceScreen() {
       {card.substitutions.length ? (
         card.substitutions.map((s, index) => {
           const note = en ? s.note_en : s.note_es;
-          return (
-            <View key={index} style={styles.box}>
-              <Text style={styles.strong}>
-                {en ? s.substitute_en : s.substitute_es}
-                {s.ratio ? `  (${s.ratio})` : ""}
-              </Text>
-              {note ? <Text style={styles.body}>{note}</Text> : null}
+          const label = `${en ? s.substitute_en : s.substitute_es}${s.ratio ? `  (${s.ratio})` : ""}`;
+          const target = s.substitute_id;
+          const content = (
+            <>
+              <View style={styles.boxText}>
+                <Text style={styles.strong}>{label}</Text>
+                {note ? <Text style={styles.body}>{note}</Text> : null}
+              </View>
+              {target ? <Ionicons name="chevron-forward" size={24} color={colors.ink} /> : null}
+            </>
+          );
+          return target && target !== card.id ? (
+            <Pressable
+              key={index}
+              accessibilityRole="button"
+              accessibilityLabel={label}
+              onPress={() => router.push(`/spices/${target}`)}
+              style={({ pressed }) => [styles.box, styles.boxRow, pressed && styles.pressed]}
+            >
+              {content}
+            </Pressable>
+          ) : (
+            <View key={index} style={[styles.box, styles.boxRow]}>
+              {content}
             </View>
           );
         })
@@ -75,9 +93,21 @@ export default function SpiceScreen() {
       {card.used_in_blends.length ? (
         <>
           <SectionTitle text={t("spice.usedIn")} />
-          <Text style={styles.body}>
-            {card.used_in_blends.map((b) => (en && b.name_en) || b.name).join(", ")}
-          </Text>
+          {card.used_in_blends.map((b) => {
+            const blendName = cap((en && b.name_en) || b.name);
+            return (
+              <Pressable
+                key={b.ingredient_id}
+                accessibilityRole="button"
+                accessibilityLabel={blendName}
+                onPress={() => router.push(`/spices/${b.ingredient_id}`)}
+                style={({ pressed }) => [styles.box, styles.boxRow, pressed && styles.pressed]}
+              >
+                <Text style={[styles.strong, styles.boxText]}>{blendName}</Text>
+                <Ionicons name="chevron-forward" size={24} color={colors.ink} />
+              </Pressable>
+            );
+          })}
         </>
       ) : null}
     </Screen>
@@ -93,6 +123,9 @@ const styles = StyleSheet.create({
     borderRadius: radius.m,
     backgroundColor: colors.surface,
   },
+  boxRow: { flexDirection: "row", alignItems: "center", gap: spacing.s },
+  boxText: { flex: 1, gap: spacing.xs },
+  pressed: { opacity: 0.7 },
   strong: { fontSize: fontSize.body, fontWeight: "700", color: colors.ink },
   body: { fontSize: fontSize.body, color: colors.ink, lineHeight: 26 },
 });
