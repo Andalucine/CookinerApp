@@ -135,6 +135,8 @@ Mezclas propias del cuaderno y versiones propias de las del catálogo. Propietar
 | Método | Ruta | Cuerpo / parámetros | Respuesta |
 |---|---|---|---|
 | GET | `/wines` | `notebook_id`, `q` (nombre, bodega, uva, denominación), `category_id` (un tipo de primer nivel incluye sus hijos), `sweetness`, `body`, `ageing`, `country`, `appellation`, `grape`, `price_range`, `favorites=true`, `limit`, `offset` | `{total, items[]}` con `category` (y su `parent`), `added_by`, `is_favorite`. |
+| GET | `/wines/category-counts?notebook_id=` | — | Vinos del cuaderno por tipo (un tipo de primer nivel cuenta sus subtipos), para "Por tipos" (sesión 8). |
+| GET | `/wines/{id}/recipes` | — | Recetas para las que se recomienda el vino, con `reason` y `added_by` (sesión 8). |
 | POST | `/wines` | `name`, `winery`, `category_id`, facetas, `vintage`, `tasting_notes`, `pairing_notes`, `source_url`, `image_url`, `notebook_id` (opcional) | 201. 422 si una faceta o el tipo no existen. |
 | GET / PUT / DELETE | `/wines/{id}` | PUT: mismo cuerpo, sustituye el vino | Ficha con `edited_by`. Borrar: propietario o quien lo añadió. |
 | POST / DELETE | `/wines/{id}/favorite` | — | Estrella, también como lector. |

@@ -165,3 +165,30 @@ def test_wines_roles_and_free_guest(client, seeded, make_user, share):
     assert r.status_code == 422
     assert client.get(f"/wines/{ana_wine['id']}", headers=pepe_h).status_code == 404
     assert client.get(f"/wines?notebook_id={nb}", headers=pepe_h).status_code == 404
+
+
+def test_category_counts_and_recipes_of_a_wine(client, seeded, make_user):
+    h, _ = make_user()
+    _paid(seeded, "ana@example.com")
+    tinto = client.post(
+        "/wines", json=_wine(seeded, "Tondonia", "tinto-cuerpo-crianza"), headers=h
+    ).json()
+    client.post("/wines", json=_wine(seeded, "Señoráns", "blanco-aromatico"), headers=h)
+    tintos = client.get("/catalog/wine-categories").json()[0]
+    counts = {
+        c["category_id"]: c["count"] for c in client.get("/wines/category-counts", headers=h).json()
+    }
+    assert counts[tintos["id"]] == 1 and counts[tinto["category"]["id"]] == 1
+    assert sum(counts.values()) == 4  # two wines, each in its type and its parent type
+
+    from tests.api.test_recipes import marmitako
+
+    rid = client.post("/recipes", json=marmitako(seeded), headers=h).json()["id"]
+    client.post(
+        f"/recipes/{rid}/wines",
+        json={"wine_id": tinto["id"], "reason": "Va con el atún"},
+        headers=h,
+    )
+    recipes = client.get(f"/wines/{tinto['id']}/recipes", headers=h).json()
+    assert [(r["recipe_id"], r["reason"]) for r in recipes] == [(rid, "Va con el atún")]
+    assert client.get(f"/wines/{tinto['id']}/recipes").status_code == 401

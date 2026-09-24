@@ -13,10 +13,12 @@ from app.models import Notebook, Wine
 from app.schemas.auth import MessageResponse
 from app.schemas.catalog import Named
 from app.schemas.wine import (
+    WineCategoryCount,
     WineCategoryRef,
     WineCreate,
     WineIn,
     WineOut,
+    WineRecipeOut,
     WineSearchResult,
     WineSummary,
 )
@@ -143,6 +145,19 @@ def search_wines(
     return WineSearchResult(total=total, items=[to_summary(w, starred) for w in wines])
 
 
+@router.get("/category-counts", response_model=list[WineCategoryCount])
+def category_counts(
+    db: DbSession,
+    user: CurrentUser,
+    lang: Lang,
+    notebook_id: int | None = Query(default=None, description="Default: your own notebook"),
+) -> list[WineCategoryCount]:
+    """Wines of the notebook per type (a first-level type counts its subtypes), for Por tipos."""
+    notebook = _notebook(db, user, lang, notebook_id, edit=False)
+    counts = wine_service.category_counts(db, notebook.id)
+    return [WineCategoryCount(category_id=c, count=n) for c, n in sorted(counts.items())]
+
+
 @router.post("", response_model=WineOut, status_code=status.HTTP_201_CREATED)
 def create_wine(body: WineCreate, db: DbSession, user: CurrentUser, lang: Lang) -> WineOut:
     """Add a wine to your notebook, or to a notebook where you are editor."""
@@ -160,6 +175,22 @@ def create_wine(body: WineCreate, db: DbSession, user: CurrentUser, lang: Lang) 
 def get_wine(wine_id: int, db: DbSession, user: CurrentUser, lang: Lang) -> WineOut:
     wine = _load(db, user, lang, wine_id, edit=False)
     return to_out(wine, wine_service.favorite_ids(db, user.id, [wine.id]))
+
+
+@router.get("/{wine_id}/recipes", response_model=list[WineRecipeOut])
+def wine_recipes(wine_id: int, db: DbSession, user: CurrentUser, lang: Lang) -> list[WineRecipeOut]:
+    """The recipes this wine is recommended for, with the reason."""
+    wine = _load(db, user, lang, wine_id, edit=False)
+    return [
+        WineRecipeOut(
+            link_id=link.id,
+            recipe_id=link.recipe_id,
+            title=link.recipe.title,
+            reason=link.reason,
+            added_by=permissions.added_by(wine.notebook, link.added_by),
+        )
+        for link in wine_service.recipes_of(db, wine)
+    ]
 
 
 @router.put("/{wine_id}", response_model=WineOut)

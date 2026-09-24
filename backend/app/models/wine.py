@@ -1,6 +1,8 @@
 """Wines: type tree (global), the wines of each notebook, recommendations per recipe and the
 automatic pairing rules."""
 
+from typing import TYPE_CHECKING
+
 from sqlalchemy import ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -8,6 +10,9 @@ from app.core.database import Base
 from app.models.base import TimestampMixin
 from app.models.notebook import Notebook
 from app.models.user import User
+
+if TYPE_CHECKING:
+    from app.models.recipe import Recipe
 
 # Facet codes stored in `wines` (labels for the app are in i18n: wine_sweetness.dry...).
 # The seed script and the API both read them from here.
@@ -104,6 +109,7 @@ class RecipeWine(Base):
     added_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
 
     wine: Mapped[Wine] = relationship()
+    recipe: Mapped["Recipe"] = relationship()
     added_by: Mapped[User | None] = relationship()
 
 

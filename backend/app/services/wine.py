@@ -259,3 +259,32 @@ def suggest(db: Session, recipe: Recipe) -> Suggestion | None:
                 return Suggestion(based_on=category, rules=rules, wines=wines)
             category = category.parent
     return None
+
+
+def category_counts(db: Session, notebook_id: int) -> dict[int, int]:
+    """Wines of the notebook per type, each wine counted in its type and in the parent type."""
+    parents = dict(db.execute(select(WineCategory.id, WineCategory.parent_id)).all())
+    rows = db.execute(
+        select(Wine.category_id).where(
+            Wine.notebook_id == notebook_id, Wine.category_id.isnot(None)
+        )
+    ).all()
+    counts: dict[int, int] = {}
+    for (category_id,) in rows:
+        current = category_id
+        while current is not None:
+            counts[current] = counts.get(current, 0) + 1
+            current = parents.get(current)
+    return counts
+
+
+def recipes_of(db: Session, wine: Wine) -> list[RecipeWine]:
+    """The recipes this wine is recommended for (Ficha del vino → 'Marida con')."""
+    return list(
+        db.scalars(
+            select(RecipeWine)
+            .options(selectinload(RecipeWine.recipe))
+            .where(RecipeWine.wine_id == wine.id)
+            .order_by(RecipeWine.id)
+        )
+    )

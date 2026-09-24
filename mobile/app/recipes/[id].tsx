@@ -7,7 +7,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { useState } from "react";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { BigButton } from "../../components/BigButton.tsx";
 import { LoadError, Loading } from "../../components/LoadState.tsx";
@@ -31,6 +31,7 @@ import {
   youtubeId,
 } from "../../services/format.ts";
 import * as recipes from "../../services/recipes.ts";
+import * as winesApi from "../../services/wines.ts";
 import { useLoad } from "../../services/useLoad.ts";
 
 /** Wines follow the owner's plan: a free notebook answers 403 and the part is not shown. */
@@ -54,6 +55,7 @@ function RecipeView({ auth, id }: { auth: Auth; id: number }) {
     return { recipe, spiceIds: new Set(spices.map((s) => s.ingredient_id)), wines };
   }, [auth.token, auth.language, id]);
   const [favoriteError, setFavoriteError] = useState<string | null>(null);
+  const [wineError, setWineError] = useState<string | null>(null);
 
   if (data.loading && !data.data) return <Loading />;
   if (data.error || !data.data) {
@@ -74,6 +76,25 @@ function RecipeView({ auth, id }: { auth: Auth; id: number }) {
     recipe.primary_category ? localName(recipe.primary_category, language) : null,
   ].filter(Boolean);
   const when = [...recipe.seasons, ...recipe.occasions].map((x) => localName(x, language));
+
+  function confirmUnrecommend(linkId: number, wineName: string) {
+    Alert.alert(t("recommend.removeTitle"), t("recommend.removeText", { name: wineName }), [
+      { text: t("common.cancel"), style: "cancel" },
+      {
+        text: t("recommend.remove"),
+        style: "destructive",
+        onPress: async () => {
+          setWineError(null);
+          try {
+            await winesApi.unrecommend(auth, recipe.id, linkId);
+            await data.reload();
+          } catch (error) {
+            setWineError(errorText(error, t));
+          }
+        },
+      },
+    ]);
+  }
 
   async function toggleFavorite() {
     const on = !recipe.is_favorite;
@@ -221,15 +242,31 @@ function RecipeView({ auth, id }: { auth: Auth; id: number }) {
         <>
           <SectionTitle text={t("recipe.wines")} />
           {wines.recommended.map((link) => (
-            <View key={link.id} style={styles.wine}>
-              <Text style={styles.wineName}>
-                {[link.wine.name, link.wine.appellation].filter(Boolean).join(" · ")}
-              </Text>
+            <Pressable
+              key={link.id}
+              accessibilityRole="button"
+              accessibilityLabel={link.wine.name}
+              onPress={() => router.push(`/wines/${link.wine.id}`)}
+              style={({ pressed }) => [styles.wine, pressed && styles.pressed]}
+            >
+              <View style={styles.wineRow}>
+                <Text style={styles.wineName}>
+                  {[link.wine.name, link.wine.appellation].filter(Boolean).join(" · ")}
+                </Text>
+                <Ionicons name="chevron-forward" size={22} color={colors.ink} />
+              </View>
               {link.reason ? <Text style={styles.body}>{link.reason}</Text> : null}
               {link.added_by ? (
                 <Text style={styles.addedBy}>{t("recipes.addedBy", { name: link.added_by })}</Text>
               ) : null}
-            </View>
+              {canEdit ? (
+                <BigButton
+                  label={t("recommend.remove")}
+                  variant="link"
+                  onPress={() => confirmUnrecommend(link.id, link.wine.name)}
+                />
+              ) : null}
+            </Pressable>
           ))}
           {wines.suggestion ? (
             <View style={styles.wine}>
@@ -254,6 +291,20 @@ function RecipeView({ auth, id }: { auth: Auth; id: number }) {
           ) : null}
           {!wines.recommended.length && !wines.suggestion ? (
             <Text style={styles.hint}>{t("recipe.noWines")}</Text>
+          ) : null}
+          <Message text={wineError} />
+          {canEdit ? (
+            <BigButton
+              label={t("recommend.button")}
+              icon="wine-outline"
+              variant="secondary"
+              onPress={() =>
+                router.push({
+                  pathname: "/wines/recommend",
+                  params: { recipe: String(recipe.id), title: recipe.title },
+                })
+              }
+            />
           ) : null}
         </>
       ) : null}
@@ -323,6 +374,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.m,
     backgroundColor: colors.surface,
   },
-  wineName: { fontSize: fontSize.body, fontWeight: "700", color: colors.ink },
+  wineRow: { flexDirection: "row", alignItems: "center", gap: spacing.s },
+  wineName: { flex: 1, fontSize: fontSize.body, fontWeight: "700", color: colors.ink },
   actions: { marginTop: spacing.l, gap: spacing.s },
 });

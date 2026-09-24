@@ -108,3 +108,18 @@ class PairingSuggestion(BaseModel):
 class RecipeWinesOut(BaseModel):
     recommended: list[RecipeWineOut]
     suggestion: PairingSuggestion | None = None
+
+
+class WineRecipeOut(BaseModel):
+    """A recipe this wine is recommended for (Ficha del vino → Marida con)."""
+
+    link_id: int
+    recipe_id: int
+    title: str
+    reason: str | None = None
+    added_by: str | None = None
+
+
+class WineCategoryCount(BaseModel):
+    category_id: int
+    count: int

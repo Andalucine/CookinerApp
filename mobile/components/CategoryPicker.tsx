@@ -21,11 +21,13 @@ export function CategoryPicker({
   visible,
   onPick,
   onClose,
+  title,
 }: {
   tree: CategoryNode[];
   visible: boolean;
   onPick: (node: CategoryNode) => void;
   onClose: () => void;
+  title?: string; // instead of "Elegir categoría" (the wine types use it)
 }) {
   const { t, language } = useI18n();
   const [parentId, setParentId] = useState<number | null>(null);
@@ -63,7 +65,7 @@ export function CategoryPicker({
             <Text style={styles.backText}>{t("common.back")}</Text>
           </Pressable>
           <Text style={styles.headerTitle} numberOfLines={1} accessibilityRole="header">
-            {found ? name(found.node) : t("form.chooseCategory")}
+            {found ? name(found.node) : (title ?? t("form.chooseCategory"))}
           </Text>
           <View style={styles.logo}>
             <HomeLogo size={36} />

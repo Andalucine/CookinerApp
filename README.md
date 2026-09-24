@@ -14,7 +14,7 @@ Requisitos: Docker Desktop y git.
 1. Clonar el repositorio y entrar en la carpeta.
 2. Copiar las variables de entorno: `cp .env.example .env` (los valores por defecto sirven para desarrollo).
 3. Arrancar la base de datos y la API: `docker compose up --build`
-4. Crear las tablas y cargar los catálogos (en otra terminal): `docker compose exec api alembic upgrade head` y después `docker compose exec api python -m scripts.seed_catalogs` (estaciones, épocas, categorías, etiquetas, especias, vinos, secciones de compra; se puede repetir sin duplicar). Si tenías la base de datos de la sesión 2, antes: `docker compose down -v`.
+4. Crear las tablas y cargar los catálogos (en otra terminal): `docker compose exec api alembic upgrade head` y después `docker compose exec api python -m scripts.seed_catalogs` (estaciones, épocas, categorías, etiquetas, especias, vinos, secciones de compra; se puede repetir sin duplicar). Si ya tenías una base de sesiones anteriores, en vez de borrarla con `docker compose down -v` puedes ponerla al día sin perder datos: `docker compose exec api python -m scripts.sync_dev_schema`.
 5. Abrir http://localhost:8000/docs — la documentación interactiva de la API. `GET /health` debe responder `{"status": "ok"}`.
 
 Para parar: `docker compose down`. Para borrar también la base de datos: `docker compose down -v`.
