@@ -213,6 +213,7 @@ export const en: Record<keyof typeof es, string> = {
   "spice.blend": "How to make it at home",
   "spice.optional": "(optional)",
   "spice.usedIn": "Part of",
+  "spice.inSpanish": "In Spanish: {name}",
   "spice.aliases": "Also called: {names}",
   "new.intro": "How do you want to add it? You can always check it before saving.",
   "new.write": "Write it by hand",

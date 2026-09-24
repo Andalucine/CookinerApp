@@ -16,9 +16,24 @@ export function spiceName(spice: { name: string; name_en: string | null }, langu
   return cap((language === "en" && spice.name_en) || spice.name);
 }
 
+/** The small line under the name: the other Spanish names in Spanish; in English, the Spanish
+ * name (the catalogue's other names are Spanish only, and the Spanish name is what you find
+ * on the shelf here). Nothing when the spice has no English name of its own. */
+export function spiceSubtitle(
+  spice: { name: string; name_en: string | null; aliases: string | null },
+  language: string,
+  t: (key: "spice.inSpanish", params: { name: string }) => string,
+): string | null {
+  if (language === "en") {
+    return spice.name_en ? t("spice.inSpanish", { name: spice.name }) : null;
+  }
+  return spice.aliases;
+}
+
 export function SpiceRow({ spice }: { spice: SpiceSummary }) {
   const { t, language } = useI18n();
   const name = spiceName(spice, language);
+  const subtitle = spiceSubtitle(spice, language, t);
   const marks = [
     spice.has_substitutions ? t("spices.legendSubstitutes") : null,
     spice.is_blend ? t("spices.legendBlend") : null,
@@ -40,9 +55,9 @@ export function SpiceRow({ spice }: { spice: SpiceSummary }) {
                 ? t("ownSpice.mark")
                 : t(spice.is_own_version ? "blend.markVersion" : "blend.markOwn")}
           </Text>
-        ) : spice.aliases ? (
+        ) : subtitle ? (
           <Text style={styles.aliases} numberOfLines={1}>
-            {spice.aliases}
+            {subtitle}
           </Text>
         ) : null}
       </View>

@@ -218,6 +218,7 @@ export const es = {
   "spice.blend": "Cómo hacerla en casa",
   "spice.optional": "(opcional)",
   "spice.usedIn": "Forma parte de",
+  "spice.inSpanish": "En español: {name}",
   "spice.aliases": "También se llama: {names}",
   // Nueva receta
   "new.intro": "¿Cómo quieres añadirla? Antes de guardar siempre podrás revisarla.",

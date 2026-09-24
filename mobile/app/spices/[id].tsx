@@ -96,7 +96,11 @@ export default function SpiceScreen() {
       <Text style={styles.title} accessibilityRole="header">
         {name}
       </Text>
-      {card.aliases ? (
+      {en ? (
+        card.name_en ? (
+          <Text style={styles.muted}>{t("spice.inSpanish", { name: card.name })}</Text>
+        ) : null
+      ) : card.aliases ? (
         <Text style={styles.muted}>{t("spice.aliases", { names: card.aliases })}</Text>
       ) : null}
 
