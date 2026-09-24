@@ -20,6 +20,7 @@ class NoteSummary(BaseModel):
     id: int
     notebook_id: int
     title: str
+    author_id: int | None = None  # who wrote it: the app offers Borrar to the owner and to them
     preview: str | None = None  # first 140 characters of the content
     added_by: str | None = None  # "(añadido por NOMBRE)" when the author is not the owner
     edited_by: str | None = None  # "(editado por NOMBRE)" when the last editor is not the owner

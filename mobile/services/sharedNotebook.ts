@@ -36,6 +36,15 @@ export function canAdd(notebook: OtherNotebook | null): boolean {
   return notebook === null || notebook.role === "editor";
 }
 
+/** Borrar: the owner of the notebook (my own, `null`) or whoever wrote the item (session 9). */
+export function canDeleteItem(
+  notebook: OtherNotebook | null,
+  authorId: number | null,
+  myId: number,
+): boolean {
+  return notebook === null || authorId === myId;
+}
+
 export const CODE_LENGTH = 8;
 
 /** What the person typed → the code: capitals, without spaces or dashes (" k7m2-qxpa " →

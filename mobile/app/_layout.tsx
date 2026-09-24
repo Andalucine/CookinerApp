@@ -48,6 +48,8 @@ function Navigation() {
       <Stack.Screen name="spices/substitutions" options={{ title: t("subs.title") }} />
       <Stack.Screen name="spices/[id]" options={{ title: t("home.spices") }} />
       <Stack.Screen name="notes/index" options={{ title: t("home.notes") }} />
+      <Stack.Screen name="notes/[id]" options={{ title: t("notes.note") }} />
+      <Stack.Screen name="notes/write" options={{ title: t("notes.new") }} />
       <Stack.Screen name="pantry/index" options={{ title: t("home.pantry") }} />
       <Stack.Screen name="shopping-list/index" options={{ title: t("home.shoppingList") }} />
       <Stack.Screen name="share/index" options={{ title: t("home.share") }} />

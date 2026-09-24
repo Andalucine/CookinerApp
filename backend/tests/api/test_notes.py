@@ -24,7 +24,7 @@ def test_notes_crud_and_search(client, seeded, make_user):
 
 def test_notes_roles(client, seeded, make_user, share):
     ana_h, _ = make_user("Ana")
-    luis_h, _ = make_user("Luis")
+    luis_h, luis = make_user("Luis")
     eva_h, _ = make_user("Eva")
     nb = share(ana_h, "ana@example.com", luis_h, role="editor")
     share(ana_h, "ana@example.com", eva_h, role="viewer")
@@ -33,6 +33,7 @@ def test_notes_roles(client, seeded, make_user, share):
     # Editor adds a note in Ana's notebook and edits Ana's note
     r = client.post("/notes", json={"title": "Idea de Luis", "notebook_id": nb}, headers=luis_h)
     assert r.status_code == 201 and r.json()["added_by"] == "Luis"
+    assert r.json()["author_id"] == luis["id"]
     luis_note = r.json()
     r = client.put(f"/notes/{ana_note['id']}", json={"title": "Trucos de casa"}, headers=luis_h)
     assert r.json()["edited_by"] == "Luis" and r.json()["added_by"] is None

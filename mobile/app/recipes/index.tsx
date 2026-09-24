@@ -2,6 +2,7 @@
  * Recetas (portada): the three buttons (Por categorías · Buscar · Nueva receta), the latest
  * recipes and "Mis favoritas". Opened with the notebook parameters it shows someone else's
  * notebook, with the notice "Cuaderno de NOMBRE" (session 8); viewers do not see Nueva receta.
+ * There, a row at the bottom opens the notes of that notebook (session 9).
  */
 import { router, useLocalSearchParams } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
@@ -99,6 +100,16 @@ function RecipesHome({ auth, notebook }: { auth: Auth; notebook: OtherNotebook |
       ) : (
         <Text style={styles.empty}>{notebook ? t("shared.empty") : t("recipes.empty")}</Text>
       )}
+      {notebook ? (
+        // Someone else's notebook: its notes are reached from here (session 9)
+        <View style={styles.more}>
+          <RowButton
+            label={t("notes.ofNotebook")}
+            icon="document-text-outline"
+            onPress={() => router.push({ pathname: "/notes", params: carry })}
+          />
+        </View>
+      ) : null}
     </Screen>
   );
 }
@@ -112,4 +123,5 @@ const styles = StyleSheet.create({
   buttons: { gap: spacing.m },
   list: { gap: spacing.s },
   empty: { fontSize: fontSize.body, color: colors.muted },
+  more: { marginTop: spacing.m },
 });

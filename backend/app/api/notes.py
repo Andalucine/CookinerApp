@@ -18,6 +18,7 @@ def _summary_fields(note: Note) -> dict:
         "id": note.id,
         "notebook_id": note.notebook_id,
         "title": note.title,
+        "author_id": note.author_id,
         "preview": note_service.preview(note.content),
         "added_by": permissions.added_by(note.notebook, note.author),
         "edited_by": permissions.added_by(note.notebook, note.updated_by),

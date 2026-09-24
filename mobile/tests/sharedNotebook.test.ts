@@ -3,6 +3,7 @@ import { test } from "node:test";
 
 import {
   canAdd,
+  canDeleteItem,
   isCompleteCode,
   normalizeCode,
   notebookParams,
@@ -53,4 +54,12 @@ test("the date of an invitation is short and in words", () => {
   assert.equal(shortDate(iso, "es"), "1 de octubre");
   assert.equal(shortDate(iso, "en"), "1 October");
   assert.equal(shortDate("nonsense", "es"), "");
+});
+
+test("only the owner or whoever wrote it can delete", () => {
+  const marta = { id: 7, owner: "Marta", role: "editor" as const };
+  assert.equal(canDeleteItem(null, 99, 1), true); // my own notebook
+  assert.equal(canDeleteItem(marta, 1, 1), true); // I wrote it in Marta's notebook
+  assert.equal(canDeleteItem(marta, 99, 1), false);
+  assert.equal(canDeleteItem(marta, null, 1), false);
 });
