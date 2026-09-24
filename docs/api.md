@@ -5,7 +5,7 @@ La documentación interactiva la genera FastAPI en http://localhost:8000/docs (S
 ## Convenciones
 
 - Peticiones y respuestas en JSON.
-- Idioma de los mensajes: cabecera `Accept-Language: es` o `en` (por defecto español). Los catálogos devuelven siempre `name_es` y `name_en`; la app muestra el que toque.
+- Idioma de los mensajes: cabecera `Accept-Language` con `es`, `en`, `fr`, `nl` o `de` (por defecto español; sesión 9). Los catálogos devuelven siempre `name_es` y `name_en`; la app muestra el español en español y el inglés en los demás idiomas (los catálogos en francés, holandés y alemán quedan para una fase posterior).
 - Endpoints protegidos: cabecera `Authorization: Bearer <access_token>`. El token lo devuelven `/auth/register` y `/auth/login` y dura 30 días.
 - Errores: `{"detail": "mensaje para el usuario"}` con el código HTTP correspondiente (401 sin sesión, 403 sin permiso o límite del plan, 404 no encontrado, 409 conflicto, 422 datos inválidos). Una receta de un cuaderno al que no se tiene acceso responde **404**, no 403, para no revelar que existe.
 - Permisos sobre un cuaderno: **propietario** (todo), **editor** (añade y edita recetas, vinos, notas y épocas propias; queda marcado "añadido por" / "editado por"; borra solo lo que añadió él), **lector** (ve, marca favoritos). Despensa y lista de la compra son siempre las del cuaderno propio.
@@ -27,7 +27,7 @@ La documentación interactiva la genera FastAPI en http://localhost:8000/docs (S
 | POST | `/auth/register` | `email`, `display_name`, `password` (mín. 8), `language` | 201 · `access_token` + `user` (con `plan`, `max_recipes`, `max_shared_with`, `notebook_id`). Crea la cuenta en el plan gratuito **y su cuaderno**. 409 si el correo ya existe. |
 | POST | `/auth/login` | `email`, `password` | 200 · `access_token` + `user`. 401 si no coinciden. |
 | GET | `/auth/me` | — | Datos del usuario conectado. |
-| PATCH | `/auth/me` | `language` (`es`/`en`) | Cambia el idioma de la cuenta desde Mi cuenta (sesión 8). |
+| PATCH | `/auth/me` | `language` (`es`/`en`/`fr`/`nl`/`de`) | Cambia el idioma de la cuenta desde Mi cuenta (sesión 8; cinco idiomas desde la sesión 9). |
 | POST | `/auth/forgot-password` | `email` | 200 siempre. Código de 6 cifras válido 30 minutos (pendiente el envío por correo; en desarrollo sale en el log). |
 | POST | `/auth/reset-password` | `email`, `code`, `new_password` | 200 · contraseña cambiada. 400 si el código no vale. |
 

@@ -70,7 +70,7 @@ export type PriceBandKey = (typeof PRICE_BANDS)[number]["key"];
 export function formatPrice(price: number | null, language: string): string | null {
   if (price === null || price === undefined || Number.isNaN(price)) return null;
   const text = price.toFixed(2);
-  return `${language === "es" ? text.replace(".", ",") : text} €`;
+  return `${language === "en" ? text : text.replace(".", ",")} €`;
 }
 
 /** "2012" → 2012; "" → null; "hace mucho" → NaN (the form shows an error). */

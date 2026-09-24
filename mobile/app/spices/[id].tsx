@@ -25,7 +25,7 @@ export default function SpiceScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t, language } = useI18n();
   const { token } = useSession();
-  const en = language === "en";
+  const en = language !== "es";
   const data = useLoad(() => spices.card(Number(id), { language, token }), [id, language, token]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);

@@ -139,8 +139,8 @@ function EditBlend({ auth, ingredientId }: { auth: Auth; ingredientId: number })
       ingredientId={ingredientId}
       editing={blend.notebook_blend_id}
       initial={{
-        name: cap((language === "en" && blend.name_en) || blend.name),
-        note: (language === "en" ? blend.note_en : blend.note_es) ?? "",
+        name: cap((language !== "es" && blend.name_en) || blend.name),
+        note: (language !== "es" ? blend.note_en : blend.note_es) ?? "",
         lines: linesFromItems(blend.items, language, t("blend.optionalWord")),
         nameLocked: fromCatalogue,
       }}

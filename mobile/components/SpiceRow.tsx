@@ -13,7 +13,7 @@ import { colors, fontSize, radius, spacing, touchHeight } from "./theme.ts";
 export const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 export function spiceName(spice: { name: string; name_en: string | null }, language: string) {
-  return cap((language === "en" && spice.name_en) || spice.name);
+  return cap((language !== "es" && spice.name_en) || spice.name);
 }
 
 /** The small line under the name: the other Spanish names in Spanish; in English, the Spanish
@@ -24,7 +24,7 @@ export function spiceSubtitle(
   language: string,
   t: (key: "spice.inSpanish", params: { name: string }) => string,
 ): string | null {
-  if (language === "en") {
+  if (language !== "es") {
     return spice.name_en ? t("spice.inSpanish", { name: spice.name }) : null;
   }
   return spice.aliases;

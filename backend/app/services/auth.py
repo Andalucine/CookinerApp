@@ -16,6 +16,15 @@ from app.core.security import (
 from app.models import Notebook, PasswordResetToken, User
 from app.models.user import PLAN_FREE, PLAN_LIMITS
 
+# The name of the notebook created with the account, in the account's language.
+NOTEBOOK_NAMES = {
+    "es": "Cuaderno de {name}",
+    "en": "{name}'s notebook",
+    "fr": "Carnet de {name}",
+    "nl": "Kookschrift van {name}",
+    "de": "Kochbuch von {name}",
+}
+
 logger = logging.getLogger(__name__)
 
 
@@ -51,10 +60,7 @@ def register(db: Session, email: str, display_name: str, password: str, language
     )
     db.add(user)
     db.flush()  # gives user.id
-    if language == "en":
-        name = f"{user.display_name}'s notebook"
-    else:
-        name = f"Cuaderno de {user.display_name}"
+    name = NOTEBOOK_NAMES.get(language, NOTEBOOK_NAMES["es"]).format(name=user.display_name)
     db.add(Notebook(owner_id=user.id, name=name))
     db.commit()
     db.refresh(user)

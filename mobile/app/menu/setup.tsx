@@ -65,6 +65,8 @@ function Setup({ auth, week }: { auth: Auth; week: string }) {
         value={wants}
         onChangeText={setWants}
         autoCapitalize="none"
+        multiline
+        style={styles.wants}
       />
       <ToggleChips
         label={t("menu.meals")}
@@ -108,6 +110,8 @@ export default function SetupScreen() {
 
 const styles = StyleSheet.create({
   week: { fontSize: fontSize.body, fontWeight: "700", color: colors.ink },
+  // Several lines: the foods wrap instead of scrolling sideways (Beatriz, session 9)
+  wants: { minHeight: 96, paddingTop: spacing.s, textAlignVertical: "top" },
   info: { gap: spacing.xs },
   muted: { fontSize: fontSize.small, color: colors.muted },
   warn: { fontSize: fontSize.body, color: colors.ink },

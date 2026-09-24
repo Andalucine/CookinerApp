@@ -4,6 +4,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.i18n import LANGUAGE_PATTERN
 from app.schemas.catalog import Named, OccasionOut, SeasonOut, TagOut
 
 SOURCE_TYPES = ("own", "web", "book", "family", "other")
@@ -28,7 +29,7 @@ class RecipeIn(BaseModel):
     source_url: str | None = Field(default=None, max_length=1000)
     youtube_url: str | None = Field(default=None, max_length=500)
     image_url: str | None = Field(default=None, max_length=1000)
-    language: str = Field(default="es", pattern="^(es|en)$")
+    language: str = Field(default="es", pattern=LANGUAGE_PATTERN)
     ingredients: list[RecipeIngredientIn] = []
     category_ids: list[int] = Field(default=[], description="First one is the primary category")
     tag_ids: list[int] = []

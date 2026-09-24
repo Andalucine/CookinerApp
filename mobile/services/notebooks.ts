@@ -1,4 +1,5 @@
 /** My notebook and sharing it (API /notebooks), and the account language (API /auth/me). */
+import type { Language } from "../i18n/translate.ts";
 import { api } from "./apiClient.ts";
 import type { User } from "./auth.ts";
 import type { Role } from "./sharedNotebook.ts";
@@ -94,7 +95,7 @@ export function sharedWithMe({ token, language }: Auth) {
 }
 
 /** Mi cuenta → Idioma. Answers with the updated account. */
-export function setLanguage({ token, language }: Auth, newLanguage: "es" | "en") {
+export function setLanguage({ token, language }: Auth, newLanguage: Language) {
   return api<User>("/auth/me", {
     method: "PATCH",
     body: { language: newLanguage },

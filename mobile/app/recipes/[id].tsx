@@ -292,7 +292,7 @@ function RecipeView({ auth, id }: { auth: Auth; id: number }) {
                 <View key={localName(rule.wine_category, language)}>
                   <Text style={styles.wineName}>{localName(rule.wine_category, language)}</Text>
                   <Text style={styles.body}>
-                    {language === "en" ? rule.reason_en : rule.reason_es}
+                    {language !== "es" ? rule.reason_en : rule.reason_es}
                   </Text>
                 </View>
               ))}

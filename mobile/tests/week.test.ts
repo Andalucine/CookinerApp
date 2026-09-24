@@ -31,6 +31,11 @@ test("weeks before and after, and the days of a week", () => {
 test("labels in both languages", () => {
   assert.equal(weekLabel("2026-09-28", "es"), "del 28 de septiembre al 4 de octubre");
   assert.equal(weekLabel("2026-09-28", "en"), "28 September to 4 October");
+  assert.equal(weekLabel("2026-09-28", "fr"), "du 28 septembre au 4 octobre");
+  assert.equal(weekLabel("2026-09-28", "nl"), "28 september tot 4 oktober");
+  assert.equal(weekLabel("2026-09-28", "de"), "28. September bis 4. Oktober");
+  assert.equal(dayName(0, "fr"), "Lundi");
+  assert.equal(dayName(6, "de"), "Sonntag");
   assert.equal(dayName(0, "es"), "Lunes");
   assert.equal(dayName(6, "en"), "Sunday");
 });

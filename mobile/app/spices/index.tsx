@@ -61,7 +61,7 @@ export default function SpicesHome() {
   }, [query, language, token]);
 
   const searching = query.trim().length >= MIN_SEARCH;
-  const familyName = (f: spices.SpiceFamily) => (language === "en" ? f.name_en : f.name_es);
+  const familyName = (f: spices.SpiceFamily) => (language !== "es" ? f.name_en : f.name_es);
 
   return (
     <Screen>

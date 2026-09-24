@@ -1,4 +1,5 @@
 /** Access: register, sign in, current user and password recovery (API /auth). */
+import type { Language } from "../i18n/translate.ts";
 import { api } from "./apiClient.ts";
 
 export type Plan = "free" | "individual" | "family";
@@ -7,7 +8,7 @@ export type User = {
   id: number;
   email: string;
   display_name: string;
-  language: "es" | "en";
+  language: Language;
   plan: Plan;
   max_recipes: number | null;
   max_shared_with: number | null;
@@ -28,7 +29,7 @@ export function register(
   email: string,
   displayName: string,
   password: string,
-  language: "es" | "en",
+  language: Language,
 ) {
   return api<TokenResponse>("/auth/register", {
     method: "POST",

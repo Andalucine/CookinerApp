@@ -1,4 +1,5 @@
 /** Recipes of a notebook (API /recipes): search, card, favourites, spices and wines. */
+import type { Language } from "../i18n/translate.ts";
 import { api } from "./apiClient.ts";
 import type { Occasion, Season, Tag } from "./catalog.ts";
 import type { Localized } from "./format.ts";
@@ -42,7 +43,7 @@ export type Recipe = RecipeSummary & {
   servings: number | null;
   source_url: string | null;
   youtube_url: string | null;
-  language: "es" | "en";
+  language: Language;
   ingredients: RecipeIngredient[];
   categories: RecipeCategory[];
   tags: Tag[];
@@ -65,7 +66,7 @@ export type RecipeInput = {
   source_url: string | null;
   youtube_url: string | null;
   image_url: string | null;
-  language: "es" | "en";
+  language: Language;
   ingredients: {
     name: string;
     quantity: number | null;

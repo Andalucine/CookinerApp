@@ -302,7 +302,7 @@ def card(
         pairs_with=(
             own_pairing.pairs_with
             if own_pairing
-            else (ingredient.pairs_with_en if lang == "en" else ingredient.pairs_with_es)
+            else (ingredient.pairs_with_es if lang == "es" else ingredient.pairs_with_en)
         ),
         has_own_pairs_with=own_pairing is not None,
         pairs_with_added_by=(

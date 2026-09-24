@@ -80,7 +80,7 @@ function Form({
         onChange={setFamily}
         options={families.map((f) => ({
           value: f.code,
-          label: language === "en" ? f.name_en : f.name_es,
+          label: language !== "es" ? f.name_en : f.name_es,
         }))}
       />
       <TextField
@@ -134,7 +134,7 @@ function Loader({
       editing={editing}
       families={data.data.families}
       initial={{
-        name: card ? cap((language === "en" && card.name_en) || card.name) : "",
+        name: card ? cap((language !== "es" && card.name_en) || card.name) : "",
         family: card?.family ?? family,
         aliases: card?.aliases ?? "",
       }}

@@ -5,6 +5,7 @@
  * - the invitation code typed by hand;
  * - the short date of an invitation.
  */
+import type { Language } from "../i18n/translate.ts";
 
 export type Role = "viewer" | "editor";
 
@@ -57,17 +58,27 @@ export function isCompleteCode(text: string): boolean {
   return /^[A-Z0-9]{8}$/.test(normalizeCode(text));
 }
 
-const MONTHS = {
+const MONTHS: Record<Language, string[]> = {
   es: ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre",
     "octubre", "noviembre", "diciembre"],
   en: ["January", "February", "March", "April", "May", "June", "July", "August", "September",
     "October", "November", "December"],
+  fr: ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre",
+    "octobre", "novembre", "décembre"],
+  nl: ["januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september",
+    "oktober", "november", "december"],
+  de: ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September",
+    "Oktober", "November", "Dezember"],
 };
 
-/** "2026-10-01T18:30:00Z" → "1 de octubre" / "1 October" (the phone's local day). */
-export function shortDate(iso: string, language: "es" | "en"): string {
+/** "2026-10-01T18:30:00Z" → "1 de octubre" / "1 October" / "1er octobre" / "1. Oktober". */
+export function shortDate(iso: string, language: Language): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";
+  const day = date.getDate();
   const month = MONTHS[language][date.getMonth()];
-  return language === "es" ? `${date.getDate()} de ${month}` : `${date.getDate()} ${month}`;
+  if (language === "es") return `${day} de ${month}`;
+  if (language === "fr") return `${day === 1 ? "1er" : day} ${month}`;
+  if (language === "de") return `${day}. ${month}`;
+  return `${day} ${month}`;
 }

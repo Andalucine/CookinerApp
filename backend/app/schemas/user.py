@@ -4,6 +4,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
+from app.i18n import LANGUAGE_PATTERN
+
 
 class UserPublic(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -22,4 +24,4 @@ class UserPublic(BaseModel):
 class UserUpdate(BaseModel):
     """What the person can change from Mi cuenta (for now, the language)."""
 
-    language: str = Field(pattern="^(es|en)$")
+    language: str = Field(pattern=LANGUAGE_PATTERN)

@@ -44,7 +44,7 @@ export function linesFromItems(
 ): string {
   return items
     .map((it) => {
-      const name = (language === "en" && it.name_en) || it.name;
+      const name = (language !== "es" && it.name_en) || it.name;
       return `${it.parts} ${name}${it.is_optional ? ` (${optionalWord})` : ""}`;
     })
     .join("\n");

@@ -17,6 +17,7 @@ import { SectionTitle } from "../../components/SectionTitle.tsx";
 import { type Auth, SignedIn } from "../../components/SignedIn.tsx";
 import { colors, fontSize, radius, spacing } from "../../components/theme.ts";
 import { type TextKey, useI18n } from "../../i18n";
+import { isLanguage, LANGUAGES } from "../../i18n/translate.ts";
 import { errorText } from "../../services/errors.ts";
 import * as notebooks from "../../services/notebooks.ts";
 import { useSession } from "../../services/session.tsx";
@@ -31,7 +32,7 @@ function Settings({ auth }: { auth: Auth }) {
   const [languageError, setLanguageError] = useState<string | null>(null);
 
   async function changeLanguage(language: string) {
-    if (language !== "es" && language !== "en") return;
+    if (!isLanguage(language)) return;
     if (language === user.language) return;
     setLanguageError(null);
     try {
@@ -60,10 +61,7 @@ function Settings({ auth }: { auth: Auth }) {
         label={t("settings.language")}
         value={user.language}
         onChange={changeLanguage}
-        options={[
-          { value: "es", label: "Español" },
-          { value: "en", label: "English" },
-        ]}
+        options={LANGUAGES.map((l) => ({ value: l.code, label: l.label }))}
       />
       <Message text={languageError} />
 

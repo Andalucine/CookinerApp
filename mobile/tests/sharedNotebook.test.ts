@@ -53,6 +53,9 @@ test("the date of an invitation is short and in words", () => {
   const iso = new Date(2026, 9, 1, 12, 0).toISOString(); // 1 October, local time
   assert.equal(shortDate(iso, "es"), "1 de octubre");
   assert.equal(shortDate(iso, "en"), "1 October");
+  assert.equal(shortDate(iso, "fr"), "1er octobre");
+  assert.equal(shortDate(iso, "nl"), "1 oktober");
+  assert.equal(shortDate(iso, "de"), "1. Oktober");
   assert.equal(shortDate("nonsense", "es"), "");
 });
 

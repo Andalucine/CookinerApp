@@ -37,6 +37,29 @@ def test_register_duplicate_email_is_rejected_in_spanish_and_english(client):
     assert r.json()["detail"] == "Ya existe una cuenta con ese correo."
     r = client.post("/auth/register", json=USER, headers={"Accept-Language": "en-GB"})
     assert r.json()["detail"] == "An account with that email already exists."
+    r = client.post("/auth/register", json=USER, headers={"Accept-Language": "nl"})
+    assert r.json()["detail"] == "Er bestaat al een account met dat e-mailadres."
+    r = client.post("/auth/register", json=USER, headers={"Accept-Language": "it"})
+    assert r.json()["detail"] == "Ya existe una cuenta con ese correo."
+
+
+def test_every_language_has_the_same_message_keys():
+    from app.i18n import _CATALOGS, LANGUAGES
+
+    assert tuple(_CATALOGS) == LANGUAGES
+    keys = set(_CATALOGS["es"])
+    for code, texts in _CATALOGS.items():
+        assert set(texts) == keys, code
+        assert all(v.strip() for v in texts.values()), code
+
+
+def test_register_in_french_names_the_notebook_in_french(client, db_session):
+    from app.models import Notebook
+
+    r = register(client, language="fr")
+    assert r.status_code == 201
+    assert r.json()["user"]["language"] == "fr"
+    assert db_session.query(Notebook).one().name == "Carnet de Ana"
 
 
 def test_register_short_password_is_rejected(client):
@@ -109,7 +132,10 @@ def test_change_my_language(client, make_user):
     assert client.get("/auth/me", headers=headers).json()["language"] == "en"
 
 
-def test_change_my_language_only_accepts_es_or_en(client, make_user):
+def test_change_my_language_accepts_the_five_languages_only(client, make_user):
     headers, _ = make_user()
-    assert client.patch("/auth/me", json={"language": "fr"}, headers=headers).status_code == 422
+    for code in ("fr", "nl", "de"):
+        r = client.patch("/auth/me", json={"language": code}, headers=headers)
+        assert r.status_code == 200 and r.json()["language"] == code
+    assert client.patch("/auth/me", json={"language": "it"}, headers=headers).status_code == 422
     assert client.patch("/auth/me", json={"language": "en"}).status_code == 401

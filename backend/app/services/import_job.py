@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
+from app.i18n import LANGUAGES
 from app.models import ImportJob, Ingredient, Notebook, User
 from app.models.user import PLANS_WITH_IMPORT
 from app.schemas.recipe import RecipeIn, RecipeIngredientIn
@@ -117,7 +118,7 @@ def start(
         source_url=preview.source_url[:1000],
         youtube_url=preview.youtube_url,
         image_url=(preview.image_url or "")[:1000] or None,
-        language=user.language if user.language in ("es", "en") else "es",
+        language=user.language if user.language in LANGUAGES else "es",
         ingredients=[
             RecipeIngredientIn(
                 name=match_ingredient(db, line.name),

@@ -26,7 +26,7 @@ import { useLoad } from "../../services/useLoad.ts";
 
 function Form({ auth, card }: { auth: Auth; card: spices.SpiceCard }) {
   const { t, language } = useI18n();
-  const name = cap((language === "en" && card.name_en) || card.name);
+  const name = cap((language !== "es" && card.name_en) || card.name);
   const [lines, setLines] = useState(() => linesFromSubstitutions(card.substitutions, language));
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);

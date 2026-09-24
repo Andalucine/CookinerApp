@@ -2,6 +2,7 @@
  * The recipe form, the same for writing by hand, editing and checking an import before saving.
  * Ingredients and steps are written one per line, like in a paper notebook.
  */
+import type { Language } from "../i18n/translate.ts";
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
@@ -26,7 +27,7 @@ import { ToggleChips } from "./ToggleChips.tsx";
 
 const SOURCES: SourceType[] = ["own", "family", "book", "web", "other"];
 
-export function emptyRecipe(language: "es" | "en"): RecipeInput {
+export function emptyRecipe(language: Language): RecipeInput {
   return {
     title: "",
     description: null,

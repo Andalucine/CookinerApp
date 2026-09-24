@@ -1,4 +1,5 @@
 /** Weeks and days of the menu, without React Native (tested with Node), session 9. */
+import type { Language } from "../i18n/translate.ts";
 import type { Meal, Slot } from "./menu.ts";
 import { shortDate } from "./sharedNotebook.ts";
 
@@ -37,19 +38,29 @@ export function dayOf(monday: string, day: number): string {
   return toIso(date);
 }
 
-/** "del 28 de septiembre al 4 de octubre" / "28 September to 4 October". */
-export function weekLabel(monday: string, language: "es" | "en"): string {
+/** "del 28 de septiembre al 4 de octubre" / "28 September to 4 October" (and fr, nl, de). */
+export function weekLabel(monday: string, language: Language): string {
   const from = shortDate(`${monday}T12:00:00`, language);
   const to = shortDate(`${dayOf(monday, 6)}T12:00:00`, language);
-  return language === "es" ? `del ${from} al ${to}` : `${from} to ${to}`;
+  const shapes: Record<Language, string> = {
+    es: `del ${from} al ${to}`,
+    en: `${from} to ${to}`,
+    fr: `du ${from} au ${to}`,
+    nl: `${from} tot ${to}`,
+    de: `${from} bis ${to}`,
+  };
+  return shapes[language];
 }
 
-const DAY_NAMES = {
+const DAY_NAMES: Record<Language, string[]> = {
   es: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"],
   en: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+  fr: ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"],
+  nl: ["Maandag", "Dinsdag", "Woensdag", "Donderdag", "Vrijdag", "Zaterdag", "Zondag"],
+  de: ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"],
 };
 
-export function dayName(day: number, language: "es" | "en"): string {
+export function dayName(day: number, language: Language): string {
   return DAY_NAMES[language][day] ?? "";
 }
 

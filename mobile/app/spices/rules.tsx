@@ -100,7 +100,7 @@ export default function RulesScreen() {
       ) : (
         <View style={styles.list}>
           {data.data.map((rule) => (
-            <RuleCard key={rule.id} rule={rule} en={language === "en"} />
+            <RuleCard key={rule.id} rule={rule} en={language !== "es"} />
           ))}
         </View>
       )}

@@ -7,8 +7,9 @@ import type { Language } from "../i18n/translate.ts";
 /** A catalogue item with both names (categories, seasons, occasions, tags...). */
 export type Localized = { name_es: string; name_en: string };
 
+/** Catalogue names exist in Spanish and English: the other languages read the English one. */
 export function localName(item: Localized, language: Language): string {
-  return language === "en" ? item.name_en : item.name_es;
+  return language === "es" ? item.name_es : item.name_en;
 }
 
 /** 45 → "45 min" · 90 → "1 h 30 min" · 120 → "2 h". */
@@ -20,7 +21,7 @@ export function formatMinutes(minutes: number | null | undefined): string | null
   return rest ? `${hours} h ${rest} min` : `${hours} h`;
 }
 
-/** 0.5 → "½", 1.5 → "1 ½", 2 → "2", 0.3 → "0,3" (decimal comma in Spanish). */
+/** 0.5 → "½", 1.5 → "1 ½", 2 → "2", 0.3 → "0,3" (decimal comma except in English). */
 export function formatQuantity(value: number, language: Language): string {
   const whole = Math.floor(value);
   const fraction = Math.round((value - whole) * 100) / 100;
@@ -28,7 +29,7 @@ export function formatQuantity(value: number, language: Language): string {
   if (fraction === 0) return String(whole);
   if (symbols[fraction]) return whole ? `${whole} ${symbols[fraction]}` : symbols[fraction];
   const text = String(Math.round(value * 100) / 100);
-  return language === "es" ? text.replace(".", ",") : text;
+  return language === "en" ? text : text.replace(".", ",");
 }
 
 export type IngredientLine = {

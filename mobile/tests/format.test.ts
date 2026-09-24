@@ -27,6 +27,8 @@ test("quantities with fractions and decimal comma", () => {
   assert.equal(formatQuantity(1.5, "es"), "1 ½");
   assert.equal(formatQuantity(0.3, "es"), "0,3");
   assert.equal(formatQuantity(0.3, "en"), "0.3");
+  assert.equal(formatQuantity(0.3, "fr"), "0,3");
+  assert.equal(formatQuantity(0.3, "de"), "0,3");
 });
 
 test("ingredient line: the text from the web wins, otherwise quantity, unit and name", () => {

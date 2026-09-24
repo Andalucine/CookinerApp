@@ -7,17 +7,16 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import decode_access_token
-from app.i18n import t
+from app.i18n import LANGUAGES, t
 from app.models import User
 
 DbSession = Annotated[Session, Depends(get_db)]
 
 
 def get_language(accept_language: Annotated[str | None, Header()] = None) -> str:
-    """'es' or 'en' from the Accept-Language header (default es)."""
-    if accept_language and accept_language.lower().startswith("en"):
-        return "en"
-    return "es"
+    """One of the app's languages from the Accept-Language header (default es)."""
+    code = (accept_language or "")[:2].lower()
+    return code if code in LANGUAGES else "es"
 
 
 Lang = Annotated[str, Depends(get_language)]

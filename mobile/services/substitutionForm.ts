@@ -31,8 +31,8 @@ export function parseSubstitutionLines(text: string): SubstitutionInput[] {
 export function linesFromSubstitutions(items: Substitution[], language: string): string {
   return items
     .map((s) => {
-      const name = language === "en" ? s.substitute_en : s.substitute_es;
-      const note = language === "en" ? s.note_en : s.note_es;
+      const name = language !== "es" ? s.substitute_en : s.substitute_es;
+      const note = language !== "es" ? s.note_en : s.note_es;
       return [name, s.ratio ?? "", note ?? ""]
         .join(" · ")
         .replace(/( · )+$/, "");

@@ -3,6 +3,7 @@
  * "sal") → what the API stores: name (to search and to find its spice card), quantity, unit
  * and the line as written. Pure functions, tested with Node.
  */
+import type { Language } from "../i18n/translate.ts";
 import { type IngredientLine, ingredientText } from "./format.ts";
 
 const UNITS = [
@@ -72,7 +73,7 @@ export function parseIngredientLine(line: string): IngredientItem | null {
 export function linesToIngredients(
   text: string,
   previous: IngredientItem[],
-  language: "es" | "en",
+  language: Language,
 ): IngredientItem[] {
   const byText = new Map(previous.map((item) => [ingredientText(item, language), item]));
   return text
@@ -82,6 +83,6 @@ export function linesToIngredients(
 }
 
 /** The list → the text of the ingredients box, one per line. */
-export function ingredientsToLines(items: IngredientItem[], language: "es" | "en"): string {
+export function ingredientsToLines(items: IngredientItem[], language: Language): string {
   return items.map((item) => ingredientText(item, language)).join("\n");
 }

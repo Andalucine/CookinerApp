@@ -8,16 +8,12 @@ import { Message } from "../../components/Message.tsx";
 import { Screen } from "../../components/Screen.tsx";
 import { TextField } from "../../components/TextField.tsx";
 import { colors, fontSize, radius, spacing, touchHeight } from "../../components/theme.ts";
-import { type Language, useI18n } from "../../i18n";
+import { useI18n } from "../../i18n";
+import { LANGUAGES } from "../../i18n/translate.ts";
 import * as auth from "../../services/auth.ts";
 import { errorText } from "../../services/errors.ts";
 import { useSession } from "../../services/session.tsx";
 import { checkEmail, checkPassword, checkRequired } from "../../services/validation.ts";
-
-const LANGUAGES: { code: Language; label: string }[] = [
-  { code: "es", label: "Español" },
-  { code: "en", label: "English" },
-];
 
 export default function Register() {
   const { t, language, setLanguage } = useI18n();
@@ -111,7 +107,7 @@ export default function Register() {
 const styles = StyleSheet.create({
   title: { fontSize: fontSize.title, fontWeight: "800", color: colors.ink },
   label: { fontSize: fontSize.body, fontWeight: "600", color: colors.ink },
-  row: { flexDirection: "row", gap: spacing.m },
+  row: { flexDirection: "row", flexWrap: "wrap", gap: spacing.s },
   choice: {
     flex: 1,
     minHeight: touchHeight,
