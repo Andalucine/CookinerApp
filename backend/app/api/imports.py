@@ -12,11 +12,19 @@ from app.api.recipes import to_out
 from app.core.deps import CurrentUser, DbSession, Lang
 from app.i18n import t
 from app.models import Notebook
-from app.schemas.import_job import ImportJobOut, RecipeImportPreview, RecipeImportRequest
+from app.schemas.import_job import (
+    ImportJobOut,
+    RecipeImportPreview,
+    RecipeImportRequest,
+    WineImportPreview,
+    WineImportRequest,
+)
 from app.schemas.recipe import RecipeIn, RecipeOut
+from app.schemas.wine import WineIn
 from app.services import import_job as import_service
-from app.services import importer, permissions
+from app.services import importer, permissions, wine_importer
 from app.services import recipe as recipe_service
+from app.services import wine as wine_service
 
 router = APIRouter(prefix="/imports", tags=["imports"])
 
@@ -59,6 +67,55 @@ def import_recipe(
         job_id=job.id, notebook_id=notebook.id, complete="no_recipe_data" not in warnings,
         warnings=warnings, recipe=draft,
     )  # fmt: skip
+
+
+@router.post("/wine", response_model=WineImportPreview)
+def import_wine(
+    body: WineImportRequest, db: DbSession, user: CurrentUser, lang: Lang
+) -> WineImportPreview:
+    """Read a wine from a shop or winery page (session 8). Nothing is saved: the answer is the
+    preview, which the app sends to POST /wines when the person confirms."""
+    notebook = _notebook(db, user, lang, body.notebook_id)
+    try:
+        wine_service.require_wines(notebook)
+    except wine_service.WinesNotInPlan:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, t("wines_not_in_plan", lang)) from None
+    try:
+        final_url, html = wine_importer.fetch_html(body.url)
+    except importer.InvalidUrl:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT, t("import_invalid_url", lang)
+        ) from None
+    except importer.FetchFailed:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, t("import_fetch_failed", lang)) from None
+    preview = wine_importer.read_wine(html, final_url)
+    category = wine_service.category_by_slug(db, preview.category_slug)
+    paired = wine_service.categories_paired_with(db, category.id if category else None)
+    pairing = ", ".join(c.name_en if lang == "en" else c.name_es for c in paired) or None
+    wine = WineIn(
+        name=preview.name or "?",  # the form asks for a real name before saving
+        winery=preview.winery,
+        category_id=category.id if category else None,
+        sweetness=preview.sweetness,
+        ageing=preview.ageing,
+        country=preview.country,
+        appellation=preview.appellation,
+        grapes=preview.grapes,
+        vintage=preview.vintage,
+        price_range=preview.price_range,
+        tasting_notes=preview.tasting_notes,
+        pairing_notes=pairing,
+        source_url=final_url,
+        source_name=preview.source_name,
+        source_price=preview.source_price,
+        image_url=preview.image_url,
+    )
+    return WineImportPreview(
+        notebook_id=notebook.id,
+        complete="no_product_data" not in preview.warnings,
+        warnings=preview.warnings,
+        wine=wine,
+    )
 
 
 @router.post("/{job_id}/save", response_model=RecipeOut, status_code=status.HTTP_201_CREATED)

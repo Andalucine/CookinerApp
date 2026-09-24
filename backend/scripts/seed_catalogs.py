@@ -243,11 +243,14 @@ def seed_wines(db: Session) -> None:
         )
         by_slug[slug] = root
         for pos2, (slug2, es2, en2, ex2) in enumerate(children):
+            # Keyed by slug alone, so a subtype moved to another type (session 8) is updated,
+            # not duplicated
             by_slug[slug2] = _upsert(
                 db,
                 WineCategory,
-                {"parent_id": root.id, "slug": slug2},
+                {"slug": slug2},
                 {
+                    "parent_id": root.id,
                     "name_es": es2,
                     "name_en": en2,
                     "examples_es": ex2,

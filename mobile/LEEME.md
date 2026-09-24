@@ -25,7 +25,7 @@ app/          Pantallas (Expo Router): (auth)/ entrar, crear cuenta, recuperar c
               (recipes/: portada, categorías, buscar, lista, ficha [id], nueva receta;
               spices/: portada con buscador y familias, list, rules, blend (mezcla),
               spice (especia propia), substitutions (sustitutos propios) y ficha [id];
-              wines/: portada, categories (tipos), search, list, ficha [id], new, write y
+              wines/: portada, categories (tipos), search, list, ficha [id], new, write, import y
               recommend (vino para una receta); share/: compartir mi cuaderno;
               join/: unirme a un cuaderno; settings/: mi cuenta)
 components/   Piezas reutilizables y colores (theme.ts)

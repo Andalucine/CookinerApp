@@ -53,7 +53,7 @@ function WineTypes({ auth, parentId }: { auth: Auth; parentId: number | null }) 
       <View style={styles.list}>
         {parent ? (
           <RowButton
-            label={t("categories.allOf", { name: name(parent) })}
+            label={t("wines.allOf", { name: name(parent) })}
             count={count(parent.id)}
             strong
             onPress={() => openList(parent)}
@@ -62,7 +62,12 @@ function WineTypes({ auth, parentId }: { auth: Auth; parentId: number | null }) 
         {children.map((node) => (
           <RowButton
             key={node.id}
-            label={node.serving_temp && parent ? `${name(node)} · ${node.serving_temp}` : name(node)}
+            label={name(node)}
+            detail={
+              parent
+                ? [node.examples_es, node.serving_temp].filter(Boolean).join(" · ")
+                : node.serving_temp ?? undefined
+            }
             count={count(node.id)}
             strong={!parent}
             muted={count(node.id) === 0}

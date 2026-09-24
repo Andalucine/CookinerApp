@@ -754,6 +754,8 @@ def upgrade() -> None:
         sa.Column("tasting_notes", sa.Text(), nullable=True),
         sa.Column("pairing_notes", sa.Text(), nullable=True),
         sa.Column("source_url", sa.String(length=1000), nullable=True),
+        sa.Column("source_name", sa.String(length=100), nullable=True),
+        sa.Column("source_price", sa.Numeric(precision=8, scale=2), nullable=True),
         sa.Column("image_url", sa.String(length=1000), nullable=True),
         sa.Column(
             "created_at",

@@ -1,7 +1,14 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { cleanWineFilters, parseVintage, toWineQuery, wineDetails } from "../services/wineQuery.ts";
+import {
+  cleanWineFilters,
+  formatPrice,
+  parseVintage,
+  PRICE_BANDS,
+  toWineQuery,
+  wineDetails,
+} from "../services/wineQuery.ts";
 
 test("wine filters keep only known keys and build the query", () => {
   const filters = cleanWineFilters({ q: " rioja ", body: "full", junk: "x", favorites: true });
@@ -22,4 +29,14 @@ test("the vintage is a four-digit year or nothing", () => {
   assert.equal(parseVintage("2012"), 2012);
   assert.equal(parseVintage("  "), null);
   assert.ok(Number.isNaN(parseVintage("hace mucho")));
+});
+
+test("the four price bands and the shop price in euros", () => {
+  assert.deepEqual(
+    PRICE_BANDS.map((b) => b.code),
+    ["€", "€€", "€€€", "€€€€"],
+  );
+  assert.equal(formatPrice(38.9, "es"), "38,90 €");
+  assert.equal(formatPrice(12, "en"), "12.00 €");
+  assert.equal(formatPrice(null, "es"), null);
 });

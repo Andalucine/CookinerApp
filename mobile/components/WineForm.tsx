@@ -1,7 +1,8 @@
 /**
  * The wine form (new and edit): name, winery, type (chosen level by level like the recipe
- * category), sweetness, body, ageing and price with the tidy buttons, D.O., country, grapes,
- * vintage, tasting notes, what it goes with, and the source when it came from a web.
+ * category), sweetness, body and ageing with the tidy buttons, the price bands, D.O., grapes,
+ * country and vintage side by side, tasting notes, what it goes with (prefilled from the
+ * pairing rules when imported), and the source when it came from a web.
  */
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
@@ -18,7 +19,9 @@ import type { CategoryNode } from "../services/categoryTree.ts";
 import { Chips } from "./Chips.tsx";
 import { LoadError, Loading } from "./LoadState.tsx";
 import { Message } from "./Message.tsx";
+import { PriceChoice } from "./PriceChoice.tsx";
 import { SectionTitle } from "./SectionTitle.tsx";
+import { ShopPrice } from "./ShopPrice.tsx";
 import type { Auth } from "./SignedIn.tsx";
 import { TextField } from "./TextField.tsx";
 import { colors, fontSize, spacing } from "./theme.ts";
@@ -39,6 +42,8 @@ export function emptyWine(): wines.WineInput {
     tasting_notes: null,
     pairing_notes: null,
     source_url: null,
+    source_name: null,
+    source_price: null,
     image_url: null,
   };
 }
@@ -174,6 +179,9 @@ export function WineForm({
         tasting_notes: orNull(texts.tasting),
         pairing_notes: orNull(texts.pairing),
         source_url: orNull(texts.source),
+        // What the shop said when it was imported travels untouched with the wine
+        source_name: orNull(texts.source) ? initial.source_name : null,
+        source_price: orNull(texts.source) ? initial.source_price : null,
         image_url: initial.image_url,
       });
     } catch (error) {
@@ -246,11 +254,15 @@ export function WineForm({
         onChange={setFacet("ageing")}
         options={facetOptions(options.ageing)}
       />
-      <Chips
+      <PriceChoice
         label={t("wineForm.price")}
         value={facets.price_range}
         onChange={setFacet("price_range")}
-        options={[any, ...options.price_ranges.map((p) => ({ value: p, label: p }))]}
+      />
+      <ShopPrice
+        sourceUrl={orNull(texts.source)}
+        sourceName={initial.source_name}
+        sourcePrice={initial.source_price}
       />
 
       <SectionTitle text={t("wineForm.origin")} />
@@ -262,28 +274,34 @@ export function WineForm({
         autoCapitalize="words"
       />
       <TextField
-        label={t("wineForm.country")}
-        hint={t("form.optional")}
-        value={texts.country}
-        onChangeText={setText("country")}
-        autoCapitalize="words"
-      />
-      <TextField
         label={t("wineForm.grapes")}
         hint={t("wineForm.grapesHint")}
         value={texts.grapes}
         onChangeText={setText("grapes")}
         autoCapitalize="none"
       />
-      <TextField
-        label={t("wineForm.vintage")}
-        hint={t("form.optional")}
-        value={texts.vintage}
-        onChangeText={setText("vintage")}
-        error={errors.vintage}
-        keyboardType="number-pad"
-        maxLength={4}
-      />
+      <View style={styles.pair}>
+        <View style={styles.cell}>
+          <TextField
+            label={t("wineForm.country")}
+            hint={t("form.optional")}
+            value={texts.country}
+            onChangeText={setText("country")}
+            autoCapitalize="words"
+          />
+        </View>
+        <View style={styles.cell}>
+          <TextField
+            label={t("wineForm.vintage")}
+            hint={t("form.optional")}
+            value={texts.vintage}
+            onChangeText={setText("vintage")}
+            error={errors.vintage}
+            keyboardType="number-pad"
+            maxLength={4}
+          />
+        </View>
+      </View>
 
       <SectionTitle text={t("wineForm.notes")} />
       <TextField
@@ -322,5 +340,7 @@ const styles = StyleSheet.create({
   form: { gap: spacing.m },
   chosen: { fontSize: fontSize.body, fontWeight: "600", color: colors.ink },
   muted: { fontSize: fontSize.body, color: colors.muted },
+  pair: { flexDirection: "row", gap: spacing.s },
+  cell: { flex: 1 },
   multiline: { minHeight: 110, paddingTop: spacing.s, textAlignVertical: "top" },
 });

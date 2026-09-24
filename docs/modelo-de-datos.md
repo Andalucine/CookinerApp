@@ -86,7 +86,7 @@ El catálogo de especias, sustituciones y mezclas nunca se modifica: al editar u
 | Tabla | Para qué | Campos clave |
 |---|---|---|
 | `wine_categories` | Árbol de tipos de dos niveles (Tintos → Tinto joven…) | `parent_id`, `slug`, `name_es`, `name_en`, `serving_temp` |
-| `wines` | Los vinos **del cuaderno** | `notebook_id`, `added_by_id`, `updated_by_id` (último que lo editó), `name`, `winery`, `category_id`, facetas `sweetness`, `body`, `ageing`, `country`, `appellation`, `grapes`, `vintage`, `price_range`, `tasting_notes`, `pairing_notes`, `source_url` |
+| `wines` | Los vinos **del cuaderno** | `notebook_id`, `added_by_id`, `updated_by_id` (último que lo editó), `name`, `winery`, `category_id`, facetas `sweetness`, `body`, `ageing`, `country`, `appellation`, `grapes`, `vintage`, `price_range` (`€` <15 · `€€` 15–30 · `€€€` 30–60 · `€€€€` >60), `tasting_notes`, `pairing_notes`, `source_url`, `source_name` (la tienda: "Delatierra"), `source_price` (su precio al importar) |
 | `recipe_wines` | Vinos recomendados para una receta **con el motivo** | `reason`, `origin` (`manual`/`imported`) |
 | `pairing_rules` | Categoría de receta → tipo de vino, con motivo (sugerencia automática) | `recipe_category_id`, `wine_category_id`, `reason_es/en` |
 

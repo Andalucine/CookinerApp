@@ -12,6 +12,7 @@ export function RowButton({
   icon,
   strong,
   muted,
+  detail,
 }: {
   label: string;
   onPress: () => void;
@@ -19,11 +20,14 @@ export function RowButton({
   icon?: ComponentProps<typeof Ionicons>["name"];
   strong?: boolean;
   muted?: boolean;
+  detail?: string; // a second, smaller line (examples of a wine type…)
 }) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={count !== undefined ? `${label}, ${count}` : label}
+      accessibilityLabel={[label, detail, count !== undefined ? String(count) : null]
+        .filter(Boolean)
+        .join(", ")}
       onPress={onPress}
       style={({ pressed }) => [styles.row, strong && styles.strong, pressed && styles.pressed]}
     >
@@ -32,9 +36,16 @@ export function RowButton({
           <Ionicons name={icon} size={22} color={colors.ink} />
         </View>
       ) : null}
-      <Text style={[styles.label, strong && styles.labelStrong, muted && styles.muted]}>
-        {label}
-      </Text>
+      <View style={styles.text}>
+        <Text style={[styles.label, strong && styles.labelStrong, muted && styles.muted]}>
+          {label}
+        </Text>
+        {detail ? (
+          <Text style={styles.detail} numberOfLines={2}>
+            {detail}
+          </Text>
+        ) : null}
+      </View>
       {count !== undefined ? (
         <Text style={[styles.count, !count && styles.muted]}>{count}</Text>
       ) : null}
@@ -64,7 +75,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  label: { flex: 1, fontSize: fontSize.body, color: colors.ink, paddingVertical: spacing.s },
+  text: { flex: 1, paddingVertical: spacing.s, gap: 2 },
+  label: { fontSize: fontSize.body, color: colors.ink },
+  detail: { fontSize: fontSize.small, color: colors.muted },
   labelStrong: { fontWeight: "700" },
   muted: { color: colors.muted },
   count: { fontSize: fontSize.body, fontWeight: "700", color: colors.ink },

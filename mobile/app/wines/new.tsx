@@ -1,4 +1,4 @@
-/** Nuevo vino: by hand, or imported from a web (arrives in a later session, shown disabled). */
+/** Nuevo vino: by hand, or imported from a shop or winery page (session 8). */
 import { router } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 
@@ -25,10 +25,8 @@ export default function NewWine() {
           icon="globe-outline"
           iconCircle
           variant="secondary"
-          disabled
-          onPress={() => {}}
+          onPress={() => router.replace("/wines/import")}
         />
-        <Text style={styles.soon}>{t("wines.webSoon")}</Text>
       </View>
     </Screen>
   );
@@ -37,5 +35,4 @@ export default function NewWine() {
 const styles = StyleSheet.create({
   intro: { fontSize: fontSize.body, color: colors.muted },
   buttons: { gap: spacing.m },
-  soon: { fontSize: fontSize.small, color: colors.muted, textAlign: "center" },
 });

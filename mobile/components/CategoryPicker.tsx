@@ -86,6 +86,7 @@ export function CategoryPicker({
               <RowButton
                 key={node.id}
                 label={name(node)}
+                detail={node.examples_es ?? undefined}
                 onPress={() => (node.children.length ? setParentId(node.id) : pick(node))}
               />
             ))}

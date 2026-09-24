@@ -13,7 +13,7 @@ def test_seed_loads_catalogs_and_is_idempotent(db_session):
     first = {m: _count(db_session, m) for m in (Category, Ingredient, Tag, WineCategory)}
     assert first[Category] == 153  # 3 branches + categories + subcategories
     assert first[Tag] == 40
-    assert first[WineCategory] == 40
+    assert first[WineCategory] == 42
     assert _count(db_session, SpiceSubstitution) == 178
     assert _count(db_session, PairingRule) > 50
 

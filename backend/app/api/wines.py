@@ -61,9 +61,13 @@ def to_summary(wine: Wine, favorites: set[int]) -> WineSummary:
     return WineSummary(**_summary_fields(wine, favorites))
 
 
-def to_out(wine: Wine, favorites: set[int]) -> WineOut:
+def to_out(wine: Wine, favorites: set[int], db=None) -> WineOut:
+    paired = wine_service.categories_paired_with(db, wine.category_id) if db is not None else []
     return WineOut(
         **_summary_fields(wine, favorites),
+        pairs_with_categories=[Named.model_validate(c) for c in paired],
+        source_name=wine.source_name,
+        source_price=float(wine.source_price) if wine.source_price is not None else None,
         sweetness=wine.sweetness,
         body=wine.body,
         ageing=wine.ageing,
@@ -168,13 +172,13 @@ def create_wine(body: WineCreate, db: DbSession, user: CurrentUser, lang: Lang) 
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_CONTENT, t("wine_invalid_reference", lang)
         ) from None
-    return to_out(wine, set())
+    return to_out(wine, set(), db)
 
 
 @router.get("/{wine_id}", response_model=WineOut)
 def get_wine(wine_id: int, db: DbSession, user: CurrentUser, lang: Lang) -> WineOut:
     wine = _load(db, user, lang, wine_id, edit=False)
-    return to_out(wine, wine_service.favorite_ids(db, user.id, [wine.id]))
+    return to_out(wine, wine_service.favorite_ids(db, user.id, [wine.id]), db)
 
 
 @router.get("/{wine_id}/recipes", response_model=list[WineRecipeOut])
@@ -204,7 +208,7 @@ def update_wine(
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_CONTENT, t("wine_invalid_reference", lang)
         ) from None
-    return to_out(wine, wine_service.favorite_ids(db, user.id, [wine.id]))
+    return to_out(wine, wine_service.favorite_ids(db, user.id, [wine.id]), db)
 
 
 @router.delete("/{wine_id}", response_model=MessageResponse)

@@ -3,7 +3,7 @@ automatic pairing rules."""
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import ForeignKey, Integer, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -23,6 +23,18 @@ SWEETNESS = (
 BODY = ("light", "medium", "full")
 AGEING = ("young", "oak", "crianza", "reserva", "gran_reserva", "solera")
 PRICE_RANGES = ("€", "€€", "€€€", "€€€€")
+# The bands each symbol stands for, in euros (session 8): €: < 15, €€: 15–30, €€€: 30–60, €€€€: > 60
+PRICE_BAND_LIMITS = (15, 30, 60)
+
+
+def price_range_for(price: float | None) -> str | None:
+    if price is None:
+        return None
+    for symbol, limit in zip(PRICE_RANGES, PRICE_BAND_LIMITS, strict=False):
+        if price < limit:
+            return symbol
+    return PRICE_RANGES[-1]
+
 
 ORIGIN_MANUAL = "manual"
 ORIGIN_IMPORTED = "imported"
@@ -83,6 +95,9 @@ class Wine(TimestampMixin, Base):
     tasting_notes: Mapped[str | None] = mapped_column(Text)
     pairing_notes: Mapped[str | None] = mapped_column(Text)
     source_url: Mapped[str | None] = mapped_column(String(1000))
+    # When imported from a shop (session 8): the shop's name and its price at that moment
+    source_name: Mapped[str | None] = mapped_column(String(100))
+    source_price: Mapped[float | None] = mapped_column(Numeric(8, 2))
     image_url: Mapped[str | None] = mapped_column(String(1000))
 
     category: Mapped[WineCategory | None] = relationship()

@@ -5,6 +5,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 from app.schemas.recipe import RecipeIn
+from app.schemas.wine import WineIn
 
 
 class RecipeImportRequest(BaseModel):
@@ -34,3 +35,18 @@ class ImportJobOut(BaseModel):
     recipe_id: int | None = None
     created_at: datetime
     finished_at: datetime | None = None
+
+
+class WineImportRequest(BaseModel):
+    url: str = Field(min_length=8, max_length=1000)
+    notebook_id: int | None = Field(default=None, description="Notebook; your own if omitted")
+
+
+class WineImportPreview(BaseModel):
+    """What the app shows before saving; `wine` is ready to send to POST /wines (with the
+    source_url kept). Warnings: no_product_data, no_name, no_type, no_winery."""
+
+    notebook_id: int
+    complete: bool
+    warnings: list[str] = []
+    wine: WineIn

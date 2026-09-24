@@ -1,7 +1,9 @@
 /**
- * Ficha de un vino: name, winery, type with its serving temperature, the facets, D.O., country,
- * grapes, vintage, price; tasting notes; what it goes with; "Recomendado para" with the recipes
- * that carry it; the source; star; Editar for owner and editors (session 8).
+ * Ficha de un vino (session 8): name, winery and star; the type with its serving temperature;
+ * the facts in tidy tiles (sweetness, body, ageing, price band with its euros, D.O., country,
+ * vintage, grapes); the shop and its price when it was imported; tasting notes; what it goes
+ * with (its own text, or the pairing rules of its type); "Recomendado para" with the recipes
+ * that carry it; the source; Editar for owner and editors.
  */
 import { Ionicons } from "@expo/vector-icons";
 import * as WebBrowser from "expo-web-browser";
@@ -15,12 +17,14 @@ import { Message } from "../../components/Message.tsx";
 import { RowButton } from "../../components/RowButton.tsx";
 import { Screen } from "../../components/Screen.tsx";
 import { SectionTitle } from "../../components/SectionTitle.tsx";
+import { ShopPrice } from "../../components/ShopPrice.tsx";
 import { type Auth, SignedIn } from "../../components/SignedIn.tsx";
 import { colors, fontSize, radius, spacing } from "../../components/theme.ts";
 import { type TextKey, useI18n } from "../../i18n";
 import { errorText } from "../../services/errors.ts";
 import { localName, siteName } from "../../services/format.ts";
 import { useLoad } from "../../services/useLoad.ts";
+import { PRICE_BANDS } from "../../services/wineQuery.ts";
 import * as wines from "../../services/wines.ts";
 
 function WineScreen({ auth, id }: { auth: Auth; id: number }) {
@@ -42,17 +46,22 @@ function WineScreen({ auth, id }: { auth: Auth; id: number }) {
   const { wine, recipes } = data.data;
   const facet = (kind: "wine_sweetness" | "wine_body" | "wine_ageing", code: string | null) =>
     code ? t(`${kind}.${code}` as TextKey) : null;
-  const facts = [
-    facet("wine_sweetness", wine.sweetness),
-    facet("wine_body", wine.body),
-    facet("wine_ageing", wine.ageing),
-    wine.price_range,
-  ].filter((x): x is string => !!x);
-  const origin = [
-    wine.appellation,
-    wine.country,
-    wine.vintage ? String(wine.vintage) : null,
-  ].filter((x): x is string => !!x);
+  const band = PRICE_BANDS.find((b) => b.code === wine.price_range);
+  const facts: { label: string; value: string | null }[] = [
+    { label: t("wineForm.sweetness"), value: facet("wine_sweetness", wine.sweetness) },
+    { label: t("wineForm.body"), value: facet("wine_body", wine.body) },
+    { label: t("wineForm.ageing"), value: facet("wine_ageing", wine.ageing) },
+    { label: t("wineForm.price"), value: band ? `${band.code}  ·  ${t(band.key)}` : null },
+    { label: t("wineForm.appellation"), value: wine.appellation },
+    { label: t("wineForm.country"), value: wine.country },
+    { label: t("wineForm.vintage"), value: wine.vintage ? String(wine.vintage) : null },
+    { label: t("wineForm.grapes"), value: wine.grapes },
+  ];
+  const shown = facts.filter((f): f is { label: string; value: string } => !!f.value);
+  const pairing =
+    wine.pairing_notes ||
+    (wine.pairs_with_categories.length ? wine.pairs_with_categories.join(", ") : null);
+  const hasShopPrice = !!wine.source_url && wine.source_price !== null;
   // The zone shows my own notebook (owner); in another notebook the API refuses if not editor
   const canEdit = true;
 
@@ -108,17 +117,30 @@ function WineScreen({ auth, id }: { auth: Auth; id: number }) {
         </View>
       ) : null}
 
-      {facts.length ? (
-        <View style={styles.chips}>
-          {facts.map((f) => (
-            <View key={f} style={styles.chip}>
-              <Text style={styles.chipText}>{f}</Text>
+      {shown.length ? (
+        <View style={styles.facts}>
+          {shown.map((f, index) => (
+            <View
+              key={f.label}
+              style={[
+                styles.fact,
+                // Grapes take the whole row; the rest go two by two
+                f.label === t("wineForm.grapes") || (index === shown.length - 1 && index % 2 === 0)
+                  ? styles.factWide
+                  : styles.factHalf,
+              ]}
+            >
+              <Text style={styles.factLabel}>{f.label}</Text>
+              <Text style={styles.factValue}>{f.value}</Text>
             </View>
           ))}
         </View>
       ) : null}
-      {origin.length ? <Text style={styles.body}>{origin.join(" · ")}</Text> : null}
-      {wine.grapes ? <Text style={styles.muted}>{t("wines.grapes", { grapes: wine.grapes })}</Text> : null}
+      <ShopPrice
+        sourceUrl={wine.source_url}
+        sourceName={wine.source_name}
+        sourcePrice={wine.source_price}
+      />
       {wine.added_by ? (
         <Text style={styles.muted}>{t("recipes.addedBy", { name: wine.added_by })}</Text>
       ) : null}
@@ -129,10 +151,13 @@ function WineScreen({ auth, id }: { auth: Auth; id: number }) {
           <Text style={styles.body}>{wine.tasting_notes}</Text>
         </>
       ) : null}
-      {wine.pairing_notes ? (
+      {pairing ? (
         <>
           <SectionTitle text={t("wineForm.pairing")} />
-          <Text style={styles.body}>{wine.pairing_notes}</Text>
+          <Text style={styles.body}>{pairing}</Text>
+          {!wine.pairing_notes ? (
+            <Text style={styles.muted}>{t("wines.pairingFromRules")}</Text>
+          ) : null}
         </>
       ) : null}
 
@@ -154,10 +179,12 @@ function WineScreen({ auth, id }: { auth: Auth; id: number }) {
         <Text style={styles.muted}>{t("wines.recommendedForNone")}</Text>
       )}
 
-      {wine.source_url ? (
+      {wine.source_url && !hasShopPrice ? (
         <>
           <SectionTitle text={t("recipe.source")} />
-          <Text style={styles.body}>{siteName(wine.source_url) ?? wine.source_url}</Text>
+          <Text style={styles.body}>
+            {wine.source_name || siteName(wine.source_url) || wine.source_url}
+          </Text>
           <BigButton
             label={t("wines.openSource")}
             icon="open-outline"
@@ -204,16 +231,20 @@ const styles = StyleSheet.create({
   },
   typeText: { flex: 1, fontSize: fontSize.body, fontWeight: "700", color: colors.ink },
   temp: { fontSize: fontSize.small, fontWeight: "600", color: colors.ink },
-  chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.s },
-  chip: {
+  facts: { flexDirection: "row", flexWrap: "wrap", gap: spacing.s },
+  fact: {
+    gap: 2,
     paddingHorizontal: spacing.m,
-    paddingVertical: spacing.xs,
-    borderRadius: radius.l,
+    paddingVertical: spacing.s,
+    borderRadius: radius.m,
     backgroundColor: colors.surface,
     borderWidth: 2,
     borderColor: colors.border,
   },
-  chipText: { fontSize: fontSize.small, fontWeight: "600", color: colors.ink },
+  factHalf: { flexBasis: "40%", flexGrow: 1 },
+  factWide: { flexBasis: "100%" },
+  factLabel: { fontSize: fontSize.small, color: colors.muted },
+  factValue: { fontSize: fontSize.body, fontWeight: "700", color: colors.ink },
   body: { fontSize: fontSize.body, color: colors.ink, lineHeight: 26 },
   muted: { fontSize: fontSize.body, color: colors.muted },
   list: { gap: spacing.s },

@@ -53,6 +53,26 @@ export function wineDetails(wine: {
     .join(" · ");
 }
 
+/**
+ * The four price bands (session 8): the symbol is what the API stores and searches by, and the
+ * written band says the same in euros. € < 15 · €€ 15–30 · €€€ 30–60 · €€€€ > 60.
+ */
+export const PRICE_BANDS = [
+  { code: "€", key: "wines.band1" },
+  { code: "€€", key: "wines.band2" },
+  { code: "€€€", key: "wines.band3" },
+  { code: "€€€€", key: "wines.band4" },
+] as const;
+
+export type PriceBandKey = (typeof PRICE_BANDS)[number]["key"];
+
+/** 38.9 → "38,90 €" (or "38.90 €" in English); null → null. */
+export function formatPrice(price: number | null, language: string): string | null {
+  if (price === null || price === undefined || Number.isNaN(price)) return null;
+  const text = price.toFixed(2);
+  return `${language === "es" ? text.replace(".", ",") : text} €`;
+}
+
 /** "2012" → 2012; "" → null; "hace mucho" → NaN (the form shows an error). */
 export function parseVintage(text: string): number | null {
   const clean = text.trim();

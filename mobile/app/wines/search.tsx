@@ -6,6 +6,7 @@ import { StyleSheet, View } from "react-native";
 
 import { BigButton } from "../../components/BigButton.tsx";
 import { Chips } from "../../components/Chips.tsx";
+import { PriceChoice } from "../../components/PriceChoice.tsx";
 import { Screen } from "../../components/Screen.tsx";
 import { type Auth, SignedIn } from "../../components/SignedIn.tsx";
 import { TextField } from "../../components/TextField.tsx";
@@ -85,11 +86,10 @@ function Search({ auth }: { auth: Auth }) {
             onChange={set("ageing")}
             options={facet(catalog.data.facets.ageing)}
           />
-          <Chips
+          <PriceChoice
             label={t("wineForm.price")}
             value={form.price_range}
             onChange={set("price_range")}
-            options={[any, ...catalog.data.facets.price_ranges.map((p) => ({ value: p, label: p }))]}
           />
         </>
       ) : null}

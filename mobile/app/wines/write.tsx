@@ -32,6 +32,8 @@ function toInput(wine: wines.Wine): wines.WineInput {
     tasting_notes: wine.tasting_notes,
     pairing_notes: wine.pairing_notes,
     source_url: wine.source_url,
+    source_name: wine.source_name,
+    source_price: wine.source_price,
     image_url: wine.image_url,
   };
 }

@@ -52,7 +52,11 @@ export type Wine = WineSummary & {
   grapes: string | null;
   tasting_notes: string | null;
   pairing_notes: string | null;
+  /** Names of the food categories the pairing rules give for its type (session 8). */
+  pairs_with_categories: string[];
   source_url: string | null;
+  source_name: string | null;
+  source_price: number | null;
   edited_by: string | null;
   created_at: string;
   updated_at: string;
@@ -74,6 +78,8 @@ export type WineInput = {
   tasting_notes: string | null;
   pairing_notes: string | null;
   source_url: string | null;
+  source_name: string | null;
+  source_price: number | null;
   image_url: string | null;
 };
 
@@ -154,6 +160,26 @@ export function recommend(
 export function unrecommend({ token, language }: Auth, recipeId: number, linkId: number) {
   return api<{ message: string }>(`/recipes/${recipeId}/wines/${linkId}`, {
     method: "DELETE",
+    token,
+    language,
+  });
+}
+
+// --- Import a wine from a web page (API /imports/wine) ------------------------------------
+
+export type WineImportWarning = "no_product_data" | "no_name" | "no_type" | "no_winery";
+
+export type WineImportPreview = {
+  notebook_id: number;
+  complete: boolean;
+  warnings: WineImportWarning[];
+  wine: WineInput;
+};
+
+export function readPage({ token, language }: Auth, url: string) {
+  return api<WineImportPreview>("/imports/wine", {
+    method: "POST",
+    body: { url: url.trim() },
     token,
     language,
   });

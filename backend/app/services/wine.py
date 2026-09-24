@@ -288,3 +288,23 @@ def recipes_of(db: Session, wine: Wine) -> list[RecipeWine]:
             .order_by(RecipeWine.id)
         )
     )
+
+
+def category_by_slug(db: Session, slug: str | None) -> WineCategory | None:
+    if not slug:
+        return None
+    return db.scalar(select(WineCategory).where(WineCategory.slug == slug))
+
+
+def categories_paired_with(db: Session, wine_category_id: int | None) -> list[Category]:
+    """Recipe categories whose pairing rules name this wine type (Ficha del vino → Marida con)."""
+    if wine_category_id is None:
+        return []
+    return list(
+        db.scalars(
+            select(Category)
+            .join(PairingRule, PairingRule.recipe_category_id == Category.id)
+            .where(PairingRule.wine_category_id == wine_category_id)
+            .order_by(PairingRule.position, Category.name_es)
+        )
+    )

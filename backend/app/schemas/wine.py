@@ -28,6 +28,8 @@ class WineIn(BaseModel):
     tasting_notes: str | None = None
     pairing_notes: str | None = None
     source_url: str | None = Field(default=None, max_length=1000)
+    source_name: str | None = Field(default=None, max_length=100, description="The shop's name")
+    source_price: float | None = Field(default=None, ge=0, description="Price in that shop, €")
     image_url: str | None = Field(default=None, max_length=1000)
 
 
@@ -68,6 +70,11 @@ class WineOut(WineSummary):
     tasting_notes: str | None = None
     pairing_notes: str | None = None
     source_url: str | None = None
+    source_name: str | None = None
+    source_price: float | None = None
+    # What the pairing rules say this type of wine goes with (recipe categories), for the
+    # card when the person has not written "con qué marida" (session 8)
+    pairs_with_categories: list[Named] = []
     edited_by: str | None = None
     created_at: datetime
     updated_at: datetime
