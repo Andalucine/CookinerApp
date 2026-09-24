@@ -35,7 +35,9 @@ class WinePreview:
     price_range: str | None = None
     source_name: str | None = None  # the shop, as people know it ("Delatierra")
     source_price: float | None = None  # its price at that moment, in euros
+    in_stock: bool | None = None  # what the page's offer says (None: it does not say)
     tasting_notes: str | None = None
+    pairing_notes: str | None = None  # what the page says it goes with (Vinoselección, s. 9)
     image_url: str | None = None
     warnings: list[str] = field(default_factory=list)
 
@@ -133,14 +135,21 @@ _KNOWN_APPELLATIONS = [
 
 # What a shop's "Tipo de vino" usually says (Blanco, Tinto, Rosado): a family, not a subtype.
 # The name and the description may refine it within that family ("albariño" → aromatic white).
-_GENERIC_TYPES = {"blanco-joven": "blanco-", "tinto-medio": "tinto-", "rosado-fruta": "rosado-"}
+# Sheet types too general to keep when the name says something more precise: "Tinto" + "Viña
+# Tondonia Reserva" → the aged red; "Espumoso Blanco" + "Cava Gran Bach" → cava (session 9)
+_GENERIC_TYPES = {
+    "blanco-joven": ("blanco-",),
+    "tinto-medio": ("tinto-",),
+    "rosado-fruta": ("rosado-",),
+    "otros-espumosos": ("cava", "champan", "prosecco", "aguja"),
+}
 
 
 def _pick_type(from_sheet: str | None, from_words: str | None) -> str | None:
     if from_sheet is None:
         return from_words
-    family = _GENERIC_TYPES.get(from_sheet)
-    if family and from_words and from_words.startswith(family):
+    refinements = _GENERIC_TYPES.get(from_sheet, ())
+    if from_words and from_words.startswith(refinements):
         return from_words
     return from_sheet
 
@@ -163,6 +172,16 @@ def _price(offer) -> float | None:
     except (TypeError, ValueError):
         return None
     return price if price > 0 else None
+
+
+def _in_stock(offer) -> bool | None:
+    """schema.org availability of the offer: InStock / OutOfStock / SoldOut / Discontinued..."""
+    if isinstance(offer, list):
+        offer = offer[0] if offer else None
+    if not isinstance(offer, dict) or not offer.get("availability"):
+        return None
+    value = str(offer["availability"]).rsplit("/", 1)[-1].lower()
+    return value in ("instock", "limitedavailability", "onlineonly", "instoreonly", "preorder")
 
 
 def _vintage(*texts: str | None) -> int | None:
@@ -343,7 +362,9 @@ _COUNTRY_NAMES = {
 }  # fmt: skip
 
 
-def read_wine(html: str, url: str) -> WinePreview:
+def read_wine(html: str, url: str, sheet: dict[str, str] | None = None) -> WinePreview:
+    """`sheet`: the page's data sheet when a shop-specific reader has it (Vinoselección, session
+    9); otherwise it is looked for with `read_sheet`."""
     reader = _PageReader()
     reader.feed(html)
     reader.close()
@@ -356,6 +377,7 @@ def read_wine(html: str, url: str) -> WinePreview:
         preview.tasting_notes = _text(product.get("description"))
         preview.image_url = _image(product.get("image"))
         preview.source_price = _price(product.get("offers"))
+        preview.in_stock = _in_stock(product.get("offers"))
         preview.price_range = price_range_for(preview.source_price)
     else:
         preview.warnings.append("no_product_data")
@@ -382,7 +404,8 @@ def read_wine(html: str, url: str) -> WinePreview:
     ):
         preview.tasting_notes = None
 
-    sheet = read_sheet(html)
+    if sheet is None:
+        sheet = read_sheet(html)
     preview.winery = preview.winery or sheet.get("winery")
     preview.appellation = sheet.get("appellation")
     preview.country = sheet.get("country")

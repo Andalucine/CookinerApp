@@ -25,8 +25,8 @@ app/          Pantallas (Expo Router): (auth)/ entrar, crear cuenta, recuperar c
               (recipes/: portada, categorías, buscar, lista, ficha [id], nueva receta;
               spices/: portada con buscador y familias, list, rules, blend (mezcla),
               spice (especia propia), substitutions (sustitutos propios) y ficha [id];
-              wines/: portada, categories (tipos), search, list, ficha [id], new, write, import y
-              recommend (vino para una receta); notes/: portada con buscador, ficha [id] y
+              wines/: portada, categories (tipos), search, list, ficha [id] con «Comprar en
+              Vinoselección» y recommend (vino para una receta); notes/: portada con buscador, ficha [id] y
               write (nueva y editar); pantry/: mi despensa en tres bloques y cook
               (¿qué puedo cocinar?); shopping-list/: lista de la compra por secciones;
               menu/: menú de la semana, setup (prepararlo) y pick (elegir receta para un plato);
@@ -45,6 +45,6 @@ No hay un "cuaderno activo". Cuando se abre el cuaderno de otra persona (desde M
 
 ## Fotos (sesión 9)
 
-Las fotos se hacen con la cámara o se eligen de la galería (`expo-image-picker`, en `components/Photo.tsx`) y se mandan a la API (`POST /photos`) con el envío de archivos del propio teléfono (`expo-file-system/legacy`, `uploadAsync`), que devuelve una dirección relativa (`/photos/….jpg`) que se guarda en el `image_url` de la receta, el vino, el producto de la despensa o la línea de la compra. `services/photos.ts` completa esa dirección con la de la API al mostrarla. En desarrollo los archivos quedan en la carpeta `uploads/` del proyecto, en el Mac.
+Las fotos se hacen con la cámara o se eligen de la galería (`expo-image-picker`, en `components/Photo.tsx`) y se mandan a la API (`POST /photos`) con el envío de archivos del propio teléfono (`expo-file-system/legacy`, `uploadAsync`), que devuelve una dirección relativa (`/photos/….jpg`) que se guarda en el `image_url` de la receta, el producto de la despensa o la línea de la compra. `services/photos.ts` completa esa dirección con la de la API al mostrarla. En desarrollo los archivos quedan en la carpeta `uploads/` del proyecto, en el Mac.
 
 Los paquetes se añaden con las versiones compatibles con el SDK (`node_modules/expo/bundledNativeModules.json`); ver la decisión 0006.

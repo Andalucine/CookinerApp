@@ -1,5 +1,5 @@
-/** Wines of a notebook (API /wines), the wine catalogue (types and facets) and the wines
- * recommended for a recipe (API /recipes/{id}/wines). */
+/** The shop's cellar (API /wines, session 9: Vinoselección, the same for everyone), the wine
+ * catalogue (types and facets) and the wines recommended for a recipe (/recipes/{id}/wines). */
 import { api } from "./apiClient.ts";
 import type { Localized } from "./format.ts";
 import type { RecipeWines } from "./recipes.ts";
@@ -32,7 +32,6 @@ export type WineCategoryRef = Localized & {
 
 export type WineSummary = {
   id: number;
-  notebook_id: number;
   name: string;
   winery: string | null;
   category: WineCategoryRef | null;
@@ -40,7 +39,10 @@ export type WineSummary = {
   vintage: number | null;
   price_range: string | null;
   image_url: string | null;
-  added_by: string | null;
+  source_name: string | null; // "Vinoselección"
+  source_price: number | null; // euros, the last time the shop's page was read
+  in_stock: boolean;
+  shop_url: string; // the page in the shop, with CookinerApp's agent code
   is_favorite: boolean;
 };
 
@@ -54,33 +56,7 @@ export type Wine = WineSummary & {
   pairing_notes: string | null;
   /** Names of the food categories the pairing rules give for its type (session 8). */
   pairs_with_categories: string[];
-  source_url: string | null;
-  source_name: string | null;
-  source_price: number | null;
-  edited_by: string | null;
-  created_at: string;
-  updated_at: string;
-};
-
-/** What is sent to create or replace a wine. */
-export type WineInput = {
-  name: string;
-  winery: string | null;
-  category_id: number | null;
-  sweetness: string | null;
-  body: string | null;
-  ageing: string | null;
-  country: string | null;
-  appellation: string | null;
-  grapes: string | null;
-  vintage: number | null;
-  price_range: string | null;
-  tasting_notes: string | null;
-  pairing_notes: string | null;
-  source_url: string | null;
-  source_name: string | null;
-  source_price: number | null;
-  image_url: string | null;
+  checked_at: string | null;
 };
 
 export type WineRecipe = {
@@ -117,20 +93,10 @@ export function get({ token, language }: Auth, id: number) {
   return api<Wine>(`/wines/${id}`, { token, language });
 }
 
-export function recipesOf({ token, language }: Auth, id: number) {
-  return api<WineRecipe[]>(`/wines/${id}/recipes`, { token, language });
-}
-
-export function create({ token, language }: Auth, body: WineInput) {
-  return api<Wine>("/wines", { method: "POST", body, token, language });
-}
-
-export function update({ token, language }: Auth, id: number, body: WineInput) {
-  return api<Wine>(`/wines/${id}`, { method: "PUT", body, token, language });
-}
-
-export function remove({ token, language }: Auth, id: number) {
-  return api<{ message: string }>(`/wines/${id}`, { method: "DELETE", token, language });
+/** The recipes of my notebook (or of the one given) that recommend this wine. */
+export function recipesOf({ token, language }: Auth, id: number, notebookId?: number) {
+  const query = notebookId ? `?notebook_id=${notebookId}` : "";
+  return api<WineRecipe[]>(`/wines/${id}/recipes${query}`, { token, language });
 }
 
 export function setFavorite({ token, language }: Auth, id: number, on: boolean) {
@@ -160,26 +126,6 @@ export function recommend(
 export function unrecommend({ token, language }: Auth, recipeId: number, linkId: number) {
   return api<{ message: string }>(`/recipes/${recipeId}/wines/${linkId}`, {
     method: "DELETE",
-    token,
-    language,
-  });
-}
-
-// --- Import a wine from a web page (API /imports/wine) ------------------------------------
-
-export type WineImportWarning = "no_product_data" | "no_name" | "no_type" | "no_winery";
-
-export type WineImportPreview = {
-  notebook_id: number;
-  complete: boolean;
-  warnings: WineImportWarning[];
-  wine: WineInput;
-};
-
-export function readPage({ token, language }: Auth, url: string) {
-  return api<WineImportPreview>("/imports/wine", {
-    method: "POST",
-    body: { url: url.trim() },
     token,
     language,
   });

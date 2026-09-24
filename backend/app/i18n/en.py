@@ -59,13 +59,6 @@ TEXTS = {
     "spice_family.blends": "Blends",
     "spice_family.salts_seasonings": "Salts & other seasonings",
     "wine_not_found": "Wine not found.",
-    "wine_deleted": "Wine deleted.",
-    "wines_not_in_plan": (
-        "This notebook's plan does not include the wine section. "
-        "The individual or family plan includes it."
-    ),
-    "wine_invalid_reference": "That wine type does not exist.",
-    "wine_other_notebook": "That wine is not in the recipe's notebook.",
     "recipe_wine_removed": "Wine removed from the recipe.",
     "wine_sweetness.dry": "Dry",
     "wine_sweetness.off_dry": "Off-dry",

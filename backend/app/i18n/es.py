@@ -59,13 +59,6 @@ TEXTS = {
     "spice_family.blends": "Mezclas",
     "spice_family.salts_seasonings": "Sales y otros condimentos",
     "wine_not_found": "No se ha encontrado el vino.",
-    "wine_deleted": "Vino eliminado.",
-    "wines_not_in_plan": (
-        "El plan de este cuaderno no incluye la sección de vinos. "
-        "Con el plan individual o familiar podrás usarla."
-    ),
-    "wine_invalid_reference": "El tipo de vino no existe.",
-    "wine_other_notebook": "Ese vino no está en el cuaderno de la receta.",
     "recipe_wine_removed": "Vino quitado de la receta.",
     "wine_sweetness.dry": "Seco",
     "wine_sweetness.off_dry": "Semiseco",

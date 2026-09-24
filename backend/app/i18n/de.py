@@ -65,13 +65,6 @@ TEXTS = {
     "spice_family.blends": "Mischungen",
     "spice_family.salts_seasonings": "Salze und andere Würzmittel",
     "wine_not_found": "Wein nicht gefunden.",
-    "wine_deleted": "Wein gelöscht.",
-    "wines_not_in_plan": (
-        "Der Tarif dieses Kochbuchs enthält den Weinkeller nicht. "
-        "Der Einzel- oder Familientarif enthält ihn."
-    ),
-    "wine_invalid_reference": "Diese Weinsorte gibt es nicht.",
-    "wine_other_notebook": "Dieser Wein ist nicht im Kochbuch des Rezepts.",
     "recipe_wine_removed": "Wein vom Rezept entfernt.",
     "wine_sweetness.dry": "Trocken",
     "wine_sweetness.off_dry": "Halbtrocken",

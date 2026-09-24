@@ -1,22 +1,24 @@
-/** One wine in a list: name, winery · D.O. · vintage · price, its type; star when favourite. */
+/** One wine in a list: name, winery · D.O. · vintage, its type, the price in the shop (or
+ * "Agotado"); star when favourite. */
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useI18n } from "../i18n";
 import { localName } from "../services/format.ts";
-import { wineDetails } from "../services/wineQuery.ts";
+import { formatPrice, wineDetails } from "../services/wineQuery.ts";
 import type { WineSummary } from "../services/wines.ts";
 import { colors, fontSize, radius, spacing } from "./theme.ts";
 
 export function WineCard({ wine, onPress }: { wine: WineSummary; onPress?: () => void }) {
   const { t, language } = useI18n();
-  const details = wineDetails(wine);
+  const details = wineDetails({ ...wine, price_range: null });
   const type = wine.category ? localName(wine.category, language) : null;
+  const price = wine.in_stock ? formatPrice(wine.source_price, language) : t("wines.soldOut");
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={[wine.name, details, type].filter(Boolean).join(", ")}
+      accessibilityLabel={[wine.name, details, type, price].filter(Boolean).join(", ")}
       onPress={onPress ?? (() => router.push(`/wines/${wine.id}`))}
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
     >
@@ -24,8 +26,8 @@ export function WineCard({ wine, onPress }: { wine: WineSummary; onPress?: () =>
         <Text style={styles.title}>{wine.name}</Text>
         {details ? <Text style={styles.details}>{details}</Text> : null}
         {type ? <Text style={styles.details}>{type}</Text> : null}
-        {wine.added_by ? (
-          <Text style={styles.details}>{t("recipes.addedBy", { name: wine.added_by })}</Text>
+        {price ? (
+          <Text style={[styles.price, !wine.in_stock && styles.soldOut]}>{price}</Text>
         ) : null}
       </View>
       {wine.is_favorite ? <Ionicons name="star" size={24} color={colors.accent} /> : null}
@@ -50,4 +52,6 @@ const styles = StyleSheet.create({
   text: { flex: 1, gap: 2 },
   title: { fontSize: fontSize.body, fontWeight: "700", color: colors.ink },
   details: { fontSize: fontSize.small, color: colors.muted },
+  price: { fontSize: fontSize.small, fontWeight: "800", color: colors.ink },
+  soldOut: { color: colors.muted, fontWeight: "600" },
 });

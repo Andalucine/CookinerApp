@@ -848,9 +848,8 @@ def upgrade() -> None:
     op.create_table(
         "wines",
         sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("notebook_id", sa.Integer(), nullable=False),
-        sa.Column("added_by_id", sa.Integer(), nullable=True),
-        sa.Column("updated_by_id", sa.Integer(), nullable=True),
+        sa.Column("shop", sa.String(length=30), nullable=False),
+        sa.Column("source_url", sa.String(length=1000), nullable=False),
         sa.Column("name", sa.String(length=200), nullable=False),
         sa.Column("winery", sa.String(length=200), nullable=True),
         sa.Column("category_id", sa.Integer(), nullable=True),
@@ -864,10 +863,11 @@ def upgrade() -> None:
         sa.Column("price_range", sa.String(length=4), nullable=True),
         sa.Column("tasting_notes", sa.Text(), nullable=True),
         sa.Column("pairing_notes", sa.Text(), nullable=True),
-        sa.Column("source_url", sa.String(length=1000), nullable=True),
         sa.Column("source_name", sa.String(length=100), nullable=True),
         sa.Column("source_price", sa.Numeric(precision=8, scale=2), nullable=True),
         sa.Column("image_url", sa.String(length=1000), nullable=True),
+        sa.Column("in_stock", sa.Boolean(), nullable=False),
+        sa.Column("checked_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
@@ -881,33 +881,16 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.ForeignKeyConstraint(
-            ["added_by_id"],
-            ["users.id"],
-            name=op.f("fk_wines_added_by_id_users"),
-            ondelete="SET NULL",
-        ),
-        sa.ForeignKeyConstraint(
             ["category_id"],
             ["wine_categories.id"],
             name=op.f("fk_wines_category_id_wine_categories"),
             ondelete="SET NULL",
         ),
-        sa.ForeignKeyConstraint(
-            ["notebook_id"],
-            ["notebooks.id"],
-            name=op.f("fk_wines_notebook_id_notebooks"),
-            ondelete="CASCADE",
-        ),
-        sa.ForeignKeyConstraint(
-            ["updated_by_id"],
-            ["users.id"],
-            name=op.f("fk_wines_updated_by_id_users"),
-            ondelete="SET NULL",
-        ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_wines")),
+        sa.UniqueConstraint("source_url", name=op.f("uq_wines_source_url")),
     )
     op.create_index(op.f("ix_wines_name"), "wines", ["name"], unique=False)
-    op.create_index(op.f("ix_wines_notebook_id"), "wines", ["notebook_id"], unique=False)
+    op.create_index(op.f("ix_wines_shop"), "wines", ["shop"], unique=False)
     op.create_table(
         "favorites",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -1363,7 +1346,7 @@ def downgrade() -> None:
     op.drop_table("menu_slots")
     op.drop_index(op.f("ix_weekly_menus_notebook_id"), table_name="weekly_menus")
     op.drop_table("weekly_menus")
-    op.drop_index(op.f("ix_wines_notebook_id"), table_name="wines")
+    op.drop_index(op.f("ix_wines_shop"), table_name="wines")
     op.drop_index(op.f("ix_wines_name"), table_name="wines")
     op.drop_table("wines")
     op.drop_index(op.f("ix_spice_substitutions_ingredient_id"), table_name="spice_substitutions")

@@ -13,6 +13,7 @@ export const WINE_FILTER_KEYS = [
   "grape",
   "price_range",
   "favorites",
+  "in_stock",
 ] as const;
 
 export type WineFilterKey = (typeof WINE_FILTER_KEYS)[number];

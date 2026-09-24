@@ -65,13 +65,6 @@ TEXTS = {
     "spice_family.blends": "Mengsels",
     "spice_family.salts_seasonings": "Zout en andere smaakmakers",
     "wine_not_found": "Wijn niet gevonden.",
-    "wine_deleted": "Wijn gewist.",
-    "wines_not_in_plan": (
-        "Het abonnement van dit kookschrift heeft geen wijnkelder. "
-        "Het individuele of gezinsabonnement wel."
-    ),
-    "wine_invalid_reference": "Die wijnsoort bestaat niet.",
-    "wine_other_notebook": "Die wijn staat niet in het kookschrift van het recept.",
     "recipe_wine_removed": "Wijn van het recept weggehaald.",
     "wine_sweetness.dry": "Droog",
     "wine_sweetness.off_dry": "Halfdroog",

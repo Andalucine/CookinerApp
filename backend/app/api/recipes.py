@@ -3,7 +3,7 @@
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import select
 
-from app.api.wines import category_ref, check_plan
+from app.api.wines import category_ref
 from app.api.wines import to_summary as wine_summary
 from app.core.deps import CurrentUser, DbSession, Lang
 from app.i18n import t
@@ -257,7 +257,7 @@ def _recipe_wines(db, user, recipe: Recipe) -> RecipeWinesOut:
     ]
     suggestion = None
     if not recommended:
-        found = wine_service.suggest(db, recipe)
+        found = wine_service.suggest(db, recipe, user.id)
         if found is not None:
             starred = wine_service.favorite_ids(db, user.id, [w.id for w in found.wines])
             suggestion = PairingSuggestion(
@@ -269,7 +269,7 @@ def _recipe_wines(db, user, recipe: Recipe) -> RecipeWinesOut:
                     )
                     for r in found.rules
                 ],
-                my_wines=[wine_summary(w, starred) for w in found.wines],
+                wines=[wine_summary(w, starred) for w in found.wines],
             )
     return RecipeWinesOut(recommended=recommended, suggestion=suggestion)
 
@@ -277,9 +277,8 @@ def _recipe_wines(db, user, recipe: Recipe) -> RecipeWinesOut:
 @router.get("/{recipe_id}/wines", response_model=RecipeWinesOut)
 def recipe_wines(recipe_id: int, db: DbSession, user: CurrentUser, lang: Lang) -> RecipeWinesOut:
     """Wines recommended for the recipe with their reason. When it has none, the automatic
-    suggestion: wine types from the pairing rules and the notebook's wines of those types."""
+    suggestion: wine types from the pairing rules and a few shop wines of those types."""
     recipe, _ = _load(db, user, lang, recipe_id, edit=False)
-    check_plan(recipe.notebook, lang)
     return _recipe_wines(db, user, recipe)
 
 
@@ -289,16 +288,13 @@ def recipe_wines(recipe_id: int, db: DbSession, user: CurrentUser, lang: Lang) -
 def add_recipe_wine(
     recipe_id: int, body: RecipeWineIn, db: DbSession, user: CurrentUser, lang: Lang
 ) -> RecipeWinesOut:
-    """Recommend a wine of the same notebook for this recipe, with the reason (owner or editor).
+    """Recommend a wine of the shop for this recipe, with the reason (owner or editor).
     Sending the same wine again updates the reason."""
     recipe, _ = _load(db, user, lang, recipe_id, edit=True)
-    check_plan(recipe.notebook, lang)
     try:
         wine_service.add_to_recipe(db, user, recipe, body.wine_id, body.reason)
-    except wine_service.WineInOtherNotebook:
-        raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_CONTENT, t("wine_other_notebook", lang)
-        ) from None
+    except wine_service.WineNotFound:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, t("wine_not_found", lang)) from None
     return _recipe_wines(db, user, recipe)
 
 
@@ -306,9 +302,8 @@ def add_recipe_wine(
 def remove_recipe_wine(
     recipe_id: int, link_id: int, db: DbSession, user: CurrentUser, lang: Lang
 ) -> MessageResponse:
-    """Only the notebook owner or whoever recommended it. The wine stays in the notebook."""
+    """Only the notebook owner or whoever recommended it. The wine stays in the shop's cellar."""
     recipe, _ = _load(db, user, lang, recipe_id, edit=True)
-    check_plan(recipe.notebook, lang)
     try:
         link = wine_service.get_recipe_wine(db, recipe, link_id)
     except wine_service.RecipeWineNotFound:

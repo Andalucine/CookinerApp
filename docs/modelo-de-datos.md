@@ -11,10 +11,10 @@ users ──< notebooks (1 por cuenta) ──< recipes ──< recipe_ingredient
   │            │                          │                                   │
   │            ├─< notebook_access        ├─< recipe_categories >── categories (árbol, 3 niveles)
   │            ├─< notebook_invitations   ├─< recipe_tags >── tags (momento, técnica, dieta, dificultad, origen)
-  │            ├─< wines >── wine_categories        ├─< recipe_seasons >── seasons
+  │            │                                   ├─< recipe_seasons >── seasons
   │            ├─< notes                  ├─< recipe_occasions >── occasions
   │            ├─< pantry_items           ├─< recipe_contributions
-  │            ├─< shopping_list_items    └─< recipe_wines >── wines
+  │            ├─< shopping_list_items    └─< recipe_wines >── wines >── wine_categories (bodega global de Vinoselección)
   │            ├─< notebook_ingredient_sections
   │            ├─< weekly_menus ──< menu_slots >── recipes
   │            └─< import_jobs
@@ -90,7 +90,7 @@ El catálogo de especias, sustituciones y mezclas nunca se modifica: al editar u
 | Tabla | Para qué | Campos clave |
 |---|---|---|
 | `wine_categories` | Árbol de tipos de dos niveles (Tintos → Tinto joven…) | `parent_id`, `slug`, `name_es`, `name_en`, `name_fr/nl/de`, `serving_temp` |
-| `wines` | Los vinos **del cuaderno** | `notebook_id`, `added_by_id`, `updated_by_id` (último que lo editó), `name`, `winery`, `category_id`, facetas `sweetness`, `body`, `ageing`, `country`, `appellation`, `grapes`, `vintage`, `price_range` (`€` <15 · `€€` 15–30 · `€€€` 30–60 · `€€€€` >60), `tasting_notes`, `pairing_notes`, `source_url`, `source_name` (la tienda: "Delatierra"), `source_price` (su precio al importar) |
+| `wines` | Los vinos de **Vinoselección** (sesión 9): una bodega **global**, la misma para todos los cuadernos, como las especias; la llena y actualiza `scripts.sync_vinoseleccion` | `shop` (`vinoseleccion`), `source_url` (su ficha en la tienda, **única**: es la identidad del vino), `name`, `winery`, `category_id`, facetas `sweetness`, `body`, `ageing`, `country`, `appellation`, `grapes`, `vintage`, `price_range` (`€` <15 · `€€` 15–30 · `€€€` 30–60 · `€€€€` >60), `tasting_notes`, `pairing_notes`, `source_name` ("Vinoselección"), `source_price` (precio la última vez que se leyó), `image_url`, `in_stock` (falso si la tienda ya no lo vende; no se borra porque una receta puede recomendarlo), `checked_at`. Ya no tiene `notebook_id`, `added_by_id` ni `updated_by_id`. |
 | `recipe_wines` | Vinos recomendados para una receta **con el motivo** | `reason`, `origin` (`manual`/`imported`) |
 | `pairing_rules` | Categoría de receta → tipo de vino, con motivo (sugerencia automática) | `recipe_category_id`, `wine_category_id`, `reason_es/en` |
 
@@ -115,7 +115,7 @@ El catálogo de especias, sustituciones y mezclas nunca se modifica: al editar u
 
 ## Reglas de negocio que el modelo soporta
 
-- Permisos: sobre un cuaderno, el propietario lo puede todo; `editor` añade y edita recetas (queda en `recipe_contributions`), vinos, notas, épocas propias, mezclas, especias y sustitutos del cuaderno (queda en `added_by_id`/`updated_by_id`/`created_by_id`); borrar solo el propietario o quien lo creó; `viewer` solo ve y puede copiar a su cuaderno o marcar favoritos.
+- Permisos: sobre un cuaderno, el propietario lo puede todo; `editor` añade y edita recetas (queda en `recipe_contributions`), notas, épocas propias, mezclas, especias y sustitutos del cuaderno (queda en `added_by_id`/`updated_by_id`/`created_by_id`), y recomienda vinos de la bodega en sus recetas; borrar solo el propietario o quien lo creó; `viewer` solo ve y puede copiar a su cuaderno o marcar favoritos.
 - Sección de vinos: solo si el **propietario** del cuaderno tiene plan `individual` o `family` (`PLANS_WITH_WINES`, sesión 5).
 - Sugerencia automática de vinos: `pairing_rules` de la categoría principal de la receta (si no tiene, la de su categoría madre; después, las demás categorías de la receta), más los `wines` del cuaderno de esos tipos.
 - Una receta solo puede llevar épocas precargadas o del propio cuaderno.

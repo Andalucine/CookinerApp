@@ -19,10 +19,10 @@ import { PhotoThumb } from "../../components/Photo.tsx";
 import { Screen } from "../../components/Screen.tsx";
 import { SectionTitle } from "../../components/SectionTitle.tsx";
 import { type Auth, SignedIn } from "../../components/SignedIn.tsx";
+import { WineCard } from "../../components/WineCard.tsx";
 import { colors, fontSize, radius, spacing } from "../../components/theme.ts";
 import { YouTubeVideo } from "../../components/YouTubeVideo.tsx";
 import { type TextKey, useI18n } from "../../i18n";
-import { ApiError } from "../../services/apiClient.ts";
 import { errorText } from "../../services/errors.ts";
 import {
   formatMinutes,
@@ -38,23 +38,13 @@ import * as recipes from "../../services/recipes.ts";
 import * as winesApi from "../../services/wines.ts";
 import { useLoad } from "../../services/useLoad.ts";
 
-/** Wines follow the owner's plan: a free notebook answers 403 and the part is not shown. */
-async function winesOrNothing(auth: Auth, id: number) {
-  try {
-    return await recipes.wines(auth, id);
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 403) return null;
-    throw error;
-  }
-}
-
 function RecipeView({ auth, id }: { auth: Auth; id: number }) {
   const { t, language } = useI18n();
   const data = useLoad(async () => {
     const [recipe, spices, wines] = await Promise.all([
       recipes.get(auth, id),
       recipes.spices(auth, id),
-      winesOrNothing(auth, id),
+      recipes.wines(auth, id), // Vinoselección's cellar: every plan (session 9)
     ]);
     return { recipe, spiceIds: new Set(spices.map((s) => s.ingredient_id)), wines };
   }, [auth.token, auth.language, id]);
@@ -297,11 +287,13 @@ function RecipeView({ auth, id }: { auth: Auth; id: number }) {
                   </Text>
                 </View>
               ))}
-              {wines.suggestion.my_wines.length ? (
-                <Text style={styles.body}>
-                  {t("recipe.myWinesOfType")}{" "}
-                  {wines.suggestion.my_wines.map((w) => w.name).join(", ")}
-                </Text>
+              {wines.suggestion.wines.length ? (
+                <>
+                  <Text style={styles.wineName}>{t("recipe.myWinesOfType")}</Text>
+                  {wines.suggestion.wines.map((w) => (
+                    <WineCard key={w.id} wine={w} />
+                  ))}
+                </>
               ) : null}
             </View>
           ) : null}

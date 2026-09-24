@@ -1,9 +1,11 @@
 /**
- * Recomendar un vino para una receta (session 8): the wines of my notebook (with a search box),
- * tap one, write why, "Recomendar". Route param: `recipe` (the recipe id) and `title`.
+ * Recomendar un vino para una receta (session 8; session 9: from Vinoselección's cellar). With
+ * the box empty, my favourites (or, without favourites, wines for sale); writing searches the
+ * whole shop by name, winery, grape or D.O. Tap one, write why, "Recomendar".
+ * Route params: `recipe` (the recipe id) and `title`.
  */
 import { router, Stack, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 import { BigButton } from "../../components/BigButton.tsx";
@@ -20,10 +22,21 @@ import { useLoad } from "../../services/useLoad.ts";
 import { wineDetails } from "../../services/wineQuery.ts";
 import * as wines from "../../services/wines.ts";
 
+const RESULTS = 40;
+
 function Recommend({ auth, recipeId, title }: { auth: Auth; recipeId: number; title: string }) {
   const { t } = useI18n();
   const [query, setQuery] = useState("");
-  const list = useLoad(() => wines.search(auth, {}, 200), [auth.token, auth.language]);
+  const [term, setTerm] = useState(""); // what is searched, a moment after typing stops
+  useEffect(() => {
+    const timer = setTimeout(() => setTerm(query.trim()), 400);
+    return () => clearTimeout(timer);
+  }, [query]);
+  const list = useLoad(async () => {
+    if (term.length >= 2) return wines.search(auth, { q: term }, RESULTS);
+    const favorites = await wines.search(auth, { favorites: "true" }, RESULTS);
+    return favorites.total ? favorites : wines.search(auth, { in_stock: "true" }, RESULTS);
+  }, [auth.token, auth.language, term]);
   const [chosen, setChosen] = useState<wines.WineSummary | null>(null);
   const [reason, setReason] = useState("");
   const [message, setMessage] = useState<string | null>(null);
@@ -68,18 +81,13 @@ function Recommend({ auth, recipeId, title }: { auth: Auth; recipeId: number; ti
     );
   }
 
-  const term = query.trim().toLowerCase();
-  const items = (list.data?.items ?? []).filter(
-    (w) =>
-      !term ||
-      [w.name, w.winery, w.appellation].some((x) => x && x.toLowerCase().includes(term)),
-  );
   return (
     <Screen>
       <Stack.Screen options={{ title: t("recommend.title") }} />
       <Text style={styles.intro}>{t("recommend.pick", { title })}</Text>
       <TextField
         label={t("wines.searchText")}
+        hint={t("wines.searchTextHint")}
         value={query}
         onChangeText={setQuery}
         autoCapitalize="none"
@@ -89,16 +97,12 @@ function Recommend({ auth, recipeId, title }: { auth: Auth; recipeId: number; ti
       ) : list.error || !list.data ? (
         <LoadError error={list.error} onRetry={list.reload} />
       ) : list.data.total === 0 ? (
-        <>
-          <Text style={styles.muted}>{t("recommend.noWines")}</Text>
-          <BigButton label={t("wines.new")} icon="add" onPress={() => router.push("/wines/new")} />
-        </>
+        <Text style={styles.muted}>{t("wines.noResults")}</Text>
       ) : (
         <View style={styles.list}>
-          {items.map((wine) => (
+          {list.data.items.map((wine) => (
             <WineCard key={wine.id} wine={wine} onPress={() => setChosen(wine)} />
           ))}
-          {items.length === 0 ? <Text style={styles.muted}>{t("wines.noResults")}</Text> : null}
         </View>
       )}
     </Screen>

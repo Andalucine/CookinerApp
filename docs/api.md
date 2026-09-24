@@ -8,9 +8,9 @@ La documentación interactiva la genera FastAPI en http://localhost:8000/docs (S
 - Idioma de los mensajes: cabecera `Accept-Language` con `es`, `en`, `fr`, `nl` o `de` (por defecto español; sesión 9). Los catálogos devuelven `name_es`, `name_en` y, desde la fase 2 de la sesión 9, `name_fr`, `name_nl` y `name_de` (lo mismo con `substitute_`, `note_`, `situation_`, `equivalence_`, `quick_substitute_`, `reason_`); estos tres pueden venir vacíos en lo que un cuaderno escribió a mano, y entonces la app enseña el inglés.
 - Endpoints protegidos: cabecera `Authorization: Bearer <access_token>`. El token lo devuelven `/auth/register` y `/auth/login` y dura 30 días.
 - Errores: `{"detail": "mensaje para el usuario"}` con el código HTTP correspondiente (401 sin sesión, 403 sin permiso o límite del plan, 404 no encontrado, 409 conflicto, 422 datos inválidos). Una receta de un cuaderno al que no se tiene acceso responde **404**, no 403, para no revelar que existe.
-- Permisos sobre un cuaderno: **propietario** (todo), **editor** (añade y edita recetas, vinos, notas y épocas propias; queda marcado "añadido por" / "editado por"; borra solo lo que añadió él), **lector** (ve, marca favoritos). Despensa y lista de la compra son siempre las del cuaderno propio.
-- Cualquier elemento (receta, vino, nota, época) de un cuaderno sin acceso responde **404**.
-- Sección de vinos: si el propietario del cuaderno tiene plan gratuito, las rutas de vinos responden **403** con un mensaje que lo explica.
+- Permisos sobre un cuaderno: **propietario** (todo), **editor** (añade y edita recetas, notas y épocas propias, y recomienda vinos en sus recetas; queda marcado "añadido por" / "editado por"; borra solo lo que añadió él), **lector** (ve, marca favoritos). Despensa y lista de la compra son siempre las del cuaderno propio.
+- Cualquier elemento (receta, nota, época) de un cuaderno sin acceso responde **404**.
+- Vinos (sesión 9): la bodega es el catálogo de **Vinoselección**, el mismo para todos los cuadernos y todos los planes (la app actúa como agente de ventas de la tienda). Desde la API no se crean, cambian ni borran vinos: los carga y actualiza `scripts.sync_vinoseleccion`.
 
 ## Endpoints
 
@@ -72,9 +72,9 @@ La documentación interactiva la genera FastAPI en http://localhost:8000/docs (S
 | DELETE | `/recipes/{id}` | — | Solo el propietario del cuaderno o el autor de la receta. |
 | POST / DELETE | `/recipes/{id}/favorite` | — | Estrella (idempotente), también en cuadernos ajenos. |
 | GET | `/recipes/{id}/spices` | — | Ingredientes de la receta con ficha de especia, `in_my_pantry` y sus sustitutos, cada uno con `in_my_pantry` (despensa **propia**). |
-| GET | `/recipes/{id}/wines` | — | `recommended[]` (vino, `reason`, `origin`, `added_by`) y, si no hay ninguno, `suggestion`: `based_on` (categoría usada), `wine_types[]` con motivo y `my_wines[]` del cuaderno de esos tipos. 403 si el cuaderno es gratuito. |
-| POST | `/recipes/{id}/wines` | `wine_id`, `reason` | 201 · Recomendar un vino **del mismo cuaderno** (422 si no); repetirlo cambia el motivo. Propietario o editor. |
-| DELETE | `/recipes/{id}/wines/{link_id}` | — | Quitarlo de la receta (el vino sigue en el cuaderno). Propietario o quien lo recomendó. |
+| GET | `/recipes/{id}/wines` | — | `recommended[]` (vino, `reason`, `origin`, `added_by`) y, si no hay ninguno, `suggestion`: `based_on` (categoría usada), `wine_types[]` con motivo y `wines[]`: hasta 6 vinos de Vinoselección de esos tipos, primero los favoritos de quien mira y después los que están a la venta (sesión 9). |
+| POST | `/recipes/{id}/wines` | `wine_id`, `reason` | 201 · Recomendar un vino de la bodega de Vinoselección (404 si no existe); repetirlo cambia el motivo. Propietario o editor. |
+| DELETE | `/recipes/{id}/wines/{link_id}` | — | Quitarlo de la receta (el vino sigue en la bodega). Propietario o quien lo recomendó. |
 
 ### Mi despensa (`/pantry`)
 
@@ -137,12 +137,11 @@ Mezclas propias del cuaderno y versiones propias de las del catálogo. Propietar
 
 | Método | Ruta | Cuerpo / parámetros | Respuesta |
 |---|---|---|---|
-| GET | `/wines` | `notebook_id`, `q` (nombre, bodega, uva, denominación), `category_id` (un tipo de primer nivel incluye sus hijos), `sweetness`, `body`, `ageing`, `country`, `appellation`, `grape`, `price_range`, `favorites=true`, `limit`, `offset` | `{total, items[]}` con `category` (y su `parent`), `added_by`, `is_favorite`. |
-| GET | `/wines/category-counts?notebook_id=` | — | Vinos del cuaderno por tipo (un tipo de primer nivel cuenta sus subtipos), para "Por tipos" (sesión 8). |
-| GET | `/wines/{id}/recipes` | — | Recetas para las que se recomienda el vino, con `reason` y `added_by` (sesión 8). |
-| POST | `/imports/wine` | `url`, `notebook_id` opcional | Lee la ficha de un vino en una tienda o bodega (schema.org Product, la ficha de datos de la página —Bodega, Origen, País, Uva, Añada, Tipo de vino, Crianza— y pistas del nombre y la descripción; si la tienda se pone a sí misma como marca, no se toma por bodega; sesión 9: el "Tipo de vino" de la ficha manda salvo que sea genérico —Blanco, Tinto, Rosado— y el nombre o la descripción lo afinen; "medium dry/sweet" es dulzor, no tipo cream; la uva de la ficha solo vale si la página la menciona, y un menú de filtros de uvas no se toma por la uva del vino): vista previa `wine` lista para POST `/wines` (con `source_name` y `source_price` si la tienda publica el precio, `price_range` calculado de él y `pairing_notes` rellenado con las reglas de maridaje del tipo), con `warnings` (`no_product_data`, `no_name`, `no_type`, `no_winery`). 403 si el cuaderno es gratuito (sesión 8). |
-| POST | `/wines` | `name`, `winery`, `category_id`, facetas, `vintage`, `price_range` (`€` <15 € · `€€` 15–30 · `€€€` 30–60 · `€€€€` >60), `tasting_notes`, `pairing_notes`, `source_url`, `source_name`, `source_price`, `image_url`, `notebook_id` (opcional) | 201. 422 si una faceta o el tipo no existen. |
-| GET / PUT / DELETE | `/wines/{id}` | PUT: mismo cuerpo, sustituye el vino | Ficha con `edited_by`. Borrar: propietario o quien lo añadió. |
+| GET | `/wines` | `q` (nombre, bodega, uva, denominación), `category_id` (un tipo de primer nivel incluye sus hijos), `sweetness`, `body`, `ageing`, `country`, `appellation`, `grape`, `price_range`, `favorites=true`, `in_stock=true` (solo lo que se puede comprar), `limit`, `offset` | `{total, items[]}`, primero lo que está a la venta. Cada vino lleva `category` (y su `parent`), `source_name` ("Vinoselección"), `source_price`, `in_stock`, `shop_url` (su ficha en la tienda **con el código de agente**, variable de entorno `SHOP_LINK_PARAMS`) e `is_favorite`. |
+| GET | `/wines/category-counts` | — | Vinos a la venta por tipo (un tipo de primer nivel cuenta sus subtipos), para "Por tipos". |
+| GET | `/wines/{id}/recipes` | `notebook_id` (por defecto, el propio) | Recetas **de ese cuaderno** para las que se recomienda el vino, con `reason` y `added_by`. |
+| ~~POST~~ | ~~`/imports/wine`~~ | — | Retirado en la sesión 9: los vinos ya no se importan uno a uno; la bodega es la de Vinoselección. El lector de fichas de vino sigue en `app/services/wine_importer.py` y lo usa `scripts.sync_vinoseleccion`. |
+| GET | `/wines/{id}` | — | Ficha: lo de la lista más facetas, uvas, notas de cata, maridaje, `pairs_with_categories` y `checked_at` (última vez que se leyó su página). `POST /wines` y `PUT`/`DELETE /wines/{id}` ya no existen (405, sesión 9). |
 | POST / DELETE | `/wines/{id}/favorite` | — | Estrella, también como lector. |
 
 ### Menú semanal (`/menus`, sesión 9)
@@ -194,4 +193,4 @@ Solo en cuadernos cuyo propietario tiene plan individual o familiar (403 en uno 
 | POST | `/imports/{job_id}/save` | `recipe` (la vista previa, editada o no) | 201 · receta guardada en el cuaderno elegido al importar. 409 si ya se guardó; 422 si falta el enlace a la fuente. |
 | GET | `/imports` | — | Mis últimos 20 intentos (`status`: `pending`, `ok`, `error`). |
 
-Pendiente: importación de vinos y de vídeos de YouTube, login con Google/Apple.
+Pendiente: importación de vídeos de YouTube, login con Google/Apple.

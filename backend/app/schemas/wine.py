@@ -1,4 +1,5 @@
-"""Wines of a notebook, wines recommended for a recipe and the automatic pairing suggestion."""
+"""The shop's wines (session 9: Vinoselección), the wines recommended for a recipe and the
+automatic pairing suggestion."""
 
 from datetime import datetime
 
@@ -8,6 +9,8 @@ from app.schemas.catalog import Named
 
 
 class WineIn(BaseModel):
+    """A wine as read from its page in the shop, before the sync saves it."""
+
     name: str = Field(min_length=1, max_length=200)
     winery: str | None = Field(default=None, max_length=200)
     category_id: int | None = Field(default=None, description="Wine type (second level)")
@@ -33,12 +36,6 @@ class WineIn(BaseModel):
     image_url: str | None = Field(default=None, max_length=1000)
 
 
-class WineCreate(WineIn):
-    notebook_id: int | None = Field(
-        default=None, description="Notebook to add the wine to; your own if omitted"
-    )
-
-
 class WineCategoryRef(Named):
     slug: str
     parent: Named | None = None  # the first-level type (Tintos, Blancos...)
@@ -49,7 +46,6 @@ class WineSummary(BaseModel):
     """What a list returns: enough for the card."""
 
     id: int
-    notebook_id: int
     name: str
     winery: str | None = None
     category: WineCategoryRef | None = None
@@ -57,7 +53,11 @@ class WineSummary(BaseModel):
     vintage: int | None = None
     price_range: str | None = None
     image_url: str | None = None
-    added_by: str | None = None  # "(añadido por NOMBRE)" when not the notebook owner
+    source_name: str | None = None  # "Vinoselección"
+    source_price: float | None = None  # euros, the last time the shop's page was read
+    in_stock: bool = True
+    # The page in the shop with the agent's code (settings.shop_link_params): "Comprar"
+    shop_url: str
     is_favorite: bool = False
 
 
@@ -69,15 +69,10 @@ class WineOut(WineSummary):
     grapes: str | None = None
     tasting_notes: str | None = None
     pairing_notes: str | None = None
-    source_url: str | None = None
-    source_name: str | None = None
-    source_price: float | None = None
     # What the pairing rules say this type of wine goes with (recipe categories), for the
     # card when the person has not written "con qué marida" (session 8)
     pairs_with_categories: list[Named] = []
-    edited_by: str | None = None
-    created_at: datetime
-    updated_at: datetime
+    checked_at: datetime | None = None
 
 
 class WineSearchResult(BaseModel):
@@ -112,7 +107,8 @@ class PairingSuggestion(BaseModel):
 
     based_on: Named  # recipe category whose rules were used (maybe the parent of the primary)
     wine_types: list[PairingRuleOut]
-    my_wines: list[WineSummary]  # wines of the notebook that are of those types
+    # Wines of the shop of those types: the person's favourites first, then those in stock
+    wines: list[WineSummary]
 
 
 class RecipeWinesOut(BaseModel):

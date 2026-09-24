@@ -3,7 +3,7 @@
 Two steps so that nothing is saved without the user seeing it first:
 1. POST /imports/recipe {url} → preview (not saved) + job id.
 2. POST /imports/{job_id}/save {recipe} → the recipe, with its link to the source.
-Importing follows the plan of the notebook owner, like wines (403 on a free notebook).
+Importing follows the plan of the notebook owner (403 on a free notebook).
 """
 
 from fastapi import APIRouter, HTTPException, status
@@ -16,14 +16,11 @@ from app.schemas.import_job import (
     ImportJobOut,
     RecipeImportPreview,
     RecipeImportRequest,
-    WineImportPreview,
-    WineImportRequest,
 )
 from app.schemas.recipe import RecipeIn, RecipeOut
 from app.services import import_job as import_service
-from app.services import importer, permissions, wine_importer
+from app.services import importer, permissions
 from app.services import recipe as recipe_service
-from app.services import wine as wine_service
 
 router = APIRouter(prefix="/imports", tags=["imports"])
 
@@ -66,35 +63,6 @@ def import_recipe(
         job_id=job.id, notebook_id=notebook.id, complete="no_recipe_data" not in warnings,
         warnings=warnings, recipe=draft,
     )  # fmt: skip
-
-
-@router.post("/wine", response_model=WineImportPreview)
-def import_wine(
-    body: WineImportRequest, db: DbSession, user: CurrentUser, lang: Lang
-) -> WineImportPreview:
-    """Read a wine from a shop or winery page (session 8). Nothing is saved: the answer is the
-    preview, which the app sends to POST /wines when the person confirms."""
-    notebook = _notebook(db, user, lang, body.notebook_id)
-    try:
-        wine_service.require_wines(notebook)
-    except wine_service.WinesNotInPlan:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, t("wines_not_in_plan", lang)) from None
-    try:
-        final_url, html = wine_importer.fetch_html(body.url)
-    except importer.InvalidUrl:
-        raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_CONTENT, t("import_invalid_url", lang)
-        ) from None
-    except importer.FetchFailed:
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, t("import_fetch_failed", lang)) from None
-    preview = wine_importer.read_wine(html, final_url)
-    wine = wine_service.from_preview(db, preview, final_url, lang)
-    return WineImportPreview(
-        notebook_id=notebook.id,
-        complete="no_product_data" not in preview.warnings,
-        warnings=preview.warnings,
-        wine=wine,
-    )
 
 
 @router.post("/{job_id}/save", response_model=RecipeOut, status_code=status.HTTP_201_CREATED)

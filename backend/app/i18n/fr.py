@@ -64,12 +64,6 @@ TEXTS = {
     "spice_family.blends": "Mélanges",
     "spice_family.salts_seasonings": "Sels et autres assaisonnements",
     "wine_not_found": "Vin introuvable.",
-    "wine_deleted": "Vin supprimé.",
-    "wines_not_in_plan": (
-        "Le forfait de ce carnet n'inclut pas la cave. Le forfait individuel ou familial l'inclut."
-    ),
-    "wine_invalid_reference": "Ce type de vin n'existe pas.",
-    "wine_other_notebook": "Ce vin n'est pas dans le carnet de la recette.",
     "recipe_wine_removed": "Vin retiré de la recette.",
     "wine_sweetness.dry": "Sec",
     "wine_sweetness.off_dry": "Demi-sec",

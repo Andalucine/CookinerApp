@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     # Where the photos sent from the phone are kept (session 9). In Docker, /code/uploads is
     # the folder `uploads/` of the project on the Mac (docker-compose.yml); never in git.
     uploads_dir: str = "uploads"
+    # Added to every link to Vinoselección (session 9: CookinerApp is its sales agent), e.g.
+    # "utm_source=cookinerapp&utm_medium=app" or the agent code the shop gives. Empty: plain link
+    shop_link_params: str = ""
 
 
 @lru_cache

@@ -1,22 +1,22 @@
-"""Vinos: the wines of a notebook, with facets and favourites.
+"""Vinos: the shop's wine catalogue (session 9: Vinoselección, CookinerApp is its sales agent).
 
-The wine section follows the plan of the notebook owner: a free notebook answers 403 with a
-message explaining it (after checking access, so strangers still get 404).
-The wines recommended for a recipe live in /recipes/{id}/wines.
+The same cellar for every notebook and every plan: nobody creates, edits or deletes wines from
+the app; `scripts.sync_vinoseleccion` fills it and keeps prices and stock up to date. Each
+person marks favourites, and each notebook recommends wines for its recipes
+(/recipes/{id}/wines). Every wine carries `shop_url`: its page in the shop with the agent's
+code.
 """
 
 from fastapi import APIRouter, HTTPException, Query, status
 
 from app.core.deps import CurrentUser, DbSession, Lang
 from app.i18n import t
-from app.models import Notebook, Wine
+from app.models import Wine
 from app.schemas.auth import MessageResponse
 from app.schemas.catalog import Named, texts
 from app.schemas.wine import (
     WineCategoryCount,
     WineCategoryRef,
-    WineCreate,
-    WineIn,
     WineOut,
     WineRecipeOut,
     WineSearchResult,
@@ -43,7 +43,6 @@ def category_ref(category) -> WineCategoryRef | None:
 def _summary_fields(wine: Wine, favorites: set[int]) -> dict:
     return {
         "id": wine.id,
-        "notebook_id": wine.notebook_id,
         "name": wine.name,
         "winery": wine.winery,
         "category": category_ref(wine.category),
@@ -51,7 +50,10 @@ def _summary_fields(wine: Wine, favorites: set[int]) -> dict:
         "vintage": wine.vintage,
         "price_range": wine.price_range,
         "image_url": wine.image_url,
-        "added_by": permissions.added_by(wine.notebook, wine.added_by),
+        "source_name": wine.source_name,
+        "source_price": float(wine.source_price) if wine.source_price is not None else None,
+        "in_stock": wine.in_stock,
+        "shop_url": wine_service.shop_url(wine.source_url),
         "is_favorite": wine.id in favorites,
     }
 
@@ -65,8 +67,6 @@ def to_out(wine: Wine, favorites: set[int], db=None) -> WineOut:
     return WineOut(
         **_summary_fields(wine, favorites),
         pairs_with_categories=[Named.model_validate(c) for c in paired],
-        source_name=wine.source_name,
-        source_price=float(wine.source_price) if wine.source_price is not None else None,
         sweetness=wine.sweetness,
         body=wine.body,
         ageing=wine.ageing,
@@ -74,48 +74,21 @@ def to_out(wine: Wine, favorites: set[int], db=None) -> WineOut:
         grapes=wine.grapes,
         tasting_notes=wine.tasting_notes,
         pairing_notes=wine.pairing_notes,
-        source_url=wine.source_url,
-        edited_by=permissions.added_by(wine.notebook, wine.updated_by),
-        created_at=wine.created_at,
-        updated_at=wine.updated_at,
+        checked_at=wine.checked_at,
     )
 
 
-def check_plan(notebook: Notebook, lang: str) -> None:
+def _load(db, lang, wine_id: int) -> Wine:
     try:
-        wine_service.require_wines(notebook)
-    except wine_service.WinesNotInPlan:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, t("wines_not_in_plan", lang)) from None
-
-
-def _notebook(db, user, lang, notebook_id: int | None, *, edit: bool) -> Notebook:
-    try:
-        notebook = permissions.resolve_notebook(db, user, notebook_id, edit=edit)
-    except (permissions.NotebookNotFound, permissions.Forbidden):
-        raise HTTPException(status.HTTP_404_NOT_FOUND, t("notebook_not_found", lang)) from None
-    check_plan(notebook, lang)
-    return notebook
-
-
-def _load(db, user, lang, wine_id: int, *, edit: bool) -> Wine:
-    try:
-        wine = wine_service.get(db, wine_id)
-        if edit:
-            permissions.require_edit(db, user, wine.notebook)
-        else:
-            permissions.require_view(db, user, wine.notebook)
-    except (wine_service.WineNotFound, permissions.Forbidden):
+        return wine_service.get(db, wine_id)
+    except wine_service.WineNotFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, t("wine_not_found", lang)) from None
-    check_plan(wine.notebook, lang)
-    return wine
 
 
 @router.get("", response_model=WineSearchResult)
 def search_wines(
     db: DbSession,
     user: CurrentUser,
-    lang: Lang,
-    notebook_id: int | None = Query(default=None, description="Default: your own notebook"),
     q: str | None = Query(default=None, description="Name, winery, grapes or appellation"),
     category_id: int | None = Query(default=None, description="A first-level type includes all"),
     sweetness: str | None = None,
@@ -126,12 +99,13 @@ def search_wines(
     grape: str | None = None,
     price_range: str | None = None,
     favorites: bool = False,
+    in_stock: bool = Query(default=False, description="Only what the shop sells now"),
     limit: int = Query(default=50, le=200),
     offset: int = Query(default=0, ge=0),
 ) -> WineSearchResult:
-    notebook = _notebook(db, user, lang, notebook_id, edit=False)
+    """The shop's wines, those in stock first. Sold-out ones stay findable (a recipe may
+    recommend them) and come marked."""
     filters = wine_service.WineFilters(
-        notebook_ids=[notebook.id],
         text=q,
         category_id=category_id,
         sweetness=sweetness,
@@ -142,6 +116,7 @@ def search_wines(
         grape=grape,
         price_range=price_range,
         favorites_of=user.id if favorites else None,
+        in_stock_only=in_stock,
     )
     total, wines = wine_service.search(db, filters, limit=limit, offset=offset)
     starred = wine_service.favorite_ids(db, user.id, [w.id for w in wines])
@@ -149,86 +124,53 @@ def search_wines(
 
 
 @router.get("/category-counts", response_model=list[WineCategoryCount])
-def category_counts(
-    db: DbSession,
-    user: CurrentUser,
-    lang: Lang,
-    notebook_id: int | None = Query(default=None, description="Default: your own notebook"),
-) -> list[WineCategoryCount]:
-    """Wines of the notebook per type (a first-level type counts its subtypes), for Por tipos."""
-    notebook = _notebook(db, user, lang, notebook_id, edit=False)
-    counts = wine_service.category_counts(db, notebook.id)
+def category_counts(db: DbSession, user: CurrentUser) -> list[WineCategoryCount]:
+    """Wines in stock per type (a first-level type counts its subtypes), for Por tipos."""
+    counts = wine_service.category_counts(db)
     return [WineCategoryCount(category_id=c, count=n) for c, n in sorted(counts.items())]
-
-
-@router.post("", response_model=WineOut, status_code=status.HTTP_201_CREATED)
-def create_wine(body: WineCreate, db: DbSession, user: CurrentUser, lang: Lang) -> WineOut:
-    """Add a wine to your notebook, or to a notebook where you are editor."""
-    notebook = _notebook(db, user, lang, body.notebook_id, edit=True)
-    try:
-        wine = wine_service.create(db, user, notebook, WineIn(**body.model_dump()))
-    except wine_service.UnknownWineCategory:
-        raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_CONTENT, t("wine_invalid_reference", lang)
-        ) from None
-    return to_out(wine, set(), db)
 
 
 @router.get("/{wine_id}", response_model=WineOut)
 def get_wine(wine_id: int, db: DbSession, user: CurrentUser, lang: Lang) -> WineOut:
-    wine = _load(db, user, lang, wine_id, edit=False)
+    wine = _load(db, lang, wine_id)
     return to_out(wine, wine_service.favorite_ids(db, user.id, [wine.id]), db)
 
 
 @router.get("/{wine_id}/recipes", response_model=list[WineRecipeOut])
-def wine_recipes(wine_id: int, db: DbSession, user: CurrentUser, lang: Lang) -> list[WineRecipeOut]:
-    """The recipes this wine is recommended for, with the reason."""
-    wine = _load(db, user, lang, wine_id, edit=False)
+def wine_recipes(
+    wine_id: int,
+    db: DbSession,
+    user: CurrentUser,
+    lang: Lang,
+    notebook_id: int | None = Query(default=None, description="Default: your own notebook"),
+) -> list[WineRecipeOut]:
+    """The recipes of a notebook this wine is recommended for, with the reason."""
+    wine = _load(db, lang, wine_id)
+    try:
+        notebook = permissions.resolve_notebook(db, user, notebook_id, edit=False)
+    except (permissions.NotebookNotFound, permissions.Forbidden):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, t("notebook_not_found", lang)) from None
     return [
         WineRecipeOut(
             link_id=link.id,
             recipe_id=link.recipe_id,
             title=link.recipe.title,
             reason=link.reason,
-            added_by=permissions.added_by(wine.notebook, link.added_by),
+            added_by=permissions.added_by(notebook, link.added_by),
         )
-        for link in wine_service.recipes_of(db, wine)
+        for link in wine_service.recipes_of(db, wine, notebook.id)
     ]
-
-
-@router.put("/{wine_id}", response_model=WineOut)
-def update_wine(
-    wine_id: int, body: WineIn, db: DbSession, user: CurrentUser, lang: Lang
-) -> WineOut:
-    wine = _load(db, user, lang, wine_id, edit=True)
-    try:
-        wine = wine_service.update(db, wine, user, body)
-    except wine_service.UnknownWineCategory:
-        raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_CONTENT, t("wine_invalid_reference", lang)
-        ) from None
-    return to_out(wine, wine_service.favorite_ids(db, user.id, [wine.id]), db)
-
-
-@router.delete("/{wine_id}", response_model=MessageResponse)
-def delete_wine(wine_id: int, db: DbSession, user: CurrentUser, lang: Lang) -> MessageResponse:
-    """Only the notebook owner or whoever added the wine."""
-    wine = _load(db, user, lang, wine_id, edit=True)
-    if not permissions.can_delete(user, wine.notebook, wine.added_by_id):
-        raise HTTPException(status.HTTP_403_FORBIDDEN, t("forbidden", lang))
-    wine_service.delete(db, wine)
-    return MessageResponse(message=t("wine_deleted", lang))
 
 
 @router.post("/{wine_id}/favorite", response_model=MessageResponse)
 def add_favorite(wine_id: int, db: DbSession, user: CurrentUser, lang: Lang) -> MessageResponse:
-    wine = _load(db, user, lang, wine_id, edit=False)
+    wine = _load(db, lang, wine_id)
     wine_service.set_favorite(db, user, wine, on=True)
     return MessageResponse(message=t("favorite_added", lang))
 
 
 @router.delete("/{wine_id}/favorite", response_model=MessageResponse)
 def remove_favorite(wine_id: int, db: DbSession, user: CurrentUser, lang: Lang) -> MessageResponse:
-    wine = _load(db, user, lang, wine_id, edit=False)
+    wine = _load(db, lang, wine_id)
     wine_service.set_favorite(db, user, wine, on=False)
     return MessageResponse(message=t("favorite_removed", lang))

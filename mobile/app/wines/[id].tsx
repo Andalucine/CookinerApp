@@ -1,17 +1,16 @@
 /**
- * Ficha de un vino (session 8): name, winery and star; the type with its serving temperature;
- * the facts in tidy tiles (sweetness, body, ageing, the price band in euros, D.O., country,
- * vintage, grapes); the shop and its price when it was imported; tasting notes; what it goes
- * with (its own text, or the pairing rules of its type); "Recomendado para" with the recipes
- * that carry it; the source; Editar for owner and editors.
+ * Ficha de un vino (session 8; session 9: the wines are Vinoselección's): name, winery and
+ * star; the orange "Comprar en Vinoselección" button with its price (or "agotado"); the type
+ * with its serving temperature; the facts in tidy tiles (sweetness, body, ageing, the price
+ * band in euros, D.O., country, vintage, grapes); tasting notes; what it goes with (the shop's
+ * text, or the pairing rules of its type); "Recomendado para" with the recipes of my notebook
+ * that carry it. Nothing is edited here: the shop's page is the source.
  */
 import { Ionicons } from "@expo/vector-icons";
-import * as WebBrowser from "expo-web-browser";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { BigButton } from "../../components/BigButton.tsx";
 import { LoadError, Loading } from "../../components/LoadState.tsx";
 import { Message } from "../../components/Message.tsx";
 import { PhotoThumb } from "../../components/Photo.tsx";
@@ -23,7 +22,7 @@ import { type Auth, SignedIn } from "../../components/SignedIn.tsx";
 import { colors, fontSize, radius, spacing } from "../../components/theme.ts";
 import { useI18n } from "../../i18n";
 import { errorText } from "../../services/errors.ts";
-import { localName, siteName } from "../../services/format.ts";
+import { localName } from "../../services/format.ts";
 import { useLoad } from "../../services/useLoad.ts";
 import { PRICE_BANDS } from "../../services/wineQuery.ts";
 import * as wines from "../../services/wines.ts";
@@ -72,9 +71,6 @@ function WineScreen({ auth, id }: { auth: Auth; id: number }) {
   const pairing =
     wine.pairing_notes ||
     (wine.pairs_with_categories.length ? wine.pairs_with_categories.join(", ") : null);
-  const hasShopPrice = !!wine.source_url && wine.source_price !== null;
-  // The zone shows my own notebook (owner); in another notebook the API refuses if not editor
-  const canEdit = true;
 
   async function toggleFavorite() {
     const on = !wine.is_favorite;
@@ -112,6 +108,7 @@ function WineScreen({ auth, id }: { auth: Auth; id: number }) {
         </Pressable>
       </View>
       <Message text={favoriteError} />
+      <ShopPrice wine={wine} />
       {wine.image_url ? (
         <View style={styles.image}>
           <PhotoThumb url={wine.image_url} size={160} label={t("photo.see")} />
@@ -146,14 +143,6 @@ function WineScreen({ auth, id }: { auth: Auth; id: number }) {
             </View>
           ))}
         </View>
-      ) : null}
-      <ShopPrice
-        sourceUrl={wine.source_url}
-        sourceName={wine.source_name}
-        sourcePrice={wine.source_price}
-      />
-      {wine.added_by ? (
-        <Text style={styles.muted}>{t("recipes.addedBy", { name: wine.added_by })}</Text>
       ) : null}
 
       {wine.tasting_notes ? (
@@ -190,31 +179,6 @@ function WineScreen({ auth, id }: { auth: Auth; id: number }) {
         <Text style={styles.muted}>{t("wines.recommendedForNone")}</Text>
       )}
 
-      {wine.source_url && !hasShopPrice ? (
-        <>
-          <SectionTitle text={t("recipe.source")} />
-          <Text style={styles.body}>
-            {wine.source_name || siteName(wine.source_url) || wine.source_url}
-          </Text>
-          <BigButton
-            label={t("wines.openSource")}
-            icon="open-outline"
-            variant="link"
-            onPress={() => WebBrowser.openBrowserAsync(wine.source_url!)}
-          />
-        </>
-      ) : null}
-
-      {canEdit ? (
-        <View style={styles.actions}>
-          <BigButton
-            label={t("recipe.edit")}
-            icon="create-outline"
-            variant="secondary"
-            onPress={() => router.push({ pathname: "/wines/write", params: { id: String(wine.id) } })}
-          />
-        </View>
-      ) : null}
     </Screen>
   );
 }
@@ -262,5 +226,4 @@ const styles = StyleSheet.create({
   list: { gap: spacing.s },
   recipe: { gap: spacing.xs },
   reason: { fontSize: fontSize.small, color: colors.muted, paddingHorizontal: spacing.m },
-  actions: { marginTop: spacing.l, gap: spacing.s },
 });

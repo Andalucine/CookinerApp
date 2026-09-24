@@ -1,14 +1,23 @@
-"""Wines: type tree (global), the wines of each notebook, recommendations per recipe and the
-automatic pairing rules."""
+"""Wines: type tree (global), the shop's wine catalogue (global, session 9: Vinoselección),
+recommendations per recipe and the automatic pairing rules."""
 
+from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Integer, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 from app.models.base import TimestampMixin
-from app.models.notebook import Notebook
 from app.models.user import User
 
 if TYPE_CHECKING:
@@ -35,6 +44,10 @@ def price_range_for(price: float | None) -> str | None:
             return symbol
     return PRICE_RANGES[-1]
 
+
+# The shop whose catalogue is the app's cellar (session 9: the app acts as its sales agent)
+SHOP_VINOSELECCION = "vinoseleccion"
+SHOP_NAMES = {SHOP_VINOSELECCION: "Vinoselección"}
 
 ORIGIN_MANUAL = "manual"
 ORIGIN_IMPORTED = "imported"
@@ -70,17 +83,19 @@ class WineCategory(Base):
 
 
 class Wine(TimestampMixin, Base):
-    """A wine in someone's notebook (the wine section is per notebook, like recipes)."""
+    """A wine of the shop's catalogue (session 9): the same cellar for every notebook, like the
+    spices. It is filled and kept up to date by `scripts.sync_vinoseleccion`, which reads each
+    page of the shop; nobody creates, edits or deletes wines from the app. Each notebook marks
+    favourites and recommends wines for its recipes (`favorites`, `recipe_wines`)."""
 
     __tablename__ = "wines"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    notebook_id: Mapped[int] = mapped_column(
-        ForeignKey("notebooks.id", ondelete="CASCADE"), nullable=False, index=True
+    shop: Mapped[str] = mapped_column(
+        String(30), default=SHOP_VINOSELECCION, nullable=False, index=True
     )
-    added_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
-    # Last person who changed it, to show "(editado por NOMBRE)" when it is not the owner
-    updated_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    # The wine's page in the shop: its identity (the sync finds the wine by it)
+    source_url: Mapped[str] = mapped_column(String(1000), unique=True, nullable=False)
     name: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
     winery: Mapped[str | None] = mapped_column(String(200))
     category_id: Mapped[int | None] = mapped_column(
@@ -97,16 +112,15 @@ class Wine(TimestampMixin, Base):
     price_range: Mapped[str | None] = mapped_column(String(4))  # €, €€, €€€, €€€€
     tasting_notes: Mapped[str | None] = mapped_column(Text)
     pairing_notes: Mapped[str | None] = mapped_column(Text)
-    source_url: Mapped[str | None] = mapped_column(String(1000))
-    # When imported from a shop (session 8): the shop's name and its price at that moment
+    # The shop's name as people know it and its price the last time the page was read
     source_name: Mapped[str | None] = mapped_column(String(100))
     source_price: Mapped[float | None] = mapped_column(Numeric(8, 2))
     image_url: Mapped[str | None] = mapped_column(String(1000))
+    # False when the shop no longer sells it (gone from its product list, or sold out)
+    in_stock: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     category: Mapped[WineCategory | None] = relationship()
-    notebook: Mapped[Notebook] = relationship()
-    added_by: Mapped[User | None] = relationship(foreign_keys=[added_by_id])
-    updated_by: Mapped[User | None] = relationship(foreign_keys=[updated_by_id])
 
 
 class RecipeWine(Base):

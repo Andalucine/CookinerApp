@@ -128,3 +128,11 @@ def test_the_sheet_grape_is_kept_when_the_page_backs_it():
     # a sheet grape the page never mentions, while the page names another one → the page wins
     wrong = page.replace('<a href="/g">Albariño</a>', '<a href="/g">Mencía</a>')
     assert read_wine(wrong, "https://www.delatierra.com/z.html").grapes == "albariño"
+
+
+def test_reads_the_stock_of_the_offer():
+    assert read_wine(SHOP, "https://x.test/a").in_stock is None  # the page does not say
+    sold = SHOP.replace('"priceCurrency":"EUR"', '"availability":"https://schema.org/OutOfStock"')
+    assert read_wine(sold, "https://x.test/a").in_stock is False
+    ok = SHOP.replace('"priceCurrency":"EUR"', '"availability":"http://schema.org/InStock"')
+    assert read_wine(ok, "https://x.test/a").in_stock is True

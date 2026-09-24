@@ -4,6 +4,7 @@ import { api } from "./apiClient.ts";
 import type { Occasion, Season, Tag } from "./catalog.ts";
 import type { Localized, Translated } from "./format.ts";
 import { type RecipeFilters, toQuery } from "./recipeQuery.ts";
+import type { WineSummary } from "./wines.ts";
 
 export type SourceType = "own" | "web" | "book" | "family" | "other";
 export type Role = "owner" | "editor" | "viewer";
@@ -87,15 +88,7 @@ export type RecipeSpice = {
   substitutions: unknown[];
 };
 
-export type WineSummary = {
-  id: number;
-  name: string;
-  winery: string | null;
-  appellation: string | null;
-  vintage: number | null;
-  category: (Localized & { parent: Localized | null; serving_temp: string | null }) | null;
-  added_by: string | null;
-};
+export type { WineSummary } from "./wines.ts";
 
 export type RecipeWines = {
   recommended: { id: number; wine: WineSummary; reason: string | null; added_by: string | null }[];
@@ -106,7 +99,7 @@ export type RecipeWines = {
       reason_es: string;
       reason_en: string;
     } & Translated<"reason">)[];
-    my_wines: WineSummary[];
+    wines: WineSummary[]; // shop wines of those types: my favourites first, then in stock
   } | null;
 };
 
