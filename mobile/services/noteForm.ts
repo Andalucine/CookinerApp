@@ -1,5 +1,5 @@
 /** The note form without React Native (tested with Node), session 9. */
-import type { NoteInput } from "./notes.ts";
+import type { NoteInput, NoteKind } from "./notes.ts";
 
 export const TITLE_MAX = 200;
 const TITLE_FROM_TEXT = 60;
@@ -7,7 +7,11 @@ const TITLE_FROM_TEXT = 60;
 /** What was typed → what is saved. The title may be left empty: then the first line of the
  * text is the title, like the first line of a page in a paper notebook. `null` when there is
  * nothing to save (no title and no text). */
-export function toNoteInput(title: string, text: string): NoteInput | null {
+export function toNoteInput(
+  title: string,
+  text: string,
+  kind: NoteKind | null = null,
+): NoteInput | null {
   const content = text.replace(/\s+$/, "").replace(/^\s*\n/, "");
   let name = title.trim().replace(/\s+/g, " ");
   if (!name) {
@@ -19,5 +23,5 @@ export function toNoteInput(title: string, text: string): NoteInput | null {
     }
   }
   if (!name) return null;
-  return { title: name.slice(0, TITLE_MAX), content: content.trim() ? content : null };
+  return { title: name.slice(0, TITLE_MAX), content: content.trim() ? content : null, kind };
 }

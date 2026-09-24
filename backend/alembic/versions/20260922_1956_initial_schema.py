@@ -336,6 +336,7 @@ def upgrade() -> None:
         sa.Column("updated_by_id", sa.Integer(), nullable=True),
         sa.Column("title", sa.String(length=200), nullable=False),
         sa.Column("content", sa.Text(), nullable=True),
+        sa.Column("kind", sa.String(length=20), nullable=True),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),

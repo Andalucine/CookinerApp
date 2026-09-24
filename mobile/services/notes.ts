@@ -3,10 +3,14 @@ import { api } from "./apiClient.ts";
 
 type Auth = { token: string; language: string };
 
+/** What a note is about (session 9); the same values as the API. */
+export type NoteKind = "recipes" | "wines" | "spices" | "celebrations" | "shopping" | "ideas";
+
 export type NoteSummary = {
   id: number;
   notebook_id: number;
   title: string;
+  kind: NoteKind | null;
   author_id: number | null;
   preview: string | null; // the first 140 characters of the text
   added_by: string | null; // name, when someone else wrote it in the owner's notebook
@@ -16,7 +20,7 @@ export type NoteSummary = {
 
 export type Note = NoteSummary & { content: string | null; created_at: string };
 
-export type NoteInput = { title: string; content: string | null };
+export type NoteInput = { title: string; content: string | null; kind: NoteKind | null };
 
 /** The notes of my notebook (or of someone else's, with its id), last changed first. */
 export function list({ token, language }: Auth, notebookId?: number, q?: string) {

@@ -146,9 +146,9 @@ Mezclas propias del cuaderno y versiones propias de las del catálogo. Propietar
 
 | Método | Ruta | Cuerpo / parámetros | Respuesta |
 |---|---|---|---|
-| GET | `/notes` | `notebook_id`, `q` (título o contenido) | Notas más recientes primero, con `preview`, `author_id` (quién la escribió: la app ofrece Borrar al propietario y a esa persona; sesión 9), `added_by`, `edited_by`. |
-| POST | `/notes` | `title`, `content`, `notebook_id` (opcional) | 201. Propietario o editor. |
-| GET / PUT / DELETE | `/notes/{id}` | PUT: `title`, `content` | Borrar: propietario o autor. |
+| GET | `/notes` | `notebook_id`, `q` (título o contenido), `kind` | Notas más recientes primero, con `kind`, `preview`, `author_id` (quién la escribió: la app ofrece Borrar al propietario y a esa persona; sesión 9), `added_by`, `edited_by`. |
+| POST | `/notes` | `title`, `content`, `kind` (opcional: `recipes`, `wines`, `spices`, `celebrations`, `shopping`, `ideas`; sesión 9), `notebook_id` (opcional) | 201. Propietario o editor. |
+| GET / PUT / DELETE | `/notes/{id}` | PUT: `title`, `content`, `kind` | Borrar: propietario o autor. |
 
 ### Épocas (`/occasions`)
 

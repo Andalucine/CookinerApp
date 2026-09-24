@@ -8,7 +8,9 @@ def test_notes_crud_and_search(client, seeded, make_user):
     note = r.json()
     assert note["notebook_id"] == user["notebook_id"] and note["added_by"] is None
     client.post(
-        "/notes", json={"title": "Pescadería Manolo", "content": "Martes y jueves"}, headers=h
+        "/notes",
+        json={"title": "Pescadería Manolo", "content": "Martes y jueves", "kind": "shopping"},
+        headers=h,
     )
 
     assert len(client.get("/notes", headers=h).json()) == 2
@@ -16,8 +18,16 @@ def test_notes_crud_and_search(client, seeded, make_user):
     assert [n["title"] for n in found] == ["Menú de Nochebuena"]
     assert found[0]["preview"] == "Sopa de marisco, cordero"
 
-    r = client.put(f"/notes/{note['id']}", json={"title": "Nochebuena 2026"}, headers=h)
+    shopping = client.get("/notes?kind=shopping", headers=h).json()
+    assert [(n["title"], n["kind"]) for n in shopping] == [("Pescadería Manolo", "shopping")]
+
+    r = client.put(
+        f"/notes/{note['id']}", json={"title": "Nochebuena 2026", "kind": "celebrations"}, headers=h
+    )
     assert r.json()["title"] == "Nochebuena 2026" and r.json()["content"] is None
+    assert r.json()["kind"] == "celebrations"
+    r = client.put(f"/notes/{note['id']}", json={"title": "x", "kind": "party"}, headers=h)
+    assert r.status_code == 422
     assert client.delete(f"/notes/{note['id']}", headers=h).status_code == 200
     assert client.get(f"/notes/{note['id']}", headers=h).status_code == 404
 

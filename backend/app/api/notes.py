@@ -6,7 +6,7 @@ from app.core.deps import CurrentUser, DbSession, Lang
 from app.i18n import t
 from app.models import Note
 from app.schemas.auth import MessageResponse
-from app.schemas.note import NoteCreate, NoteIn, NoteOut, NoteSummary
+from app.schemas.note import NoteCreate, NoteIn, NoteKind, NoteOut, NoteSummary
 from app.services import note as note_service
 from app.services import permissions
 
@@ -18,6 +18,7 @@ def _summary_fields(note: Note) -> dict:
         "id": note.id,
         "notebook_id": note.notebook_id,
         "title": note.title,
+        "kind": note.kind,
         "author_id": note.author_id,
         "preview": note_service.preview(note.content),
         "added_by": permissions.added_by(note.notebook, note.author),
@@ -56,9 +57,11 @@ def list_notes(
     lang: Lang,
     notebook_id: int | None = Query(default=None, description="Default: your own notebook"),
     q: str | None = Query(default=None, description="Search in title and content"),
+    kind: NoteKind | None = Query(default=None, description="Only the notes of this kind"),
 ) -> list[NoteSummary]:
     notebook = _notebook(db, user, lang, notebook_id, edit=False)
-    return [NoteSummary(**_summary_fields(n)) for n in note_service.list_notes(db, notebook.id, q)]
+    found = note_service.list_notes(db, notebook.id, q, kind)
+    return [NoteSummary(**_summary_fields(n)) for n in found]
 
 
 @router.post("", response_model=NoteOut, status_code=status.HTTP_201_CREATED)

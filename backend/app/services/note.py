@@ -26,8 +26,12 @@ def get(db: Session, note_id: int) -> Note:
     return note
 
 
-def list_notes(db: Session, notebook_id: int, text: str | None) -> list[Note]:
+def list_notes(
+    db: Session, notebook_id: int, text: str | None, kind: str | None = None
+) -> list[Note]:
     q = _query().where(Note.notebook_id == notebook_id)
+    if kind:
+        q = q.where(Note.kind == kind)
     if text:
         term = f"%{text.strip()}%"
         q = q.where(or_(Note.title.ilike(term), Note.content.ilike(term)))
@@ -41,6 +45,7 @@ def create(db: Session, author: User, notebook_id: int, data: NoteIn) -> Note:
         updated_by_id=author.id,
         title=data.title,
         content=data.content,
+        kind=data.kind,
     )
     db.add(note)
     db.commit()
@@ -48,7 +53,8 @@ def create(db: Session, author: User, notebook_id: int, data: NoteIn) -> Note:
 
 
 def update(db: Session, note: Note, editor: User, data: NoteIn) -> Note:
-    note.title, note.content, note.updated_by_id = data.title, data.content, editor.id
+    note.title, note.content, note.kind = data.title, data.content, data.kind
+    note.updated_by_id = editor.id
     db.commit()
     return get(db, note.id)
 

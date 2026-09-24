@@ -1,6 +1,6 @@
 /**
- * Nueva nota and Editar nota (with ?id=), session 9: a title and a big box for the text, as on
- * a notebook page. The title may stay empty: the first line of the text becomes the title.
+ * Nueva nota and Editar nota (with ?id=), session 9: what it is about (six yellow squares), a
+ * title and a big box for the text, as on a notebook page. The title may stay empty: the first line of the text becomes the title.
  * Saving a new note opens it; saving an edit goes back to it. Borrar, with confirmation, only
  * for the notebook owner or whoever wrote the note.
  */
@@ -12,6 +12,7 @@ import { BigButton } from "../../components/BigButton.tsx";
 import { LoadError, Loading } from "../../components/LoadState.tsx";
 import { Message } from "../../components/Message.tsx";
 import { NotebookBanner } from "../../components/NotebookBanner.tsx";
+import { NoteKindPicker } from "../../components/NoteKindPicker.tsx";
 import { Screen } from "../../components/Screen.tsx";
 import { type Auth, SignedIn } from "../../components/SignedIn.tsx";
 import { TextField } from "../../components/TextField.tsx";
@@ -33,18 +34,19 @@ function NoteForm({
   submitLabel,
   onSubmit,
 }: {
-  initial: { title: string; content: string };
+  initial: { title: string; content: string; kind: notes.NoteKind | null };
   submitLabel: string;
   onSubmit: (input: notes.NoteInput) => Promise<void>;
 }) {
   const { t } = useI18n();
   const [title, setTitle] = useState(initial.title);
   const [content, setContent] = useState(initial.content);
+  const [kind, setKind] = useState(initial.kind);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function submit() {
-    const input = toNoteInput(title, content);
+    const input = toNoteInput(title, content, kind);
     if (!input) {
       setMessage(t("notes.errorEmpty"));
       return;
@@ -61,6 +63,7 @@ function NoteForm({
 
   return (
     <>
+      <NoteKindPicker value={kind} onChange={setKind} />
       <TextField
         label={t("notes.title")}
         hint={t("notes.titleHint")}
@@ -91,7 +94,7 @@ function NewNote({ auth, notebook }: { auth: Auth; notebook: OtherNotebook | nul
       <Stack.Screen options={{ title: t("notes.new") }} />
       <NotebookBanner notebook={notebook} />
       <NoteForm
-        initial={{ title: "", content: "" }}
+        initial={{ title: "", content: "", kind: null }}
         submitLabel={t("notes.save")}
         onSubmit={async (input) => {
           const saved = await notes.create(auth, input, notebook?.id);
@@ -155,7 +158,7 @@ function EditNote({
       {/* key: a fresh form when the note is loaded again */}
       <NoteForm
         key={note.updated_at}
-        initial={{ title: note.title, content: note.content ?? "" }}
+        initial={{ title: note.title, content: note.content ?? "", kind: note.kind }}
         submitLabel={t("form.saveChanges")}
         onSubmit={async (input) => {
           await notes.update(auth, note.id, input);

@@ -94,7 +94,7 @@ El catálogo de especias, sustituciones y mezclas nunca se modifica: al editar u
 
 | Tabla | Para qué | Campos clave |
 |---|---|---|
-| `notes` | Páginas libres del cuaderno | `title`, `content`, `author_id`, `updated_by_id` (último que la editó) |
+| `notes` | Páginas libres del cuaderno | `title`, `content`, `kind` (de qué trata, opcional: `recipes`, `wines`, `spices`, `celebrations`, `shopping`, `ideas`; sesión 9), `author_id`, `updated_by_id` (último que la editó) |
 | `pantry_items` | Lo que hay en casa (sin caducidades) | `ingredient_id` (único por cuaderno), `location` (`fridge`/`freezer`/`pantry`) |
 | `shopping_sections` | Secciones del supermercado, en orden de recorrido | `code`, `name_es`, `name_en`, `position` |
 | `shopping_list_items` | Líneas de la lista de la compra | `text`, `quantity`, `ingredient_id` (si viene del catálogo), `section_id` (la del ingrediente; "Otros" si no la tiene), `is_checked`, `recipe_id` (de qué receta salió) |
