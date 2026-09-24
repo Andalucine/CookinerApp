@@ -86,6 +86,9 @@ function asTree(nodes: wines.WineCategoryNode[], level = 1): CategoryNode[] {
     examples_es: n.examples_es,
     name_es: n.name_es,
     name_en: n.name_en,
+    name_fr: n.name_fr,
+    name_nl: n.name_nl,
+    name_de: n.name_de,
     children: asTree(n.children, level + 1),
   }));
 }

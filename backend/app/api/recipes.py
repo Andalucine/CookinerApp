@@ -9,7 +9,7 @@ from app.core.deps import CurrentUser, DbSession, Lang
 from app.i18n import t
 from app.models import Favorite, Recipe
 from app.schemas.auth import MessageResponse
-from app.schemas.catalog import Named, OccasionOut, SeasonOut, TagOut
+from app.schemas.catalog import Named, OccasionOut, SeasonOut, TagOut, texts
 from app.schemas.recipe import (
     AuthorOut,
     CategoryCount,
@@ -42,8 +42,7 @@ def _categories(recipe: Recipe) -> list[RecipeCategoryOut]:
         RecipeCategoryOut(
             id=rc.category.id,
             slug=rc.category.slug,
-            name_es=rc.category.name_es,
-            name_en=rc.category.name_en,
+            **texts(rc.category),
             is_primary=rc.is_primary,
         )
         for rc in recipe.categories
@@ -266,8 +265,7 @@ def _recipe_wines(db, user, recipe: Recipe) -> RecipeWinesOut:
                 wine_types=[
                     PairingRuleOut(
                         wine_category=category_ref(r.wine_category),
-                        reason_es=r.reason_es,
-                        reason_en=r.reason_en,
+                        **texts(r, "reason"),
                     )
                     for r in found.rules
                 ],

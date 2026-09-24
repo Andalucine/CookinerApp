@@ -20,6 +20,7 @@ import { useI18n } from "../../i18n";
 import { errorText } from "../../services/errors.ts";
 import * as spices from "../../services/spices.ts";
 import { useLoad } from "../../services/useLoad.ts";
+import { catalogName, localName } from "../../services/format.ts";
 
 type Initial = { name: string; family: string; aliases: string };
 
@@ -80,7 +81,7 @@ function Form({
         onChange={setFamily}
         options={families.map((f) => ({
           value: f.code,
-          label: language !== "es" ? f.name_en : f.name_es,
+          label: localName(f, language),
         }))}
       />
       <TextField
@@ -134,7 +135,7 @@ function Loader({
       editing={editing}
       families={data.data.families}
       initial={{
-        name: card ? cap((language !== "es" && card.name_en) || card.name) : "",
+        name: card ? cap(catalogName(card, language)) : "",
         family: card?.family ?? family,
         aliases: card?.aliases ?? "",
       }}

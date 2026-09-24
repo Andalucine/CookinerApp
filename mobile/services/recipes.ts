@@ -2,7 +2,7 @@
 import type { Language } from "../i18n/translate.ts";
 import { api } from "./apiClient.ts";
 import type { Occasion, Season, Tag } from "./catalog.ts";
-import type { Localized } from "./format.ts";
+import type { Localized, Translated } from "./format.ts";
 import { type RecipeFilters, toQuery } from "./recipeQuery.ts";
 
 export type SourceType = "own" | "web" | "book" | "family" | "other";
@@ -101,11 +101,11 @@ export type RecipeWines = {
   recommended: { id: number; wine: WineSummary; reason: string | null; added_by: string | null }[];
   suggestion: {
     based_on: Localized;
-    wine_types: {
+    wine_types: ({
       wine_category: Localized & { parent: Localized | null };
       reason_es: string;
       reason_en: string;
-    }[];
+    } & Translated<"reason">)[];
     my_wines: WineSummary[];
   } | null;
 };

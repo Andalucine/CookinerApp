@@ -32,7 +32,15 @@ from app.models import (
     Tag,
     WineCategory,
 )
-from scripts.catalog_data import basics, categories, ingredients, pairings, spices, wines
+from scripts.catalog_data import (
+    basics,
+    categories,
+    ingredients,
+    pairings,
+    spices,
+    translations,
+    wines,
+)
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 log = logging.getLogger("seed")
@@ -51,15 +59,21 @@ def _upsert(db: Session, model, keys: dict, values: dict):
     return row
 
 
+def _tr(base: str, text: str | None) -> dict:
+    """{base_fr, base_nl, base_de} for a Spanish catalogue text (session 9, five languages)."""
+    fr, nl, de = translations.tr(text)
+    return {f"{base}_fr": fr, f"{base}_nl": nl, f"{base}_de": de}
+
+
 def seed_basics(db: Session) -> None:
     for code, es, en in basics.SEASONS:
-        _upsert(db, Season, {"code": code}, {"name_es": es, "name_en": en})
+        _upsert(db, Season, {"code": code}, {"name_es": es, "name_en": en, **_tr("name", es)})
     for es, en in basics.OCCASIONS:
         _upsert(
             db,
             Occasion,
             {"notebook_id": None, "name_es": es},
-            {"name_en": en, "is_preloaded": True},
+            {"name_en": en, "is_preloaded": True, **_tr("name", es)},
         )
     # A preloaded occasion taken out of the list is deleted (recipes just lose it), so that it
     # disappears from every screen. The notebooks' own occasions are never touched.
@@ -72,7 +86,10 @@ def seed_basics(db: Session) -> None:
         db.execute(delete(Occasion).where(Occasion.id.in_(gone)))
     for pos, (code, es, en) in enumerate(basics.SHOPPING_SECTIONS):
         _upsert(
-            db, ShoppingSection, {"code": code}, {"name_es": es, "name_en": en, "position": pos}
+            db,
+            ShoppingSection,
+            {"code": code},
+            {"name_es": es, "name_en": en, "position": pos, **_tr("name", es)},
         )
     for kind, values in basics.TAGS.items():
         for pos, (code, es, en) in enumerate(values):
@@ -80,7 +97,7 @@ def seed_basics(db: Session) -> None:
                 db,
                 Tag,
                 {"kind": kind, "code": code},
-                {"name_es": es, "name_en": en, "position": pos},
+                {"name_es": es, "name_en": en, "position": pos, **_tr("name", es)},
             )
     log.info("Estaciones, épocas, secciones de compra y etiquetas: ok")
 
@@ -95,6 +112,7 @@ def seed_categories(db: Session) -> None:
             {
                 "name_es": es,
                 "name_en": en,
+                **_tr("name", es),
                 "level": 1,
                 "position": pos1,
                 "is_preloaded": True,
@@ -110,6 +128,7 @@ def seed_categories(db: Session) -> None:
                 {
                     "name_es": es2,
                     "name_en": en2,
+                    **_tr("name", es2),
                     "examples_es": ex2,
                     "level": 2,
                     "position": pos2,
@@ -126,6 +145,7 @@ def seed_categories(db: Session) -> None:
                     {
                         "name_es": es3,
                         "name_en": en3,
+                        **_tr("name", es3),
                         "examples_es": ex3,
                         "level": 3,
                         "position": pos3,
@@ -158,11 +178,13 @@ def seed_ingredients(db: Session) -> dict[str, Ingredient]:
                 {"name": name},
                 {
                     "name_en": name_en,
+                    **_tr("name", name),
                     "aliases": aliases,
                     "is_spice": True,
                     "spice_family": family,
                     "pairs_with_es": pairings.PAIRINGS.get(name, (None, None))[0],
                     "pairs_with_en": pairings.PAIRINGS.get(name, (None, None))[1],
+                    **_tr("pairs_with", pairings.PAIRINGS.get(name, (None, None))[0]),
                     "shopping_section_id": sections["spices"].id,
                 },
             )
@@ -174,6 +196,7 @@ def seed_ingredients(db: Session) -> dict[str, Ingredient]:
             {"name": name},
             {
                 "name_en": name_en,
+                **_tr("name", name),
                 "aliases": _with_plural(name, aliases),
                 "shopping_section_id": sections[section].id,
             },
@@ -194,6 +217,9 @@ def seed_spice_zone(db: Session, ing: dict[str, Ingredient]) -> None:
                 equivalence_en=e_en,
                 note_es=n_es,
                 note_en=n_en,
+                **_tr("situation", s_es),
+                **_tr("equivalence", e_es),
+                **_tr("note", n_es),
                 position=pos,
             )
         )
@@ -211,6 +237,8 @@ def seed_spice_zone(db: Session, ing: dict[str, Ingredient]) -> None:
                     ratio=ratio,
                     note_es=n_es,
                     note_en=n_en,
+                    **_tr("substitute", sub_es),
+                    **_tr("note", n_es),
                     position=pos,
                 )
             )
@@ -222,7 +250,13 @@ def seed_spice_zone(db: Session, ing: dict[str, Ingredient]) -> None:
             db,
             SpiceBlend,
             {"ingredient_id": ing[blend_name].id},
-            {"quick_substitute_es": quick_es, "quick_substitute_en": quick_en, "note_es": note_es},
+            {
+                "quick_substitute_es": quick_es,
+                "quick_substitute_en": quick_en,
+                "note_es": note_es,
+                **_tr("quick_substitute", quick_es),
+                **_tr("note", note_es),
+            },
         )
         db.execute(delete(SpiceBlendItem).where(SpiceBlendItem.blend_id == blend.id))
         for pos, (name, parts, optional) in enumerate(items):
@@ -252,7 +286,13 @@ def seed_wines(db: Session) -> None:
             db,
             WineCategory,
             {"parent_id": None, "slug": slug},
-            {"name_es": es, "name_en": en, "serving_temp": temp, "position": pos},
+            {
+                "name_es": es,
+                "name_en": en,
+                "serving_temp": temp,
+                "position": pos,
+                **_tr("name", es),
+            },
         )
         by_slug[slug] = root
         for pos2, (slug2, es2, en2, ex2) in enumerate(children):
@@ -266,6 +306,7 @@ def seed_wines(db: Session) -> None:
                     "parent_id": root.id,
                     "name_es": es2,
                     "name_en": en2,
+                    **_tr("name", es2),
                     "examples_es": ex2,
                     "serving_temp": temp,
                     "position": pos2,
@@ -284,6 +325,7 @@ def seed_wines(db: Session) -> None:
                     wine_category_id=by_slug[wine_slug].id,
                     reason_es=reason_es,
                     reason_en=reason_en,
+                    **_tr("reason", reason_es),
                     position=pos,
                 )
             )
@@ -352,6 +394,7 @@ def seed_everyday_ingredients(db: Session) -> int:
                 {"name": name},
                 {
                     "name_en": name_en,
+                    **_tr("name", name),
                     "aliases": alias_text,
                     "shopping_section_id": sections[section].id,
                 },

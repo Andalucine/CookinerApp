@@ -1,7 +1,7 @@
 Utilidades de desarrollo (cargar datos de prueba, limpiar la base de datos, etc.).
 Se ejecutan desde `backend/` con `python -m scripts.nombre`.
 
-- `seed_catalogs.py` (+ `catalog_data/`): carga o actualiza los catálogos globales. Desde la sesión 9 incluye unos 330 ingredientes de todos los días con su sección de la compra (`catalog_data/ingredients.py`); el script añade sus plurales y su nombre en inglés, y saca de «Otros» los ingredientes que se crearon antes con esos nombres.
+- `seed_catalogs.py` (+ `catalog_data/`): carga o actualiza los catálogos globales. Desde la sesión 9 incluye unos 330 ingredientes de todos los días con su sección de la compra (`catalog_data/ingredients.py`); el script añade sus plurales y su nombre en inglés, y saca de «Otros» los ingredientes que se crearon antes con esos nombres. También rellena el francés, el holandés y el alemán de todos los textos de catálogo desde `catalog_data/translations.py` (un diccionario por tipo, con el texto español como clave; un test comprueba que no falta ninguno). Tras actualizar el código hay que ejecutarlo de nuevo para que la base local tenga las traducciones.
 - `check_import.py URL…`: comprueba qué lee la importación en páginas reales (no guarda nada).
 - `set_plan.py CORREO PLAN`: cambia el plan de una cuenta (`free`, `individual`, `family`) para probar en local lo que depende del plan (vinos, importar de webs). Solo desarrollo, hasta que exista el cobro.
 - `sync_dev_schema.py`: pone la base local al día con los modelos **sin borrar datos** (crea las tablas que faltan y añade las columnas nuevas). Alternativa a `docker compose down -v` mientras no haya despliegue; la migración inicial se actualiza igualmente a mano.

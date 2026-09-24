@@ -21,6 +21,7 @@ import { blendErrors, linesFromItems, parseBlendLines } from "../../services/ble
 import { errorText } from "../../services/errors.ts";
 import * as spices from "../../services/spices.ts";
 import { useLoad } from "../../services/useLoad.ts";
+import { catalogName, localText } from "../../services/format.ts";
 
 type Initial = { name: string; note: string; lines: string; nameLocked: boolean };
 
@@ -139,8 +140,8 @@ function EditBlend({ auth, ingredientId }: { auth: Auth; ingredientId: number })
       ingredientId={ingredientId}
       editing={blend.notebook_blend_id}
       initial={{
-        name: cap((language !== "es" && blend.name_en) || blend.name),
-        note: (language !== "es" ? blend.note_en : blend.note_es) ?? "",
+        name: cap(catalogName(blend, language)),
+        note: localText(blend, "note", language) ?? "",
         lines: linesFromItems(blend.items, language, t("blend.optionalWord")),
         nameLocked: fromCatalogue,
       }}

@@ -11,6 +11,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from app.core.deps import DbSession, Lang, OptionalUser
 from app.i18n import t
 from app.models import Notebook
+from app.schemas.catalog import LANGS
 from app.schemas.spice import BlendOut, EquivalenceRuleOut, SpiceCard, SpiceFamilyOut, SpiceSummary
 from app.services import permissions
 from app.services import spice as spice_service
@@ -38,7 +39,7 @@ def families(
     """The seven families, in the order of the spice zone, with how many spices each has
     (the notebook's own included when there is a token)."""
     names = {
-        f: (t(f"spice_family.{f}", "es"), t(f"spice_family.{f}", "en"))
+        f: {f"name_{code}": t(f"spice_family.{f}", code) for code in LANGS}
         for f in spice_service.FAMILIES
     }
     return spice_service.families(db, names, _notebook(db, user, lang, notebook_id))

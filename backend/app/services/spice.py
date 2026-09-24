@@ -14,6 +14,7 @@ from app.models import (
     SpiceEquivalenceRule,
     SpiceSubstitution,
 )
+from app.schemas.catalog import local_text, texts
 from app.schemas.spice import (
     BlendItemOut,
     BlendOut,
@@ -54,7 +55,7 @@ def _blend_ids(db: Session) -> set[int]:
 
 
 def families(
-    db: Session, names: dict[str, tuple[str, str]], notebook: Notebook | None = None
+    db: Session, names: dict[str, dict[str, str]], notebook: Notebook | None = None
 ) -> list[SpiceFamilyOut]:
     counts = dict(
         db.execute(
@@ -69,10 +70,7 @@ def families(
         for b in blend_service.list_for(db, notebook.id):
             if b.ingredient_id not in _blend_ids(db) and not b.ingredient.is_spice:
                 counts["blends"] = counts.get("blends", 0) + 1
-    return [
-        SpiceFamilyOut(code=f, name_es=names[f][0], name_en=names[f][1], count=counts.get(f, 0))
-        for f in FAMILIES
-    ]
+    return [SpiceFamilyOut(code=f, **names[f], count=counts.get(f, 0)) for f in FAMILIES]
 
 
 def _matches(ingredient: Ingredient, text: str | None) -> bool:
@@ -112,7 +110,7 @@ def list_spices(
         SpiceSummary(
             id=i.id,
             name=i.name,
-            name_en=i.name_en,
+            **texts(i, es=False),
             aliases=i.aliases,
             family=i.spice_family,
             has_substitutions=i.id in subs or i.id in own_subs,
@@ -132,7 +130,7 @@ def list_spices(
                 SpiceSummary(
                     id=b.ingredient_id,
                     name=b.ingredient.name,
-                    name_en=b.ingredient.name_en,
+                    **texts(b.ingredient, es=False),
                     aliases=b.ingredient.aliases,
                     family="blends",
                     has_substitutions=b.ingredient_id in subs,
@@ -155,7 +153,7 @@ def list_spices(
                 SpiceSummary(
                     id=sp.ingredient_id,
                     name=sp.ingredient.name,
-                    name_en=sp.ingredient.name_en,
+                    **texts(sp.ingredient, es=False),
                     aliases=sp.aliases,
                     family=sp.family,
                     has_substitutions=sp.ingredient_id in subs or sp.ingredient_id in own_subs,
@@ -187,16 +185,13 @@ def _blend_out(blend: SpiceBlend) -> BlendOut:
         id=blend.id,
         ingredient_id=blend.ingredient_id,
         name=blend.ingredient.name,
-        name_en=blend.ingredient.name_en,
-        quick_substitute_es=blend.quick_substitute_es,
-        quick_substitute_en=blend.quick_substitute_en,
-        note_es=blend.note_es,
-        note_en=blend.note_en,
+        **texts(blend.ingredient, es=False),
+        **texts(blend, "quick_substitute", "note"),
         items=[
             BlendItemOut(
                 ingredient_id=it.ingredient_id,
                 name=it.ingredient.name,
-                name_en=it.ingredient.name_en,
+                **texts(it.ingredient, es=False),
                 parts=it.parts,
                 is_optional=it.is_optional,
             )
@@ -222,12 +217,9 @@ def _substitutions(
     for s in rows:
         out.setdefault(s.ingredient_id, []).append(
             SubstitutionOut(
-                substitute_es=s.substitute_es,
-                substitute_en=s.substitute_en,
+                **texts(s, "substitute", "note"),
                 substitute_id=s.substitute_id,
                 ratio=s.ratio,
-                note_es=s.note_es,
-                note_en=s.note_en,
                 in_my_pantry=(s.substitute_id in pantry)
                 if pantry is not None and s.substitute_id
                 else None,
@@ -288,7 +280,7 @@ def card(
     return SpiceCard(
         id=ingredient.id,
         name=ingredient.name,
-        name_en=ingredient.name_en,
+        **texts(ingredient, es=False),
         aliases=own_spice.aliases if own_spice else ingredient.aliases,
         family=own_spice.family if own_spice else ingredient.spice_family,
         notebook_spice_id=own_spice.id if own_spice else None,
@@ -300,9 +292,7 @@ def card(
             else None
         ),
         pairs_with=(
-            own_pairing.pairs_with
-            if own_pairing
-            else (ingredient.pairs_with_es if lang == "es" else ingredient.pairs_with_en)
+            own_pairing.pairs_with if own_pairing else local_text(ingredient, lang, "pairs_with")
         ),
         has_own_pairs_with=own_pairing is not None,
         pairs_with_added_by=(
@@ -322,7 +312,7 @@ def card(
         blend=_first_blend(own, blend, notebook),
         catalog_blend=_blend_out(blend) if blend and own else None,
         used_in_blends=[
-            BlendRef(ingredient_id=i.id, name=i.name, name_en=i.name_en) for i in used_in
+            BlendRef(ingredient_id=i.id, name=i.name, **texts(i, es=False)) for i in used_in
         ],
     )
 

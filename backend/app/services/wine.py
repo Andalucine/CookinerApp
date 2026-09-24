@@ -18,6 +18,7 @@ from app.models import (
 )
 from app.models.user import PLANS_WITH_WINES
 from app.models.wine import ORIGIN_MANUAL
+from app.schemas.catalog import local_text
 from app.schemas.wine import WineIn
 
 
@@ -315,7 +316,7 @@ def from_preview(db: Session, preview, url: str, lang: str = "es") -> WineIn:
     with its type found by slug and "con qué marida" prefilled from the pairing rules."""
     category = category_by_slug(db, preview.category_slug)
     paired = categories_paired_with(db, category.id if category else None)
-    pairing = ", ".join(c.name_es if lang == "es" else c.name_en for c in paired) or None
+    pairing = ", ".join(local_text(c, lang) or "" for c in paired) or None
     return WineIn(
         name=preview.name or "?",  # the form asks for a real name before saving
         winery=preview.winery,

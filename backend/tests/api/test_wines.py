@@ -23,7 +23,14 @@ def test_wine_catalogue(client, seeded):
     assert [t["slug"] for t in tree][:2] == ["tintos", "blancos"]
     assert tree[0]["serving_temp"] == "14–18 °C" and len(tree[0]["children"]) == 4
     facets = client.get("/catalog/wine-facets").json()
-    assert facets["body"][2] == {"code": "full", "name_es": "Con cuerpo", "name_en": "Full-bodied"}
+    assert facets["body"][2] == {
+        "code": "full",
+        "name_es": "Con cuerpo",
+        "name_en": "Full-bodied",
+        "name_fr": "Corsé",
+        "name_nl": "Vol",
+        "name_de": "Kräftig",
+    }
     assert facets["price_ranges"] == ["€", "€€", "€€€", "€€€€"]
 
 

@@ -95,3 +95,43 @@ def test_everyday_ingredients_have_their_section_and_plurals(db_session):
     ):  # fmt: skip
         found = get_or_create_ingredient(db_session, written)
         assert found.shopping_section.code == section, written
+
+
+def test_every_catalogue_text_is_translated_to_the_five_languages(seeded):
+    """Session 9: fr, nl and de of every preloaded name and text (the seed reads them from
+    scripts/catalog_data/translations.py; a missing one would arrive as NULL)."""
+    from app.models import (
+        Category,
+        Ingredient,
+        Occasion,
+        PairingRule,
+        Season,
+        ShoppingSection,
+        SpiceEquivalenceRule,
+        SpiceSubstitution,
+        Tag,
+        WineCategory,
+    )
+
+    checks = [
+        (Season, ("name",)),
+        (Occasion, ("name",)),
+        (ShoppingSection, ("name",)),
+        (Tag, ("name",)),
+        (Category, ("name",)),
+        (WineCategory, ("name",)),
+        (Ingredient, ("name",)),
+        (SpiceEquivalenceRule, ("situation", "equivalence")),
+        (SpiceSubstitution, ("substitute",)),
+        (PairingRule, ("reason",)),
+    ]
+    for model, bases in checks:
+        for row in seeded.query(model).all():
+            for base in bases:
+                for lang in ("fr", "nl", "de"):
+                    assert getattr(row, f"{base}_{lang}"), (model.__name__, row.id, base, lang)
+    spices = seeded.query(Ingredient).filter(Ingredient.is_spice.is_(True)).all()
+    with_pairs = [s for s in spices if s.pairs_with_es]
+    assert with_pairs and all(
+        s.pairs_with_fr and s.pairs_with_nl and s.pairs_with_de for s in with_pairs
+    )

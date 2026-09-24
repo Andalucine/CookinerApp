@@ -7,6 +7,9 @@ class SpiceFamilyOut(BaseModel):
     code: str
     name_es: str
     name_en: str
+    name_fr: str | None = None
+    name_nl: str | None = None
+    name_de: str | None = None
     count: int
 
 
@@ -18,6 +21,9 @@ class SpiceSummary(BaseModel):
     id: int
     name: str
     name_en: str | None = None
+    name_fr: str | None = None
+    name_nl: str | None = None
+    name_de: str | None = None
     aliases: str | None = None
     family: str | None = None
     has_substitutions: bool = False
@@ -37,19 +43,34 @@ class EquivalenceRuleOut(BaseModel):
     id: int
     situation_es: str
     situation_en: str
+    situation_fr: str | None = None
+    situation_nl: str | None = None
+    situation_de: str | None = None
     equivalence_es: str
     equivalence_en: str
+    equivalence_fr: str | None = None
+    equivalence_nl: str | None = None
+    equivalence_de: str | None = None
     note_es: str | None = None
     note_en: str | None = None
+    note_fr: str | None = None
+    note_nl: str | None = None
+    note_de: str | None = None
 
 
 class SubstitutionOut(BaseModel):
     substitute_es: str
     substitute_en: str
+    substitute_fr: str | None = None
+    substitute_nl: str | None = None
+    substitute_de: str | None = None
     substitute_id: int | None = None  # set when the substitute is a single catalogue ingredient
     ratio: str | None = None
     note_es: str | None = None
     note_en: str | None = None
+    note_fr: str | None = None
+    note_nl: str | None = None
+    note_de: str | None = None
     in_my_pantry: bool | None = None  # only when asked with login (recipe spices)
 
 
@@ -57,6 +78,9 @@ class BlendItemOut(BaseModel):
     ingredient_id: int
     name: str
     name_en: str | None = None
+    name_fr: str | None = None
+    name_nl: str | None = None
+    name_de: str | None = None
     parts: str
     is_optional: bool
 
@@ -70,10 +94,19 @@ class BlendOut(BaseModel):
     ingredient_id: int
     name: str
     name_en: str | None = None
+    name_fr: str | None = None
+    name_nl: str | None = None
+    name_de: str | None = None
     quick_substitute_es: str | None = None
     quick_substitute_en: str | None = None
+    quick_substitute_fr: str | None = None
+    quick_substitute_nl: str | None = None
+    quick_substitute_de: str | None = None
     note_es: str | None = None
     note_en: str | None = None
+    note_fr: str | None = None
+    note_nl: str | None = None
+    note_de: str | None = None
     items: list[BlendItemOut]
 
 
@@ -83,6 +116,9 @@ class BlendRef(BaseModel):
     ingredient_id: int
     name: str
     name_en: str | None = None
+    name_fr: str | None = None
+    name_nl: str | None = None
+    name_de: str | None = None
 
 
 class SpiceCard(SpiceSummary):

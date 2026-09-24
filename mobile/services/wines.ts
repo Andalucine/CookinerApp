@@ -15,7 +15,7 @@ export type WineCategoryNode = Localized & {
   children: WineCategoryNode[];
 };
 
-export type FacetValue = { code: string; name_es: string; name_en: string };
+export type FacetValue = Localized & { code: string };
 export type WineFacets = {
   sweetness: FacetValue[];
   body: FacetValue[];

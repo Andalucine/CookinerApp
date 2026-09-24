@@ -7,6 +7,7 @@ from app.core.deps import CurrentUser, DbSession, Lang
 from app.i18n import t
 from app.models import ShoppingSection
 from app.schemas.auth import MessageResponse
+from app.schemas.catalog import texts
 from app.schemas.pantry import (
     AddMissingIn,
     MissingIngredientOut,
@@ -32,16 +33,21 @@ def get_shopping_list(db: DbSession, user: CurrentUser) -> ShoppingListOut:
         mine = [ShoppingItemOut.model_validate(i) for i in items if i.section_id == s.id]
         if mine:
             groups.append(
-                ShoppingSectionGroup(
-                    section_id=s.id, code=s.code, name_es=s.name_es, name_en=s.name_en, items=mine
-                )
+                ShoppingSectionGroup(section_id=s.id, code=s.code, **texts(s), items=mine)
             )
     orphans = [ShoppingItemOut.model_validate(i) for i in items if i.section_id is None]
     if orphans:
         groups.append(
             ShoppingSectionGroup(
-                section_id=None, code="other", name_es="Otros", name_en="Other", items=orphans
-            )  # fmt: skip
+                section_id=None,
+                code="other",
+                name_es="Otros",
+                name_en="Other",
+                name_fr="Autres",
+                name_nl="Overig",
+                name_de="Sonstiges",
+                items=orphans,
+            )
         )
     return ShoppingListOut(
         sections=groups, total=len(items), pending=sum(1 for i in items if not i.is_checked)

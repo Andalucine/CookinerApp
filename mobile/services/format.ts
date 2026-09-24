@@ -4,12 +4,42 @@
  */
 import type { Language } from "../i18n/translate.ts";
 
-/** A catalogue item with both names (categories, seasons, occasions, tags...). */
-export type Localized = { name_es: string; name_en: string };
+/** The French, Dutch and German of a catalogue text (session 9). They can be missing: the
+ * texts a notebook writes by hand (its own occasions, spices, blends) are not translated. */
+export type Translated<B extends string> = {
+  [K in `${B}_fr` | `${B}_nl` | `${B}_de`]?: string | null;
+};
 
-/** Catalogue names exist in Spanish and English: the other languages read the English one. */
+/** A catalogue item with its names (categories, seasons, occasions, tags...). */
+export type Localized = { name_es: string; name_en: string } & Translated<"name">;
+
+/**
+ * A catalogue text in the person's language: `base_fr` in French and so on; English when that
+ * language has no text (a notebook's own occasion); Spanish as the last resort.
+ */
+export function localText(
+  item: Record<string, unknown>,
+  base: string,
+  language: Language,
+): string | null {
+  for (const key of [`${base}_${language}`, `${base}_en`, `${base}_es`]) {
+    const value = item[key];
+    if (typeof value === "string" && value) return value;
+  }
+  return null;
+}
+
 export function localName(item: Localized, language: Language): string {
-  return language === "es" ? item.name_es : item.name_en;
+  return localText(item, "name", language) ?? item.name_es;
+}
+
+/** Ingredients (spices included) keep the Spanish name in `name` and the others beside it. */
+export function catalogName(
+  item: { name: string; name_en?: string | null } & Translated<"name">,
+  language: Language,
+): string {
+  if (language === "es") return item.name;
+  return localText(item, "name", language) ?? item.name;
 }
 
 /** 45 → "45 min" · 90 → "1 h 30 min" · 120 → "2 h". */

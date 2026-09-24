@@ -20,12 +20,13 @@ import { errorText } from "../../services/errors.ts";
 import { useSession } from "../../services/session.tsx";
 import * as spices from "../../services/spices.ts";
 import { useLoad } from "../../services/useLoad.ts";
+import { catalogName, localText } from "../../services/format.ts";
 
 export default function SpiceScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t, language } = useI18n();
   const { token } = useSession();
-  const en = language !== "es";
+  const es = language === "es";
   const data = useLoad(() => spices.card(Number(id), { language, token }), [id, language, token]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -40,8 +41,8 @@ export default function SpiceScreen() {
     );
   }
   const card = data.data;
-  const name = cap((en && card.name_en) || card.name);
-  const blendNote = card.blend ? (en ? card.blend.note_en : card.blend.note_es) : null;
+  const name = cap(catalogName(card, language));
+  const blendNote = card.blend ? localText(card.blend, "note", language) : null;
   const ownRow = card.blend?.notebook_blend_id ?? null; // my notebook's row, if any
   const ownNew = ownRow !== null && !card.is_own_version; // a blend of my own, not a version
 
@@ -116,7 +117,7 @@ export default function SpiceScreen() {
       <Text style={styles.title} accessibilityRole="header">
         {name}
       </Text>
-      {en ? (
+      {!es ? (
         card.name_en ? (
           <Text style={styles.muted}>{t("spice.inSpanish", { name: card.name })}</Text>
         ) : null
@@ -204,8 +205,9 @@ export default function SpiceScreen() {
       ) : null}
       {card.substitutions.length ? (
         card.substitutions.map((s, index) => {
-          const note = en ? s.note_en : s.note_es;
-          const label = `${en ? s.substitute_en : s.substitute_es}${s.ratio ? `  (${s.ratio})` : ""}`;
+          const note = localText(s, "note", language);
+          const substitute = localText(s, "substitute", language) ?? s.substitute_es;
+          const label = `${substitute}${s.ratio ? `  (${s.ratio})` : ""}`;
           const target = s.substitute_id;
           const content = (
             <>
@@ -267,7 +269,7 @@ export default function SpiceScreen() {
           ) : null}
           {card.blend.items.map((item) => (
             <Text key={item.ingredient_id} style={styles.body}>
-              • {item.parts} {(en && item.name_en) || item.name}
+              • {item.parts} {catalogName(item, language)}
               {item.is_optional ? ` ${t("spice.optional")}` : ""}
             </Text>
           ))}
@@ -298,7 +300,7 @@ export default function SpiceScreen() {
         <>
           <SectionTitle text={t("spice.usedIn")} />
           {card.used_in_blends.map((b) => {
-            const blendName = cap((en && b.name_en) || b.name);
+            const blendName = cap(catalogName(b, language));
             return (
               <Pressable
                 key={b.ingredient_id}

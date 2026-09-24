@@ -92,6 +92,9 @@ class ShoppingSectionGroup(BaseModel):
     code: str
     name_es: str
     name_en: str
+    name_fr: str | None = None
+    name_nl: str | None = None
+    name_de: str | None = None
     items: list[ShoppingItemOut]
 
 

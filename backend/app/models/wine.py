@@ -53,6 +53,9 @@ class WineCategory(Base):
     slug: Mapped[str] = mapped_column(String(60), nullable=False)
     name_es: Mapped[str] = mapped_column(String(80), nullable=False)
     name_en: Mapped[str] = mapped_column(String(80), nullable=False)
+    name_fr: Mapped[str | None] = mapped_column(String(80))
+    name_nl: Mapped[str | None] = mapped_column(String(80))
+    name_de: Mapped[str | None] = mapped_column(String(80))
     examples_es: Mapped[str | None] = mapped_column(String(200))
     # Serving temperature range for the ficha, e.g. "6–8 °C"
     serving_temp: Mapped[str | None] = mapped_column(String(20))
@@ -143,6 +146,9 @@ class PairingRule(Base):
     )
     reason_es: Mapped[str] = mapped_column(String(200), nullable=False)
     reason_en: Mapped[str] = mapped_column(String(200), nullable=False)
+    reason_fr: Mapped[str | None] = mapped_column(String(200))
+    reason_nl: Mapped[str | None] = mapped_column(String(200))
+    reason_de: Mapped[str | None] = mapped_column(String(200))
     position: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     wine_category: Mapped[WineCategory] = relationship()

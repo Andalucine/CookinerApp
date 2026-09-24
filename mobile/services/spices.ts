@@ -1,10 +1,11 @@
 /** The spice zone (API /spices, no login): families, list, equivalence rules and the card of
  * each spice with its substitutes. */
 import { api } from "./apiClient.ts";
+import type { Localized, Translated } from "./format.ts";
 
-export type SpiceFamily = { code: string; name_es: string; name_en: string; count: number };
+export type SpiceFamily = Localized & { code: string; count: number };
 
-export type SpiceSummary = {
+export type SpiceSummary = Translated<"name"> & {
   id: number;
   name: string;
   name_en: string | null;
@@ -33,7 +34,7 @@ export type OwnSpice = {
 export type OwnSpiceInput = { name: string; family: string; aliases: string | null };
 export type SubstitutionInput = { substitute: string; ratio: string | null; note: string | null };
 
-export type BlendItem = {
+export type BlendItem = Translated<"name"> & {
   ingredient_id: number;
   name: string;
   name_en: string | null;
@@ -41,7 +42,8 @@ export type BlendItem = {
   is_optional: boolean;
 };
 
-export type Blend = {
+export type Blend = Translated<"name"> &
+  Translated<"note"> & {
   id: number | null; // catalogue row
   notebook_blend_id: number | null; // notebook row
   notebook_id: number | null;
@@ -55,7 +57,9 @@ export type Blend = {
   items: BlendItem[];
 };
 
-export type EquivalenceRule = {
+export type EquivalenceRule = Translated<"situation"> &
+  Translated<"equivalence"> &
+  Translated<"note"> & {
   id: number;
   situation_es: string;
   situation_en: string;
@@ -65,7 +69,8 @@ export type EquivalenceRule = {
   note_en: string | null;
 };
 
-export type Substitution = {
+export type Substitution = Translated<"substitute"> &
+  Translated<"note"> & {
   substitute_es: string;
   substitute_en: string;
   substitute_id: number | null;
@@ -83,7 +88,7 @@ export type SpiceCard = SpiceSummary & {
   pairs_with_added_by: string | null;
   blend: Blend | null; // the notebook's version when it has one, else the catalogue's
   catalog_blend: Blend | null; // the catalogue's, only when the notebook has a version
-  used_in_blends: { ingredient_id: number; name: string; name_en: string | null }[];
+  used_in_blends: (Translated<"name"> & { ingredient_id: number; name: string; name_en: string | null })[];
 };
 
 /** What is sent to create or replace a blend of the notebook. */

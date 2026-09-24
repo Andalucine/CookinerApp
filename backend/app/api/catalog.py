@@ -16,6 +16,7 @@ from app.models import (
 )
 from app.models.wine import AGEING, BODY, PRICE_RANGES, SWEETNESS
 from app.schemas.catalog import (
+    LANGS,
     CategoryOut,
     FacetValue,
     IngredientOut,
@@ -93,7 +94,7 @@ def wine_categories(db: DbSession) -> list[WineCategoryOut]:
 
 def _facet(kind: str, codes) -> list[FacetValue]:
     return [
-        FacetValue(code=c, name_es=t(f"{kind}.{c}", "es"), name_en=t(f"{kind}.{c}", "en"))
+        FacetValue(code=c, **{f"name_{lang}": t(f"{kind}.{c}", lang) for lang in LANGS})
         for c in codes
     ]
 

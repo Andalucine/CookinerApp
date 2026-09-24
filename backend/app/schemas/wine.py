@@ -102,6 +102,9 @@ class PairingRuleOut(BaseModel):
     wine_category: WineCategoryRef
     reason_es: str
     reason_en: str
+    reason_fr: str | None = None
+    reason_nl: str | None = None
+    reason_de: str | None = None
 
 
 class PairingSuggestion(BaseModel):

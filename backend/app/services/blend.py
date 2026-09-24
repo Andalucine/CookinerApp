@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.models import Notebook, NotebookBlend, NotebookBlendItem, SpiceBlend, User
+from app.schemas.catalog import texts
 from app.schemas.spice import BlendIn, BlendItemOut, BlendOut
 from app.services import permissions
 from app.services.recipe import get_or_create_ingredient
@@ -43,14 +44,14 @@ def to_out(blend: NotebookBlend, notebook: Notebook) -> BlendOut:
         created_by_id=blend.created_by_id,
         ingredient_id=blend.ingredient_id,
         name=blend.ingredient.name,
-        name_en=blend.ingredient.name_en,
+        **texts(blend.ingredient, es=False),
         note_es=blend.note,
         note_en=blend.note,
         items=[
             BlendItemOut(
                 ingredient_id=it.ingredient_id,
                 name=it.ingredient.name,
-                name_en=it.ingredient.name_en,
+                **texts(it.ingredient, es=False),
                 parts=it.parts,
                 is_optional=it.is_optional,
             )

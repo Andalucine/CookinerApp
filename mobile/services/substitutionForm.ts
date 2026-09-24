@@ -2,7 +2,9 @@
  * The substitutes of a spice are written one per line: "Comino · 1 : 1 · más suave"
  * (substitute · proportion · note; only the first part is needed). Pure, tested with Node.
  */
+import type { Language } from "../i18n/translate.ts";
 import type { Substitution, SubstitutionInput } from "./spices.ts";
+import { localText } from "./format.ts";
 
 const SEPARATOR = /\s*[·|;]\s*/;
 
@@ -28,11 +30,11 @@ export function parseSubstitutionLines(text: string): SubstitutionInput[] {
 }
 
 /** The card's substitutes back to lines, to start editing from them. */
-export function linesFromSubstitutions(items: Substitution[], language: string): string {
+export function linesFromSubstitutions(items: Substitution[], language: Language): string {
   return items
     .map((s) => {
-      const name = language !== "es" ? s.substitute_en : s.substitute_es;
-      const note = language !== "es" ? s.note_en : s.note_es;
+      const name = localText(s, "substitute", language) ?? s.substitute_es;
+      const note = localText(s, "note", language);
       return [name, s.ratio ?? "", note ?? ""]
         .join(" · ")
         .replace(/( · )+$/, "");

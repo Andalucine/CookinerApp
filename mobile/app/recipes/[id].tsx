@@ -28,6 +28,7 @@ import {
   formatMinutes,
   ingredientText,
   localName,
+  localText,
   signature,
   siteName,
   splitSteps,
@@ -292,7 +293,7 @@ function RecipeView({ auth, id }: { auth: Auth; id: number }) {
                 <View key={localName(rule.wine_category, language)}>
                   <Text style={styles.wineName}>{localName(rule.wine_category, language)}</Text>
                   <Text style={styles.body}>
-                    {language !== "es" ? rule.reason_en : rule.reason_es}
+                    {localText(rule, "reason", language)}
                   </Text>
                 </View>
               ))}

@@ -35,6 +35,7 @@ def test_spice_card_and_blends(client, seeded):
     curry = client.get(f"/spices/{_id(seeded, 'curry en polvo')}").json()
     assert curry["is_blend"] and curry["blend"]["items"][0] == {
         "ingredient_id": _id(seeded, "cúrcuma"), "name": "cúrcuma", "name_en": "turmeric",
+        "name_fr": "curcuma", "name_nl": "kurkuma", "name_de": "Kurkuma",
         "parts": "2", "is_optional": False,
     }  # fmt: skip
     blends = client.get("/spices/blends").json()

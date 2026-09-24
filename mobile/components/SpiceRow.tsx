@@ -6,14 +6,19 @@ import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useI18n } from "../i18n";
+import type { Language } from "../i18n/translate.ts";
+import { catalogName, type Translated } from "../services/format.ts";
 import type { SpiceSummary } from "../services/spices.ts";
 import { IconCircle, MARK_BLEND, MARK_SUBSTITUTES } from "./SpiceIcons.tsx";
 import { colors, fontSize, radius, spacing, touchHeight } from "./theme.ts";
 
 export const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
-export function spiceName(spice: { name: string; name_en: string | null }, language: string) {
-  return cap((language !== "es" && spice.name_en) || spice.name);
+export function spiceName(
+  spice: { name: string; name_en: string | null } & Translated<"name">,
+  language: Language,
+) {
+  return cap(catalogName(spice, language));
 }
 
 /** The small line under the name: the other Spanish names in Spanish; in English, the Spanish

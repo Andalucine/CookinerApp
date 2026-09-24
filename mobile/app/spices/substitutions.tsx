@@ -23,10 +23,11 @@ import {
   parseSubstitutionLines,
 } from "../../services/substitutionForm.ts";
 import { useLoad } from "../../services/useLoad.ts";
+import { catalogName } from "../../services/format.ts";
 
 function Form({ auth, card }: { auth: Auth; card: spices.SpiceCard }) {
   const { t, language } = useI18n();
-  const name = cap((language !== "es" && card.name_en) || card.name);
+  const name = cap(catalogName(card, language));
   const [lines, setLines] = useState(() => linesFromSubstitutions(card.substitutions, language));
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);

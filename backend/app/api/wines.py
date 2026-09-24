@@ -11,7 +11,7 @@ from app.core.deps import CurrentUser, DbSession, Lang
 from app.i18n import t
 from app.models import Notebook, Wine
 from app.schemas.auth import MessageResponse
-from app.schemas.catalog import Named
+from app.schemas.catalog import Named, texts
 from app.schemas.wine import (
     WineCategoryCount,
     WineCategoryRef,
@@ -33,8 +33,7 @@ def category_ref(category) -> WineCategoryRef | None:
         return None
     return WineCategoryRef(
         id=category.id,
-        name_es=category.name_es,
-        name_en=category.name_en,
+        **texts(category),
         slug=category.slug,
         parent=Named.model_validate(category.parent) if category.parent else None,
         serving_temp=category.serving_temp,

@@ -2,10 +2,12 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  catalogName,
   formatMinutes,
   formatQuantity,
   ingredientText,
   localName,
+  localText,
   signature,
   siteName,
   splitSteps,
@@ -97,4 +99,18 @@ test("time button from the minutes of the recipe", () => {
   assert.equal(timeBucket(60), "medium");
   assert.equal(timeBucket(75), "long");
   assert.equal(timeBucket(null), null);
+});
+
+test("catalogue texts fall back to English, then Spanish (session 9, five languages)", () => {
+  const season = { name_es: "Otoño", name_en: "Autumn", name_fr: "Automne", name_nl: "Herfst", name_de: "Herbst" };
+  assert.equal(localName(season, "de"), "Herbst");
+  assert.equal(localName(season, "es"), "Otoño");
+  const own = { name_es: "Feria", name_en: "Feria" }; // a notebook's own occasion: not translated
+  assert.equal(localName(own, "nl"), "Feria");
+  const spice = { name: "comino", name_en: "cumin", name_fr: "cumin", name_nl: "komijn", name_de: null };
+  assert.equal(catalogName(spice, "es"), "comino");
+  assert.equal(catalogName(spice, "nl"), "komijn");
+  assert.equal(catalogName(spice, "de"), "cumin"); // no German → English
+  assert.equal(localText({ note_es: "Más suave", note_en: "Milder" }, "note", "fr"), "Milder");
+  assert.equal(localText({ note_es: null, note_en: null }, "note", "fr"), null);
 });

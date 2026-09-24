@@ -2,7 +2,9 @@
  * The ingredients of a blend are written one per line, like in a recipe: "2 cúrcuma",
  * "½ canela (opcional)", "clavo". Pure functions, tested with Node.
  */
+import type { Language } from "../i18n/translate.ts";
 import type { BlendInput } from "./spices.ts";
+import { catalogName, type Translated } from "./format.ts";
 
 export type BlendLine = { name: string; parts: string; is_optional: boolean };
 
@@ -38,13 +40,18 @@ export function parseBlendLines(text: string): BlendLine[] {
 
 /** The saved items back to lines, to edit them. */
 export function linesFromItems(
-  items: { name: string; name_en: string | null; parts: string; is_optional: boolean }[],
-  language: string,
+  items: (Translated<"name"> & {
+    name: string;
+    name_en: string | null;
+    parts: string;
+    is_optional: boolean;
+  })[],
+  language: Language,
   optionalWord: string,
 ): string {
   return items
     .map((it) => {
-      const name = (language !== "es" && it.name_en) || it.name;
+      const name = catalogName(it, language);
       return `${it.parts} ${name}${it.is_optional ? ` (${optionalWord})` : ""}`;
     })
     .join("\n");

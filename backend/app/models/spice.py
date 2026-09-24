@@ -26,10 +26,19 @@ class SpiceEquivalenceRule(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     situation_es: Mapped[str] = mapped_column(String(120), nullable=False)
     situation_en: Mapped[str] = mapped_column(String(120), nullable=False)
+    situation_fr: Mapped[str | None] = mapped_column(String(120))
+    situation_nl: Mapped[str | None] = mapped_column(String(120))
+    situation_de: Mapped[str | None] = mapped_column(String(120))
     equivalence_es: Mapped[str] = mapped_column(String(200), nullable=False)
     equivalence_en: Mapped[str] = mapped_column(String(200), nullable=False)
+    equivalence_fr: Mapped[str | None] = mapped_column(String(200))
+    equivalence_nl: Mapped[str | None] = mapped_column(String(200))
+    equivalence_de: Mapped[str | None] = mapped_column(String(200))
     note_es: Mapped[str | None] = mapped_column(String(200))
     note_en: Mapped[str | None] = mapped_column(String(200))
+    note_fr: Mapped[str | None] = mapped_column(String(200))
+    note_nl: Mapped[str | None] = mapped_column(String(200))
+    note_de: Mapped[str | None] = mapped_column(String(200))
     position: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
 
@@ -46,12 +55,18 @@ class SpiceSubstitution(Base):
     # when it is a single one, so the pantry can check whether the user has it.
     substitute_es: Mapped[str] = mapped_column(String(150), nullable=False)
     substitute_en: Mapped[str] = mapped_column(String(150), nullable=False)
+    substitute_fr: Mapped[str | None] = mapped_column(String(150))
+    substitute_nl: Mapped[str | None] = mapped_column(String(150))
+    substitute_de: Mapped[str | None] = mapped_column(String(150))
     substitute_id: Mapped[int | None] = mapped_column(
         ForeignKey("ingredients.id", ondelete="SET NULL")
     )
     ratio: Mapped[str | None] = mapped_column(String(60))  # "1 : ½", "1 cda fresca = 1 cdta seca"
     note_es: Mapped[str | None] = mapped_column(String(200))
     note_en: Mapped[str | None] = mapped_column(String(200))
+    note_fr: Mapped[str | None] = mapped_column(String(200))
+    note_nl: Mapped[str | None] = mapped_column(String(200))
+    note_de: Mapped[str | None] = mapped_column(String(200))
     position: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     ingredient: Mapped[Ingredient] = relationship(foreign_keys=[ingredient_id])
@@ -69,8 +84,14 @@ class SpiceBlend(Base):
     )
     quick_substitute_es: Mapped[str | None] = mapped_column(String(150))
     quick_substitute_en: Mapped[str | None] = mapped_column(String(150))
+    quick_substitute_fr: Mapped[str | None] = mapped_column(String(150))
+    quick_substitute_nl: Mapped[str | None] = mapped_column(String(150))
+    quick_substitute_de: Mapped[str | None] = mapped_column(String(150))
     note_es: Mapped[str | None] = mapped_column(String(200))
     note_en: Mapped[str | None] = mapped_column(String(200))
+    note_fr: Mapped[str | None] = mapped_column(String(200))
+    note_nl: Mapped[str | None] = mapped_column(String(200))
+    note_de: Mapped[str | None] = mapped_column(String(200))
 
     ingredient: Mapped[Ingredient] = relationship()
     items: Mapped[list["SpiceBlendItem"]] = relationship(

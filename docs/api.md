@@ -5,7 +5,7 @@ La documentación interactiva la genera FastAPI en http://localhost:8000/docs (S
 ## Convenciones
 
 - Peticiones y respuestas en JSON.
-- Idioma de los mensajes: cabecera `Accept-Language` con `es`, `en`, `fr`, `nl` o `de` (por defecto español; sesión 9). Los catálogos devuelven siempre `name_es` y `name_en`; la app muestra el español en español y el inglés en los demás idiomas (los catálogos en francés, holandés y alemán quedan para una fase posterior).
+- Idioma de los mensajes: cabecera `Accept-Language` con `es`, `en`, `fr`, `nl` o `de` (por defecto español; sesión 9). Los catálogos devuelven `name_es`, `name_en` y, desde la fase 2 de la sesión 9, `name_fr`, `name_nl` y `name_de` (lo mismo con `substitute_`, `note_`, `situation_`, `equivalence_`, `quick_substitute_`, `reason_`); estos tres pueden venir vacíos en lo que un cuaderno escribió a mano, y entonces la app enseña el inglés.
 - Endpoints protegidos: cabecera `Authorization: Bearer <access_token>`. El token lo devuelven `/auth/register` y `/auth/login` y dura 30 días.
 - Errores: `{"detail": "mensaje para el usuario"}` con el código HTTP correspondiente (401 sin sesión, 403 sin permiso o límite del plan, 404 no encontrado, 409 conflicto, 422 datos inválidos). Una receta de un cuaderno al que no se tiene acceso responde **404**, no 403, para no revelar que existe.
 - Permisos sobre un cuaderno: **propietario** (todo), **editor** (añade y edita recetas, vinos, notas y épocas propias; queda marcado "añadido por" / "editado por"; borra solo lo que añadió él), **lector** (ve, marca favoritos). Despensa y lista de la compra son siempre las del cuaderno propio.

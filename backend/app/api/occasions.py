@@ -10,6 +10,7 @@ from app.core.deps import CurrentUser, DbSession, Lang
 from app.i18n import t
 from app.models import Notebook, Occasion
 from app.schemas.auth import MessageResponse
+from app.schemas.catalog import texts
 from app.schemas.occasion import NotebookOccasionOut, OccasionCreate, OccasionIn
 from app.services import occasion as occasion_service
 from app.services import permissions
@@ -20,8 +21,7 @@ router = APIRouter(prefix="/occasions", tags=["occasions"])
 def _out(occasion: Occasion, notebook: Notebook | None) -> NotebookOccasionOut:
     return NotebookOccasionOut(
         id=occasion.id,
-        name_es=occasion.name_es,
-        name_en=occasion.name_en,
+        **texts(occasion),
         is_preloaded=occasion.is_preloaded,
         notebook_id=occasion.notebook_id,
         added_by=permissions.added_by(notebook, occasion.created_by) if notebook else None,

@@ -15,6 +15,8 @@ import { useI18n } from "../../i18n";
 import { barWidths, readEquivalence } from "../../services/equivalence.ts";
 import * as spices from "../../services/spices.ts";
 import { useLoad } from "../../services/useLoad.ts";
+import type { Language } from "../../i18n/translate.ts";
+import { localText } from "../../services/format.ts";
 
 /** 3.75 → "3,75 ml" / "3.75 ml"; 15 → "15 ml". */
 function formatMl(ml: number, en = false): string {
@@ -22,15 +24,17 @@ function formatMl(ml: number, en = false): string {
   return `${en ? text : text.replace(".", ",")} ml`;
 }
 
-function RuleCard({ rule, en }: { rule: spices.EquivalenceRule; en: boolean }) {
-  const title = en ? rule.situation_en : rule.situation_es;
-  const note = en ? rule.note_en : rule.note_es;
-  const { measures, signs, ratio } = readEquivalence(en ? rule.equivalence_en : rule.equivalence_es);
+function RuleCard({ rule, language }: { rule: spices.EquivalenceRule; language: Language }) {
+  const en = language === "en"; // decimal point only in English
+  const title = localText(rule, "situation", language) ?? rule.situation_es;
+  const note = localText(rule, "note", language);
+  const equivalence = localText(rule, "equivalence", language) ?? rule.equivalence_es;
+  const { measures, signs, ratio } = readEquivalence(equivalence);
   const bars = barWidths(measures);
   const stacked = measures.length > 2; // "Ajo", "Guindilla", "Medidas"
 
   return (
-    <View style={styles.card} accessibilityLabel={`${title}. ${en ? rule.equivalence_en : rule.equivalence_es}`}>
+    <View style={styles.card} accessibilityLabel={`${title}. ${equivalence}`}>
       <View style={styles.header}>
         <IconCircle name={ruleIcon(rule.situation_es)} />
         <Text style={styles.title}>{title}</Text>
@@ -100,7 +104,7 @@ export default function RulesScreen() {
       ) : (
         <View style={styles.list}>
           {data.data.map((rule) => (
-            <RuleCard key={rule.id} rule={rule} en={language !== "es"} />
+            <RuleCard key={rule.id} rule={rule} language={language} />
           ))}
         </View>
       )}

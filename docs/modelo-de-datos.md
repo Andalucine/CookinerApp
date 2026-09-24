@@ -2,6 +2,8 @@
 
 Estado: **v2** (migración `initial_schema` regenerada en las sesiones 4, 5, 8 y 9, decisión 0004: cuaderno personal). Regla: cada cambio en `backend/app/models/` actualiza este documento en el mismo commit. 40 tablas.
 
+> **Cinco idiomas (sesión 9):** todo texto de catálogo que tenía `_es` y `_en` tiene también `_fr`, `_nl` y `_de` (nombres, sustitutos y sus notas, reglas de equivalencia, mezclas, motivos de maridaje y «va bien con»). Son columnas opcionales: las rellena `seed_catalogs` desde `scripts/catalog_data/translations.py`; lo que escribe un cuaderno a mano (épocas, especias, mezclas o sustitutos propios) no se traduce y la app enseña el inglés.
+
 ## Esquema general
 
 ```
@@ -52,14 +54,14 @@ Límites por plan (`PLAN_LIMITS` en `app/models/user.py`): gratuito 15 recetas /
 | Tabla | Para qué | Campos clave |
 |---|---|---|
 | `recipes` | La receta | `notebook_id`, `author_id`, `title`, `description`, `instructions`, `prep_time_minutes`, `servings`, `cook_name` ("la abuela"), `source_type` (`own`/`web`/`book`/`family`/`other`), `source_name`, `source_url` (**siempre** si viene de la web), `youtube_url`, `image_url`, `language` |
-| `ingredients` | Catálogo **global**, nombre normalizado en minúscula y singular | `name` (único), `name_en`, `aliases`, `is_spice`, `spice_family`, `pairs_with_es/en` ("va bien con", solo especias), `shopping_section_id` |
+| `ingredients` | Catálogo **global**, nombre normalizado en minúscula y singular | `name` (único), `name_en`, `name_fr/nl/de`, `aliases`, `is_spice`, `spice_family`, `pairs_with_es/en/fr/nl/de` ("va bien con", solo especias), `shopping_section_id` |
 | `recipe_ingredients` | Ingredientes de cada receta | `quantity`, `unit`, `raw_text`, `position` |
-| `categories` | Árbol de categorías: rama → categoría → subcategoría (`level` 1-3) | `parent_id`, `slug` (único bajo su padre), `name_es`, `name_en`, `examples_es`, `position`, `notebook_id` (nulo = global; preparado para subcategorías propias, no usado en v1) |
+| `categories` | Árbol de categorías: rama → categoría → subcategoría (`level` 1-3) | `parent_id`, `slug` (único bajo su padre), `name_es`, `name_en`, `name_fr/nl/de`, `examples_es`, `position`, `notebook_id` (nulo = global; preparado para subcategorías propias, no usado en v1) |
 | `recipe_categories` | Una receta en varias categorías | `is_primary` (la que se muestra en la ficha) |
 | `tags` | Etiquetas cerradas | `kind` (`course`, `method`, `diet`, `difficulty`, `origin`), `code`, `name_es`, `name_en` |
 | `recipe_tags` | Etiquetas de cada receta | — |
 | `seasons` | Las 4 estaciones | `code`, `name_es`, `name_en` |
-| `occasions` | Épocas precargadas (`notebook_id` nulo) o propias del cuaderno (sesión 5: el nombre que escribe el usuario va en `name_es` y `name_en`) | `name_es`, `name_en`, `is_preloaded`, `created_by_id` |
+| `occasions` | Épocas precargadas (`notebook_id` nulo) o propias del cuaderno (sesión 5: el nombre que escribe el usuario va en `name_es` y `name_en`; las demás quedan vacías) | `name_es`, `name_en`, `name_fr/nl/de`, `is_preloaded`, `created_by_id` |
 | `recipe_seasons`, `recipe_occasions` | Varias estaciones y épocas por receta | — |
 | `recipe_contributions` | Lo que un editor añadió, para "(añadido por NOMBRE)" | `field`, `content`, `user_id` |
 
@@ -87,7 +89,7 @@ El catálogo de especias, sustituciones y mezclas nunca se modifica: al editar u
 
 | Tabla | Para qué | Campos clave |
 |---|---|---|
-| `wine_categories` | Árbol de tipos de dos niveles (Tintos → Tinto joven…) | `parent_id`, `slug`, `name_es`, `name_en`, `serving_temp` |
+| `wine_categories` | Árbol de tipos de dos niveles (Tintos → Tinto joven…) | `parent_id`, `slug`, `name_es`, `name_en`, `name_fr/nl/de`, `serving_temp` |
 | `wines` | Los vinos **del cuaderno** | `notebook_id`, `added_by_id`, `updated_by_id` (último que lo editó), `name`, `winery`, `category_id`, facetas `sweetness`, `body`, `ageing`, `country`, `appellation`, `grapes`, `vintage`, `price_range` (`€` <15 · `€€` 15–30 · `€€€` 30–60 · `€€€€` >60), `tasting_notes`, `pairing_notes`, `source_url`, `source_name` (la tienda: "Delatierra"), `source_price` (su precio al importar) |
 | `recipe_wines` | Vinos recomendados para una receta **con el motivo** | `reason`, `origin` (`manual`/`imported`) |
 | `pairing_rules` | Categoría de receta → tipo de vino, con motivo (sugerencia automática) | `recipe_category_id`, `wine_category_id`, `reason_es/en` |
@@ -100,7 +102,7 @@ El catálogo de especias, sustituciones y mezclas nunca se modifica: al editar u
 | `menu_slots` | Cada comida de cada día del menú | `menu_id`, `day` (0 = lunes), `meal`, `recipe_id` (receta del cuaderno, o nada), `note` (escrito a mano: "sobras", "cenamos fuera") |
 | `notes` | Páginas libres del cuaderno | `title`, `content`, `kind` (de qué trata, opcional: `recipes`, `wines`, `spices`, `celebrations`, `shopping`, `ideas`; sesión 9), `author_id`, `updated_by_id` (último que la editó) |
 | `pantry_items` | Lo que hay en casa (sin caducidades) | `ingredient_id` (único por cuaderno), `location` (`fridge`/`freezer`/`pantry`), `image_url` (foto, sesión 9) |
-| `shopping_sections` | Secciones del supermercado, en orden de recorrido | `code`, `name_es`, `name_en`, `position` |
+| `shopping_sections` | Secciones del supermercado, en orden de recorrido | `code`, `name_es`, `name_en`, `name_fr/nl/de`, `position` |
 | `notebook_ingredient_sections` | Sección de la lista de la compra que un cuaderno eligió para un ingrediente (sesión 9); el catálogo global no cambia | `notebook_id`, `ingredient_id` (únicos juntos), `section_id` |
 | `shopping_list_items` | Líneas de la lista de la compra | `text`, `quantity`, `ingredient_id` (si viene del catálogo), `section_id` (la del ingrediente; "Otros" si no la tiene), `is_checked`, `recipe_id` (de qué receta salió), `image_url` (foto del producto, sesión 9) |
 | `favorites` | Estrella en una receta **o** un vino (nunca ambos) | `user_id`, `recipe_id`, `wine_id` |
