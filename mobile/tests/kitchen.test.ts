@@ -20,6 +20,7 @@ test("the pantry in its three blocks, alphabetical, without a place in Despensa"
     ingredient_id: id,
     name,
     location,
+    image_url: null,
   });
   const groups = byLocation([
     item(1, "huevo", "fridge"),
@@ -41,6 +42,7 @@ test("ticking a line moves it to the end of its section and updates what is left
     ingredient_id: id,
     is_checked,
     recipe_id: null,
+    image_url: null,
   });
   const list: ShoppingList = {
     sections: [

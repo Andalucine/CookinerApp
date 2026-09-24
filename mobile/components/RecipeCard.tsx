@@ -8,7 +8,13 @@ import { formatMinutes, localName, signature } from "../services/format.ts";
 import type { RecipeSummary } from "../services/recipes.ts";
 import { colors, fontSize, radius, spacing } from "./theme.ts";
 
-export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
+export function RecipeCard({
+  recipe,
+  onPress,
+}: {
+  recipe: RecipeSummary;
+  onPress?: () => void; // instead of opening the recipe (the menu picker, session 9)
+}) {
   const { t, language } = useI18n();
   const details = [
     formatMinutes(recipe.prep_time_minutes),
@@ -19,7 +25,7 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={[recipe.title, ...details].join(", ")}
-      onPress={() => router.push(`/recipes/${recipe.id}`)}
+      onPress={onPress ?? (() => router.push(`/recipes/${recipe.id}`))}
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
     >
       <View style={styles.text}>

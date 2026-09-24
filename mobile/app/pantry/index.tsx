@@ -1,7 +1,9 @@
 /**
  * Mi despensa (session 9): "¿Qué puedo cocinar?" in orange, then three blocks, Nevera,
  * Congelador and Despensa, each with what is noted (a tag with an X to remove it) and its own
- * field to add more. No expiry dates (decision, session 3). Always my own notebook.
+ * field to add more. Tapping the name opens the photo options (session 9): add, change or
+ * remove a photo of the product; its thumbnail sits in the tag and opens full screen. No
+ * expiry dates (decision, session 3). Always my own notebook.
  */
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -13,6 +15,8 @@ import { AddField } from "../../components/AddField.tsx";
 import { BigButton } from "../../components/BigButton.tsx";
 import { LoadError, Loading } from "../../components/LoadState.tsx";
 import { Message } from "../../components/Message.tsx";
+import { RowButton } from "../../components/RowButton.tsx";
+import { PhotoButton, PhotoThumb } from "../../components/Photo.tsx";
 import { Screen } from "../../components/Screen.tsx";
 import { type Auth, SignedIn } from "../../components/SignedIn.tsx";
 import { IconCircle } from "../../components/SpiceIcons.tsx";
@@ -35,6 +39,7 @@ function Pantry({ auth }: { auth: Auth }) {
   const { t } = useI18n();
   const data = useLoad(() => pantry.get(auth), [auth.token, auth.language]);
   const [message, setMessage] = useState<string | null>(null);
+  const [photoFor, setPhotoFor] = useState<number | null>(null); // the item with photo options open
 
   if (data.loading && !data.data) return <Loading />;
   if (data.error || !data.data) {
@@ -62,6 +67,17 @@ function Pantry({ auth }: { auth: Auth }) {
     }
   }
 
+  async function setPhoto(item: pantry.PantryItem, url: string | null) {
+    setMessage(null);
+    try {
+      const saved = await pantry.setPhoto(auth, item.id, url);
+      data.setData({ items: items.map((i) => (i.id === item.id ? saved : i)) });
+      setPhotoFor(null);
+    } catch (error) {
+      setMessage(errorText(error, t));
+    }
+  }
+
   async function remove(item: pantry.PantryItem) {
     setMessage(null);
     data.setData({ items: items.filter((i) => i.id !== item.id) });
@@ -81,6 +97,11 @@ function Pantry({ auth }: { auth: Auth }) {
         icon="restaurant-outline"
         onPress={() => router.push("/pantry/cook")}
       />
+      <RowButton
+        label={t("menu.title")}
+        icon="calendar-outline"
+        onPress={() => router.push("/menu")}
+      />
       <Message text={message} />
       {LOCATIONS.map((place, index) => (
         <View key={place} style={styles.block}>
@@ -94,21 +115,48 @@ function Pantry({ auth }: { auth: Auth }) {
           {groups[place].length ? (
             <View style={styles.tags}>
               {groups[place].map((item) => (
-                <Pressable
-                  key={item.id}
-                  accessibilityRole="button"
-                  accessibilityLabel={t("pantry.remove", { name: item.name })}
-                  onPress={() => remove(item)}
-                  style={({ pressed }) => [styles.tag, pressed && styles.pressed]}
-                >
-                  <Text style={styles.tagText}>{item.name}</Text>
-                  <Ionicons name="close" size={20} color={colors.ink} />
-                </Pressable>
+                <View key={item.id} style={styles.tagWrap}>
+                  <View style={[styles.tag, photoFor === item.id && styles.tagOpen]}>
+                    <PhotoThumb url={item.image_url} size={36} label={item.name} />
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={t("photo.options", { name: item.name })}
+                      onPress={() => setPhotoFor(photoFor === item.id ? null : item.id)}
+                      style={({ pressed }) => [styles.tagName, pressed && styles.pressed]}
+                    >
+                      <Text style={styles.tagText}>{item.name}</Text>
+                    </Pressable>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={t("pantry.remove", { name: item.name })}
+                      onPress={() => remove(item)}
+                      hitSlop={8}
+                      style={({ pressed }) => [styles.tagClose, pressed && styles.pressed]}
+                    >
+                      <Ionicons name="close" size={20} color={colors.ink} />
+                    </Pressable>
+                  </View>
+                </View>
               ))}
             </View>
           ) : (
             <Text style={styles.muted}>{t("pantry.blockEmpty")}</Text>
           )}
+          {groups[place].some((i) => i.id === photoFor) ? (
+            <View style={styles.photoOptions}>
+              <Text style={styles.photoTitle}>
+                {t("photo.options", {
+                  name: groups[place].find((i) => i.id === photoFor)!.name,
+                })}
+              </Text>
+              <PhotoButton
+                auth={auth}
+                url={groups[place].find((i) => i.id === photoFor)!.image_url}
+                onChange={(url) => setPhoto(groups[place].find((i) => i.id === photoFor)!, url)}
+                compact
+              />
+            </View>
+          ) : null}
           <AddField
             label={t(`pantry.addTo.${place}` as TextKey)}
             hint={index === 0 ? t("pantry.addHint") : undefined}
@@ -137,18 +185,30 @@ const styles = StyleSheet.create({
   title: { flex: 1, fontSize: fontSize.large, fontWeight: "800", color: colors.ink },
   count: { fontSize: fontSize.body, fontWeight: "700", color: colors.ink },
   tags: { flexDirection: "row", flexWrap: "wrap", gap: spacing.s },
+  tagWrap: {},
   tag: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.xs,
     minHeight: 44,
-    paddingHorizontal: spacing.m,
+    paddingLeft: spacing.xs,
+    paddingRight: spacing.s,
     borderRadius: 22,
     backgroundColor: colors.accentSoft,
     borderWidth: 2,
     borderColor: colors.accent,
   },
+  tagOpen: { borderColor: colors.ink },
+  tagName: { minHeight: 40, justifyContent: "center", paddingHorizontal: spacing.xs },
+  tagClose: { minHeight: 40, justifyContent: "center", paddingLeft: spacing.xs },
   tagText: { fontSize: fontSize.body, color: colors.ink },
+  photoOptions: {
+    gap: spacing.xs,
+    padding: spacing.s,
+    borderRadius: radius.m,
+    backgroundColor: colors.surface,
+  },
+  photoTitle: { fontSize: fontSize.body, fontWeight: "700", color: colors.ink },
   pressed: { opacity: 0.7 },
   muted: { fontSize: fontSize.body, color: colors.muted },
 });

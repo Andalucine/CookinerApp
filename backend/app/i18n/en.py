@@ -24,6 +24,8 @@ TEXTS = {
     "favorite_removed": "Removed from favourites.",
     "pantry_item_removed": "Removed from the pantry.",
     "ok": "Done.",
+    "photo_type": "Only photos are accepted (JPEG, PNG, WebP or HEIC).",
+    "photo_size": "The photo is too big (10 MB at most).",
     "shopping_cleared": "{n} bought items removed.",
     "shopping_cleared_pantry": "{n} bought items removed; {m} are now in your pantry.",
     "share_limit_reached": (

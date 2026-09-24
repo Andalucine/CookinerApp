@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://cookiner:cookiner@localhost:5432/cookinerapp"
     access_token_expire_minutes: int = 60 * 24 * 30  # 30 días: la app móvil no pide login a diario
     password_reset_expire_minutes: int = 30
+    # Where the photos sent from the phone are kept (session 9). In Docker, /code/uploads is
+    # the folder `uploads/` of the project on the Mac (docker-compose.yml); never in git.
+    uploads_dir: str = "uploads"
 
 
 @lru_cache

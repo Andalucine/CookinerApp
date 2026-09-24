@@ -619,6 +619,7 @@ def upgrade() -> None:
         sa.Column("notebook_id", sa.Integer(), nullable=False),
         sa.Column("ingredient_id", sa.Integer(), nullable=False),
         sa.Column("location", sa.String(length=10), nullable=True),
+        sa.Column("image_url", sa.String(length=1000), nullable=True),
         sa.Column(
             "added_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False
         ),
@@ -735,6 +736,70 @@ def upgrade() -> None:
         ["ingredient_id"],
         unique=False,
     )
+    op.create_table(
+        "weekly_menus",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("notebook_id", sa.Integer(), nullable=False),
+        sa.Column("week_start", sa.Date(), nullable=False),
+        sa.Column("meals", sa.String(length=40), nullable=False),
+        sa.Column("wants", sa.String(length=300), nullable=True),
+        sa.Column("created_by_id", sa.Integer(), nullable=True),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
+        sa.ForeignKeyConstraint(
+            ["created_by_id"],
+            ["users.id"],
+            name=op.f("fk_weekly_menus_created_by_id_users"),
+            ondelete="SET NULL",
+        ),
+        sa.ForeignKeyConstraint(
+            ["notebook_id"],
+            ["notebooks.id"],
+            name=op.f("fk_weekly_menus_notebook_id_notebooks"),
+            ondelete="CASCADE",
+        ),
+        sa.PrimaryKeyConstraint("id", name=op.f("pk_weekly_menus")),
+        sa.UniqueConstraint(
+            "notebook_id", "week_start", name=op.f("uq_weekly_menus_notebook_id_week_start")
+        ),
+    )
+    op.create_index(
+        op.f("ix_weekly_menus_notebook_id"), "weekly_menus", ["notebook_id"], unique=False
+    )
+    op.create_table(
+        "menu_slots",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("menu_id", sa.Integer(), nullable=False),
+        sa.Column("day", sa.Integer(), nullable=False),
+        sa.Column("meal", sa.String(length=10), nullable=False),
+        sa.Column("recipe_id", sa.Integer(), nullable=True),
+        sa.Column("note", sa.String(length=200), nullable=True),
+        sa.ForeignKeyConstraint(
+            ["menu_id"],
+            ["weekly_menus.id"],
+            name=op.f("fk_menu_slots_menu_id_weekly_menus"),
+            ondelete="CASCADE",
+        ),
+        sa.ForeignKeyConstraint(
+            ["recipe_id"],
+            ["recipes.id"],
+            name=op.f("fk_menu_slots_recipe_id_recipes"),
+            ondelete="SET NULL",
+        ),
+        sa.PrimaryKeyConstraint("id", name=op.f("pk_menu_slots")),
+        sa.UniqueConstraint("menu_id", "day", "meal", name=op.f("uq_menu_slots_menu_id_day_meal")),
+    )
+    op.create_index(op.f("ix_menu_slots_menu_id"), "menu_slots", ["menu_id"], unique=False)
     op.create_table(
         "wines",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -1101,6 +1166,7 @@ def upgrade() -> None:
         sa.Column("recipe_id", sa.Integer(), nullable=True),
         sa.Column("added_by_id", sa.Integer(), nullable=True),
         sa.Column("position", sa.Integer(), nullable=False),
+        sa.Column("image_url", sa.String(length=1000), nullable=True),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
@@ -1245,6 +1311,10 @@ def downgrade() -> None:
     op.drop_table("import_jobs")
     op.drop_index(op.f("ix_favorites_user_id"), table_name="favorites")
     op.drop_table("favorites")
+    op.drop_index(op.f("ix_menu_slots_menu_id"), table_name="menu_slots")
+    op.drop_table("menu_slots")
+    op.drop_index(op.f("ix_weekly_menus_notebook_id"), table_name="weekly_menus")
+    op.drop_table("weekly_menus")
     op.drop_index(op.f("ix_wines_notebook_id"), table_name="wines")
     op.drop_index(op.f("ix_wines_name"), table_name="wines")
     op.drop_table("wines")

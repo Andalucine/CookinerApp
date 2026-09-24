@@ -2,7 +2,9 @@
  * Lista de la compra (session 9): a field to add things one by one (each goes to its section
  * by itself), how many are left, and the sections in supermarket order. A tap ticks a line as
  * bought; ⋯ opens its options: move it to another section (the notebook remembers it for that
- * ingredient) or delete it. "Quitar lo comprado" asks whether to note it in the pantry.
+ * ingredient), put a photo of the product on it (session 9: to buy just that brand) or delete
+ * it; the photo's thumbnail sits before the text. "Quitar lo comprado" asks whether to note it
+ * in the pantry.
  * Always my own notebook.
  */
 import { Ionicons } from "@expo/vector-icons";
@@ -14,6 +16,7 @@ import { BigButton } from "../../components/BigButton.tsx";
 import { Chips } from "../../components/Chips.tsx";
 import { LoadError, Loading } from "../../components/LoadState.tsx";
 import { Message } from "../../components/Message.tsx";
+import { PhotoButton, PhotoThumb } from "../../components/Photo.tsx";
 import { Screen } from "../../components/Screen.tsx";
 import { SectionTitle } from "../../components/SectionTitle.tsx";
 import { type Auth, SignedIn } from "../../components/SignedIn.tsx";
@@ -78,6 +81,15 @@ function ShoppingList({ auth }: { auth: Auth }) {
     setOpen(null);
     try {
       await shopping.move(auth, item.id, code);
+      await data.reload();
+    } catch (error) {
+      fail(error);
+    }
+  }
+
+  async function setPhoto(item: shopping.ShoppingItem, url: string | null) {
+    try {
+      await shopping.setPhoto(auth, item.id, url);
       await data.reload();
     } catch (error) {
       fail(error);
@@ -149,6 +161,7 @@ function ShoppingList({ auth }: { auth: Auth }) {
                     size={30}
                     color={item.is_checked ? colors.muted : colors.ink}
                   />
+                  <PhotoThumb url={item.image_url} size={44} label={item.text} />
                   <Text style={[styles.text, item.is_checked && styles.bought]}>
                     {item.text}
                     {item.quantity && item.quantity !== item.text ? (
@@ -176,6 +189,12 @@ function ShoppingList({ auth }: { auth: Auth }) {
                     }))}
                     value={section.code}
                     onChange={(code) => move(item, code)}
+                  />
+                  <PhotoButton
+                    auth={auth}
+                    url={item.image_url}
+                    onChange={(url) => setPhoto(item, url)}
+                    compact
                   />
                   <BigButton
                     label={t("shopping.delete")}

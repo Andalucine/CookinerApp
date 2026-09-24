@@ -1,6 +1,6 @@
 # Modelo de datos
 
-Estado: **v2** (migración `initial_schema` regenerada en las sesiones 4, 5, 8 y 9, decisión 0004: cuaderno personal). Regla: cada cambio en `backend/app/models/` actualiza este documento en el mismo commit. 38 tablas.
+Estado: **v2** (migración `initial_schema` regenerada en las sesiones 4, 5, 8 y 9, decisión 0004: cuaderno personal). Regla: cada cambio en `backend/app/models/` actualiza este documento en el mismo commit. 40 tablas.
 
 ## Esquema general
 
@@ -14,6 +14,7 @@ users ──< notebooks (1 por cuenta) ──< recipes ──< recipe_ingredient
   │            ├─< pantry_items           ├─< recipe_contributions
   │            ├─< shopping_list_items    └─< recipe_wines >── wines
   │            ├─< notebook_ingredient_sections
+  │            ├─< weekly_menus ──< menu_slots >── recipes
   │            └─< import_jobs
   ├─< favorites (receta o vino)
   ├─< auth_identities                     ingredients (especias) ──< spice_substitutions
@@ -95,11 +96,13 @@ El catálogo de especias, sustituciones y mezclas nunca se modifica: al editar u
 
 | Tabla | Para qué | Campos clave |
 |---|---|---|
+| `weekly_menus` | El menú de una semana (sesión 9), entidad propia para que la lista de la compra lo lea | `notebook_id` + `week_start` (lunes; únicos juntos), `meals` ("breakfast,lunch,dinner"), `wants` (lo que apetecía), `created_by_id` |
+| `menu_slots` | Cada comida de cada día del menú | `menu_id`, `day` (0 = lunes), `meal`, `recipe_id` (receta del cuaderno, o nada), `note` (escrito a mano: "sobras", "cenamos fuera") |
 | `notes` | Páginas libres del cuaderno | `title`, `content`, `kind` (de qué trata, opcional: `recipes`, `wines`, `spices`, `celebrations`, `shopping`, `ideas`; sesión 9), `author_id`, `updated_by_id` (último que la editó) |
-| `pantry_items` | Lo que hay en casa (sin caducidades) | `ingredient_id` (único por cuaderno), `location` (`fridge`/`freezer`/`pantry`) |
+| `pantry_items` | Lo que hay en casa (sin caducidades) | `ingredient_id` (único por cuaderno), `location` (`fridge`/`freezer`/`pantry`), `image_url` (foto, sesión 9) |
 | `shopping_sections` | Secciones del supermercado, en orden de recorrido | `code`, `name_es`, `name_en`, `position` |
 | `notebook_ingredient_sections` | Sección de la lista de la compra que un cuaderno eligió para un ingrediente (sesión 9); el catálogo global no cambia | `notebook_id`, `ingredient_id` (únicos juntos), `section_id` |
-| `shopping_list_items` | Líneas de la lista de la compra | `text`, `quantity`, `ingredient_id` (si viene del catálogo), `section_id` (la del ingrediente; "Otros" si no la tiene), `is_checked`, `recipe_id` (de qué receta salió) |
+| `shopping_list_items` | Líneas de la lista de la compra | `text`, `quantity`, `ingredient_id` (si viene del catálogo), `section_id` (la del ingrediente; "Otros" si no la tiene), `is_checked`, `recipe_id` (de qué receta salió), `image_url` (foto del producto, sesión 9) |
 | `favorites` | Estrella en una receta **o** un vino (nunca ambos) | `user_id`, `recipe_id`, `wine_id` |
 
 ## Importación

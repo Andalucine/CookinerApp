@@ -35,6 +35,9 @@ mobile/expo-env.d.ts
 *.tsbuildinfo
 *.pem
 
+# Fotos subidas desde el móvil en desarrollo (sesión 9)
+uploads/
+
 # Bases de datos y volúmenes
 *.db
 *.sqlite

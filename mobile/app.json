@@ -28,7 +28,18 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-router", "expo-secure-store", "expo-localization"],
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-localization",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "CookinerApp usa tus fotos para poner una imagen a tus recetas, vinos y productos.",
+          "cameraPermission": "CookinerApp usa la cámara para hacer fotos de tus recetas, vinos y productos."
+        }
+      ]
+    ],
     "experiments": {
       "typedRoutes": true
     }

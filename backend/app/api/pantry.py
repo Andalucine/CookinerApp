@@ -10,6 +10,7 @@ from app.schemas.pantry import (
     MissingIngredient,
     PantryItemIn,
     PantryItemOut,
+    PantryItemPhoto,
     PantryOut,
     WhatCanICookOut,
 )
@@ -22,7 +23,7 @@ router = APIRouter(prefix="/pantry", tags=["pantry"])
 def _out(item) -> PantryItemOut:
     return PantryItemOut(
         id=item.id, ingredient_id=item.ingredient_id, name=item.ingredient.name,
-        location=item.location,
+        location=item.location, image_url=item.image_url,
     )  # fmt: skip
 
 
@@ -35,6 +36,17 @@ def get_pantry(db: DbSession, user: CurrentUser) -> PantryOut:
 def add_pantry_item(body: PantryItemIn, db: DbSession, user: CurrentUser) -> PantryItemOut:
     """Mark an ingredient as available (by name; new names join the catalogue)."""
     item = pantry_service.add_item(db, user.notebook.id, body.name, body.location)
+    return _out(item)
+
+
+@router.patch("/items/{item_id}", response_model=PantryItemOut)
+def set_pantry_photo(
+    item_id: int, body: PantryItemPhoto, db: DbSession, user: CurrentUser, lang: Lang
+) -> PantryItemOut:
+    """Put a photo on what I have (or remove it with `image_url: null`)."""
+    item = pantry_service.set_item_photo(db, user.notebook.id, item_id, body.image_url)
+    if item is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, t("not_found", lang))
     return _out(item)
 
 

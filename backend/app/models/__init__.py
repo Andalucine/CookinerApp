@@ -2,6 +2,7 @@
 
 from app.models.favorite import Favorite
 from app.models.import_job import ImportJob
+from app.models.menu import MenuSlot, WeeklyMenu
 from app.models.note import Note
 from app.models.notebook import Notebook, NotebookAccess, NotebookInvitation
 from app.models.pantry import NotebookIngredientSection, PantryItem, ShoppingListItem
@@ -34,6 +35,7 @@ __all__ = [
     "Category",
     "Favorite",
     "ImportJob",
+    "MenuSlot",
     "Ingredient",
     "Note",
     "Notebook",
@@ -66,6 +68,7 @@ __all__ = [
     "SpiceSubstitution",
     "Tag",
     "User",
+    "WeeklyMenu",
     "Wine",
     "WineCategory",
 ]

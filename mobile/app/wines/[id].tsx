@@ -14,6 +14,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { BigButton } from "../../components/BigButton.tsx";
 import { LoadError, Loading } from "../../components/LoadState.tsx";
 import { Message } from "../../components/Message.tsx";
+import { PhotoThumb } from "../../components/Photo.tsx";
 import { RowButton } from "../../components/RowButton.tsx";
 import { Screen } from "../../components/Screen.tsx";
 import { SectionTitle } from "../../components/SectionTitle.tsx";
@@ -111,6 +112,11 @@ function WineScreen({ auth, id }: { auth: Auth; id: number }) {
         </Pressable>
       </View>
       <Message text={favoriteError} />
+      {wine.image_url ? (
+        <View style={styles.image}>
+          <PhotoThumb url={wine.image_url} size={160} label={t("photo.see")} />
+        </View>
+      ) : null}
 
       {wine.category ? (
         <View style={styles.typeBox}>
@@ -224,6 +230,7 @@ const styles = StyleSheet.create({
   title: { fontSize: fontSize.large, fontWeight: "800", color: colors.ink },
   subtitle: { fontSize: fontSize.body, color: colors.muted },
   star: { padding: spacing.xs },
+  image: { alignItems: "center" },
   typeBox: {
     flexDirection: "row",
     alignItems: "center",

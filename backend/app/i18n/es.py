@@ -24,6 +24,8 @@ TEXTS = {
     "favorite_removed": "Quitada de favoritos.",
     "pantry_item_removed": "Quitado de la despensa.",
     "ok": "Hecho.",
+    "photo_type": "Solo se admiten fotos (JPEG, PNG, WebP o HEIC).",
+    "photo_size": "La foto es demasiado grande (máximo 10 MB).",
     "shopping_cleared": "Se han quitado {n} productos ya comprados.",
     "shopping_cleared_pantry": (
         "Se han quitado {n} productos ya comprados; {m} están ahora en tu despensa."

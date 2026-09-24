@@ -9,8 +9,8 @@ from app.models import ShoppingSection
 from app.schemas.auth import MessageResponse
 from app.schemas.pantry import (
     ShoppingItemIn,
-    ShoppingItemMove,
     ShoppingItemOut,
+    ShoppingItemPatch,
     ShoppingListOut,
     ShoppingSectionGroup,
 )
@@ -84,11 +84,21 @@ def uncheck_item(item_id: int, db: DbSession, user: CurrentUser, lang: Lang) -> 
 
 
 @router.patch("/items/{item_id}", response_model=ShoppingItemOut)
-def move_item(
-    item_id: int, body: ShoppingItemMove, db: DbSession, user: CurrentUser, lang: Lang
+def patch_item(
+    item_id: int, body: ShoppingItemPatch, db: DbSession, user: CurrentUser, lang: Lang
 ) -> ShoppingItemOut:
-    """Put a line in another section; the notebook remembers it for that ingredient."""
-    item = pantry_service.move_item(db, user.notebook.id, item_id, body.section_code)
+    """Put a line in another section (the notebook remembers it for that ingredient) and/or
+    set its photo."""
+    sent = body.model_dump(exclude_unset=True)
+    item = None
+    if "section_code" in sent and body.section_code:
+        item = pantry_service.move_item(db, user.notebook.id, item_id, body.section_code)
+        if item is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, t("not_found", lang))
+    if "image_url" in sent:
+        item = pantry_service.set_shopping_photo(db, user.notebook.id, item_id, body.image_url)
+    if item is None:
+        item = pantry_service.shopping_item(db, user.notebook.id, item_id)
     if item is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, t("not_found", lang))
     return ShoppingItemOut.model_validate(item)

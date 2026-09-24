@@ -54,6 +54,16 @@ def remove_item(db: Session, notebook_id: int, item_id: int) -> bool:
     return True
 
 
+def set_item_photo(db: Session, notebook_id: int, item_id: int, url: str | None):
+    item = db.get(PantryItem, item_id)
+    if item is None or item.notebook_id != notebook_id:
+        return None
+    item.image_url = url
+    db.commit()
+    db.refresh(item)
+    return item
+
+
 def what_can_i_cook(db: Session, notebook_id: int) -> tuple[list, list]:
     """Returns (complete, missing_one): lists of (recipe, [missing ingredients])."""
     have = {p.ingredient_id for p in list_items(db, notebook_id)}
@@ -161,6 +171,21 @@ def add_missing_from_recipe(db: Session, notebook: Notebook, user: User, recipe:
         added.append(item)
     db.commit()
     return added
+
+
+def shopping_item(db: Session, notebook_id: int, item_id: int) -> ShoppingListItem | None:
+    item = db.get(ShoppingListItem, item_id)
+    return item if item is not None and item.notebook_id == notebook_id else None
+
+
+def set_shopping_photo(db: Session, notebook_id: int, item_id: int, url: str | None):
+    item = shopping_item(db, notebook_id, item_id)
+    if item is None:
+        return None
+    item.image_url = url
+    db.commit()
+    db.refresh(item)
+    return item
 
 
 def set_checked(db: Session, notebook_id: int, item_id: int, checked: bool) -> bool:

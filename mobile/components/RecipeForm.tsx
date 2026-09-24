@@ -17,6 +17,7 @@ import { BigButton } from "./BigButton.tsx";
 import { CategoryPicker } from "./CategoryPicker.tsx";
 import { Chips } from "./Chips.tsx";
 import { Message } from "./Message.tsx";
+import { PhotoField } from "./Photo.tsx";
 import { SectionTitle } from "./SectionTitle.tsx";
 import type { Auth } from "./SignedIn.tsx";
 import { TextField } from "./TextField.tsx";
@@ -82,6 +83,7 @@ export function RecipeForm({
   const [categoryIds, setCategoryIds] = useState(initial.category_ids);
   const [seasonIds, setSeasonIds] = useState(initial.season_ids);
   const [occasionIds, setOccasionIds] = useState(initial.occasion_ids);
+  const [imageUrl, setImageUrl] = useState(initial.image_url);
   const [picking, setPicking] = useState(false);
   const [errors, setErrors] = useState<
     Partial<Record<"title" | "minutes" | "servings" | "sourceUrl", string>>
@@ -150,6 +152,7 @@ export function RecipeForm({
       source_name: orNull(form.sourceName),
       source_url: orNull(form.sourceUrl),
       youtube_url: orNull(form.youtube),
+      image_url: imageUrl,
       ingredients: linesToIngredients(form.ingredients, initial.ingredients, language),
       category_ids: categoryIds,
       season_ids: seasonIds,
@@ -300,6 +303,8 @@ export function RecipeForm({
           />
         </>
       ) : null}
+
+      <PhotoField auth={auth} label={t("photo.recipe")} url={imageUrl} onChange={setImageUrl} />
 
       <SectionTitle text={t("recipe.source")} />
       {sourceLocked ? (

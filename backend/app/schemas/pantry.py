@@ -10,6 +10,10 @@ class PantryItemIn(BaseModel):
     location: str | None = Field(default=None, pattern="^(fridge|freezer|pantry)$")
 
 
+class PantryItemPhoto(BaseModel):
+    image_url: str | None = Field(default=None, max_length=1000)  # None removes the photo
+
+
 class PantryItemOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -17,6 +21,7 @@ class PantryItemOut(BaseModel):
     ingredient_id: int
     name: str
     location: str | None = None
+    image_url: str | None = None
 
 
 class PantryOut(BaseModel):
@@ -46,8 +51,12 @@ class ShoppingItemIn(BaseModel):
     )
 
 
-class ShoppingItemMove(BaseModel):
-    section_code: str = Field(min_length=1, max_length=20, description="produce, meat… other")
+class ShoppingItemPatch(BaseModel):
+    """Move the line to another section and/or set its photo (session 9). A field that is
+    not sent does not change; `image_url: null` removes the photo."""
+
+    section_code: str | None = Field(default=None, min_length=1, max_length=20)
+    image_url: str | None = Field(default=None, max_length=1000)
 
 
 class ShoppingItemOut(BaseModel):
@@ -59,6 +68,7 @@ class ShoppingItemOut(BaseModel):
     ingredient_id: int | None = None
     is_checked: bool
     recipe_id: int | None = None
+    image_url: str | None = None
 
 
 class ShoppingSectionGroup(BaseModel):

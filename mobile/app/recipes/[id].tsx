@@ -9,12 +9,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { useState } from "react";
-import { Alert, Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { BigButton } from "../../components/BigButton.tsx";
 import { LoadError, Loading } from "../../components/LoadState.tsx";
 import { NotebookBanner } from "../../components/NotebookBanner.tsx";
 import { Message } from "../../components/Message.tsx";
+import { PhotoThumb } from "../../components/Photo.tsx";
 import { Screen } from "../../components/Screen.tsx";
 import { SectionTitle } from "../../components/SectionTitle.tsx";
 import { type Auth, SignedIn } from "../../components/SignedIn.tsx";
@@ -173,11 +174,9 @@ function RecipeView({ auth, id }: { auth: Auth; id: number }) {
         <Text style={styles.addedBy}>{t("recipes.addedBy", { name: recipe.added_by })}</Text>
       ) : null}
       {recipe.image_url ? (
-        <Image
-          source={{ uri: recipe.image_url }}
-          style={styles.image}
-          accessibilityIgnoresInvertColors
-        />
+        <View style={styles.image}>
+          <PhotoThumb url={recipe.image_url} size={160} label={t("photo.see")} />
+        </View>
       ) : null}
       {recipe.description ? <Text style={styles.body}>{recipe.description}</Text> : null}
 
@@ -375,12 +374,7 @@ const styles = StyleSheet.create({
   star: { minWidth: 48, minHeight: 48, alignItems: "center", justifyContent: "center" },
   facts: { fontSize: fontSize.body, color: colors.muted },
   addedBy: { fontSize: fontSize.small, color: colors.muted, fontStyle: "italic" },
-  image: {
-    width: "100%",
-    aspectRatio: 4 / 3,
-    borderRadius: radius.m,
-    backgroundColor: colors.surface,
-  },
+  image: { alignItems: "center" },
   body: { fontSize: fontSize.body, color: colors.ink, lineHeight: 26 },
   hint: { fontSize: fontSize.small, color: colors.muted },
   ingredients: { gap: spacing.xs },

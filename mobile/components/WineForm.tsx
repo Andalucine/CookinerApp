@@ -19,6 +19,7 @@ import type { CategoryNode } from "../services/categoryTree.ts";
 import { Chips } from "./Chips.tsx";
 import { LoadError, Loading } from "./LoadState.tsx";
 import { Message } from "./Message.tsx";
+import { PhotoField } from "./Photo.tsx";
 import { PriceChoice } from "./PriceChoice.tsx";
 import { SectionTitle } from "./SectionTitle.tsx";
 import { ShopPrice } from "./ShopPrice.tsx";
@@ -130,6 +131,7 @@ export function WineForm({
     price_range: initial.price_range ?? "",
   });
   const [picking, setPicking] = useState(false);
+  const [imageUrl, setImageUrl] = useState(initial.image_url);
   const [errors, setErrors] = useState<{ name?: string; vintage?: string }>({});
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -182,7 +184,7 @@ export function WineForm({
         // What the shop said when it was imported travels untouched with the wine
         source_name: orNull(texts.source) ? initial.source_name : null,
         source_price: orNull(texts.source) ? initial.source_price : null,
-        image_url: initial.image_url,
+        image_url: imageUrl,
       });
     } catch (error) {
       setMessage(errorText(error, t));
@@ -320,6 +322,7 @@ export function WineForm({
         multiline
         style={styles.multiline}
       />
+      <PhotoField auth={auth} label={t("photo.wine")} url={imageUrl} onChange={setImageUrl} />
       <TextField
         label={t("wineForm.source")}
         hint={t("wineForm.sourceHint")}

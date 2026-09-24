@@ -21,6 +21,7 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/code
+      - ./uploads:/code/uploads # fotos hechas con el móvil (sesión 9); fuera de git
     depends_on:
       db:
         condition: service_healthy

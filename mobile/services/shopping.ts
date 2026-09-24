@@ -12,6 +12,7 @@ export type ShoppingItem = {
   ingredient_id: number | null;
   is_checked: boolean;
   recipe_id: number | null;
+  image_url: string | null; // a photo of the product (session 9)
 };
 export type ShoppingSectionGroup = Localized & {
   section_id: number | null;
@@ -44,6 +45,16 @@ export function move({ token, language }: Auth, id: number, sectionCode: string)
   return api<ShoppingItem>(`/shopping-list/items/${id}`, {
     method: "PATCH",
     body: { section_code: sectionCode },
+    token,
+    language,
+  });
+}
+
+/** A photo of the product, to buy just that one; null removes it. */
+export function setPhoto({ token, language }: Auth, id: number, url: string | null) {
+  return api<ShoppingItem>(`/shopping-list/items/${id}`, {
+    method: "PATCH",
+    body: { image_url: url },
     token,
     language,
   });

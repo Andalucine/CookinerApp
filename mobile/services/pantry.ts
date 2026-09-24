@@ -11,6 +11,7 @@ export type PantryItem = {
   ingredient_id: number;
   name: string;
   location: Location | null;
+  image_url: string | null; // a photo of it (session 9)
 };
 
 export type Cookable = {
@@ -27,6 +28,16 @@ export function add({ token, language }: Auth, name: string, location: Location)
   return api<PantryItem>("/pantry/items", {
     method: "POST",
     body: { name, location },
+    token,
+    language,
+  });
+}
+
+/** A photo of what I have; null removes it. */
+export function setPhoto({ token, language }: Auth, id: number, url: string | null) {
+  return api<PantryItem>(`/pantry/items/${id}`, {
+    method: "PATCH",
+    body: { image_url: url },
     token,
     language,
   });

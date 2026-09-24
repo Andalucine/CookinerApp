@@ -10,11 +10,13 @@ from app.api import (
     catalog,
     health,
     imports,
+    menus,
     notebook_spices,
     notebooks,
     notes,
     occasions,
     pantry,
+    photos,
     recipes,
     shopping_list,
     spices,
@@ -27,7 +29,7 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s:     %(name)s: %(m
 
 app = FastAPI(
     title=settings.app_name,
-    version="0.7.0",
+    version="0.8.0",
     description="API de CookinerApp, el cuaderno de cocina personal.",
 )
 
@@ -45,3 +47,5 @@ app.include_router(notes.router)
 app.include_router(wines.router)
 app.include_router(occasions.router)
 app.include_router(imports.router)
+app.include_router(photos.router)
+app.include_router(menus.router)

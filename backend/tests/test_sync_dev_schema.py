@@ -23,6 +23,7 @@ def test_sync_creates_missing_tables_and_columns_and_keeps_rows():
 
     created, added = sync(engine)
     assert "ingredients" not in created and "notebook_spice_pairings" in created
+    assert {"weekly_menus", "menu_slots"} <= set(created)  # session 9
     assert {"ingredients.pairs_with_es", "ingredients.pairs_with_en"} <= set(added)
     columns = {c["name"] for c in inspect(engine).get_columns("ingredients")}
     assert "pairs_with_es" in columns

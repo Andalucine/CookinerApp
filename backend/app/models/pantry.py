@@ -28,6 +28,7 @@ class PantryItem(Base):
         ForeignKey("ingredients.id", ondelete="CASCADE"), nullable=False
     )
     location: Mapped[str | None] = mapped_column(String(10))  # fridge | freezer | pantry
+    image_url: Mapped[str | None] = mapped_column(String(1000))  # a photo of it (session 9)
     added_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -55,6 +56,8 @@ class ShoppingListItem(Base):
     recipe_id: Mapped[int | None] = mapped_column(ForeignKey("recipes.id", ondelete="SET NULL"))
     added_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     position: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    # A photo of the product, to buy just that brand or size (session 9)
+    image_url: Mapped[str | None] = mapped_column(String(1000))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

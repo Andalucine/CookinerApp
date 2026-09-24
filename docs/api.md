@@ -1,6 +1,6 @@
 # API
 
-La documentación interactiva la genera FastAPI en http://localhost:8000/docs (Swagger) y http://localhost:8000/redoc. Versión 0.7.0 (sesión 9).
+La documentación interactiva la genera FastAPI en http://localhost:8000/docs (Swagger) y http://localhost:8000/redoc. Versión 0.8.0 (sesión 9).
 
 ## Convenciones
 
@@ -82,6 +82,7 @@ La documentación interactiva la genera FastAPI en http://localhost:8000/docs (S
 |---|---|---|---|
 | GET | `/pantry` | — | Ingredientes que hay en casa, con `location` (`fridge`/`freezer`/`pantry`). |
 | POST | `/pantry/items` | `name`, `location` | 201. Repetir un nombre solo actualiza dónde está. |
+| PATCH | `/pantry/items/{id}` | `image_url` | Pone una foto a lo que hay (`null` la quita), sesión 9. |
 | DELETE | `/pantry/items/{id}` | — | Quita el ingrediente. |
 | GET | `/pantry/what-can-i-cook` | — | `complete[]` (recetas del cuaderno con todo en casa) y `missing_one[]` (falta un solo ingrediente, con `missing[]`). Sal, agua, aceite, pimienta negra y azúcar se dan por hechos. |
 
@@ -93,7 +94,7 @@ La documentación interactiva la genera FastAPI en http://localhost:8000/docs (S
 | POST | `/shopping-list/items` | `text`, `quantity`, `ingredient_name` | 201. Se coloca en la sección que el cuaderno eligió para ese ingrediente, si la eligió; si no, en la del catálogo (plurales incluidos: "patatas" → patata); si es nuevo, en "Otros". |
 | POST | `/shopping-list/from-recipe/{recipe_id}` | — | "Añadir lo que me falta": ingredientes de la receta que no están en la despensa ni ya pendientes. |
 | POST | `/shopping-list/items/{id}/check` · `/uncheck` | — | Marcar como comprado / desmarcar. |
-| PATCH | `/shopping-list/items/{id}` | `section_code` | Llevar la línea a otra sección (sesión 9). El cuaderno lo recuerda para ese ingrediente y mueve también sus otras líneas pendientes. 404 si la sección no existe. |
+| PATCH | `/shopping-list/items/{id}` | `section_code` y/o `image_url` | Llevar la línea a otra sección y/o ponerle una foto del producto (`image_url: null` la quita), sesión 9. El cuaderno lo recuerda para ese ingrediente y mueve también sus otras líneas pendientes. 404 si la sección no existe. |
 | DELETE | `/shopping-list/items/{id}` | — | Quitar una línea. |
 | DELETE | `/shopping-list/checked` | `to_pantry` (opcional) | Limpiar lo ya comprado. Con `to_pantry=true` (sesión 9), antes lo apunta en la despensa: congelados al congelador; frutas y verduras, carnes, pescados y lácteos a la nevera; lo demás a la despensa. |
 
@@ -142,6 +143,27 @@ Mezclas propias del cuaderno y versiones propias de las del catálogo. Propietar
 | POST | `/wines` | `name`, `winery`, `category_id`, facetas, `vintage`, `price_range` (`€` <15 € · `€€` 15–30 · `€€€` 30–60 · `€€€€` >60), `tasting_notes`, `pairing_notes`, `source_url`, `source_name`, `source_price`, `image_url`, `notebook_id` (opcional) | 201. 422 si una faceta o el tipo no existen. |
 | GET / PUT / DELETE | `/wines/{id}` | PUT: mismo cuerpo, sustituye el vino | Ficha con `edited_by`. Borrar: propietario o quien lo añadió. |
 | POST / DELETE | `/wines/{id}/favorite` | — | Estrella, también como lector. |
+
+### Menú semanal (`/menus`, sesión 9)
+
+Siempre el cuaderno propio. Sin inteligencia artificial: reglas sobre categorías, etiquetas, estación y despensa (decisión sesión 8).
+
+| Método | Ruta | Cuerpo / parámetros | Qué hace |
+|---|---|---|---|
+| GET | `/menus/check` | `week_start` | Antes del borrador: `season` de esa semana, `total_recipes`, `breakfast_recipes` (etiqueta momento = desayuno) y `main_recipes` (el resto, que valen para comida y cena). |
+| GET | `/menus` | `week_start` (cualquier día de la semana) | El menú de esa semana (`slots[]` con `day` 0–6, `meal`, `recipe` o `note`), o 404 si aún no hay. |
+| POST | `/menus/draft` | `week_start`, `meals` (`breakfast`/`lunch`/`dinner`), `wants` (alimentos separados por comas, opcional) | 201: el borrador de la semana (sustituye al de esa semana si lo había). Reglas: desayuno solo con recetas etiquetadas desayuno; estación de la semana salvo que no deje nada (`season_ignored`); los alimentos de `wants` primero; no se repite receta mientras queden sin usar; no dos platos seguidos de la misma categoría el mismo día; entre iguales, lo que permite la despensa. `notices[]`: `no_breakfast_recipes` (huecos de desayuno vacíos), `filled_with_rest` (no había bastantes recetas con esos alimentos), `season_ignored`, `repeated` (cuaderno pequeño: alguna receta se repite). |
+| PUT | `/menus/{id}/slots/{slot_id}` | `recipe_id` (del cuaderno propio) y/o `note` | Cambiar un plato: elegir una receta, escribirlo a mano o dejarlo vacío (`recipe_id: null`, `note: null`). 404 si la receta es de otro cuaderno. |
+| POST | `/menus/{id}/slots/{slot_id}/another` | — | "Otra propuesta" para ese plato, evitando las recetas que ya están en la semana cuando hay bastantes. |
+| POST | `/menus/{id}/shopping` | — | "Añadir lo que falta para toda la semana": los ingredientes de las recetas de la semana que no están en la despensa ni ya pendientes, una sola vez cada uno. `added[]` y `recipes` (recetas miradas). |
+| DELETE | `/menus/{id}` | — | Borrar el menú de la semana. |
+
+### Fotos (`/photos`, sesión 9)
+
+| Método | Ruta | Cuerpo | Qué hace |
+|---|---|---|---|
+| POST | `/photos` | `file` (multipart: JPEG, PNG, WebP o HEIC, hasta 10 MB) | 201 con `url` (`/photos/1f3….jpg`) para guardar en el `image_url` de una receta, un vino, un producto de la despensa o una línea de la compra. 415 si no es una foto, 413 si pesa más. |
+| GET | `/photos/{nombre}` | — | La foto, sin sesión (el móvil la muestra como una imagen cualquiera). En desarrollo los archivos están en la carpeta `uploads/` del proyecto (fuera de git); en producción irán a un almacén de archivos. |
 
 ### Notas (`/notes`)
 
