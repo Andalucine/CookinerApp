@@ -35,6 +35,9 @@ function Navigation() {
       <Stack.Screen name="spices/index" options={{ title: t("home.spices") }} />
       <Stack.Screen name="spices/list" options={{ title: t("home.spices") }} />
       <Stack.Screen name="spices/rules" options={{ title: t("spices.rules") }} />
+      <Stack.Screen name="spices/blend" options={{ title: t("blend.newTitle") }} />
+      <Stack.Screen name="spices/spice" options={{ title: t("ownSpice.newTitle") }} />
+      <Stack.Screen name="spices/substitutions" options={{ title: t("subs.title") }} />
       <Stack.Screen name="spices/[id]" options={{ title: t("home.spices") }} />
       <Stack.Screen name="notes/index" options={{ title: t("home.notes") }} />
       <Stack.Screen name="pantry/index" options={{ title: t("home.pantry") }} />

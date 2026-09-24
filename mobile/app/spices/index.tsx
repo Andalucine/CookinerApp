@@ -1,22 +1,28 @@
 /**
- * Especias (portada, session 8): a search box (results appear below as you type), the button to
- * the equivalence rules, and the seven families in the two-column grid with how many spices
- * each has. No login needed: the catalogue is the same for everyone.
+ * Especias (portada, session 8): what the marks mean, a search box (results appear below as
+ * you type), the button to the equivalence rules, and the seven families one per row with
+ * their icon and how many spices each has. No login needed: the catalogue is the same for all.
  */
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
-import { wideFlags } from "../../components/gridLayout.ts";
 import { LoadError, Loading } from "../../components/LoadState.tsx";
 import { RowButton } from "../../components/RowButton.tsx";
 import { Screen } from "../../components/Screen.tsx";
 import { SectionTitle } from "../../components/SectionTitle.tsx";
+import {
+  FAMILY_ICONS,
+  IconCircle,
+  MARK_BLEND,
+  MARK_SUBSTITUTES,
+} from "../../components/SpiceIcons.tsx";
 import { SpiceRow } from "../../components/SpiceRow.tsx";
 import { TextField } from "../../components/TextField.tsx";
 import { colors, fontSize, radius, spacing } from "../../components/theme.ts";
 import { useI18n } from "../../i18n";
 import { errorText } from "../../services/errors.ts";
+import { useSession } from "../../services/session.tsx";
 import * as spices from "../../services/spices.ts";
 import { useLoad } from "../../services/useLoad.ts";
 
@@ -24,7 +30,8 @@ const MIN_SEARCH = 2;
 
 export default function SpicesHome() {
   const { t, language } = useI18n();
-  const families = useLoad(() => spices.families(language), [language]);
+  const { token } = useSession();
+  const families = useLoad(() => spices.families({ language, token }), [language, token]);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<spices.SpiceSummary[] | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
@@ -40,7 +47,7 @@ export default function SpicesHome() {
     let cancelled = false;
     const timer = setTimeout(async () => {
       try {
-        const found = await spices.list(language, { q: text });
+        const found = await spices.list({ language, token }, { q: text });
         if (!cancelled) setResults(found);
       } catch (error) {
         if (!cancelled) setSearchError(errorText(error, t));
@@ -51,7 +58,7 @@ export default function SpicesHome() {
       clearTimeout(timer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, language]);
+  }, [query, language, token]);
 
   const searching = query.trim().length >= MIN_SEARCH;
   const familyName = (f: spices.SpiceFamily) => (language === "en" ? f.name_en : f.name_es);
@@ -59,6 +66,16 @@ export default function SpicesHome() {
   return (
     <Screen>
       <Text style={styles.intro}>{t("spices.intro")}</Text>
+      <View style={styles.legend}>
+        <View style={styles.legendRow}>
+          <IconCircle name={MARK_SUBSTITUTES} size={36} />
+          <Text style={styles.legendText}>{t("spices.legendSubstitutes")}</Text>
+        </View>
+        <View style={styles.legendRow}>
+          <IconCircle name={MARK_BLEND} size={36} />
+          <Text style={styles.legendText}>{t("spices.legendBlend")}</Text>
+        </View>
+      </View>
       <TextField
         label={t("spices.search")}
         hint={t("spices.searchHint")}
@@ -96,31 +113,21 @@ export default function SpicesHome() {
           ) : families.error || !families.data ? (
             <LoadError error={families.error} onRetry={families.reload} />
           ) : (
-            <View style={styles.grid}>
-              {families.data.map((family, index, all) => {
-                const wide = wideFlags(all.map(() => ({})))[index];
-                return (
-                  <Pressable
-                    key={family.code}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${familyName(family)}, ${family.count}`}
-                    onPress={() =>
-                      router.push({
-                        pathname: "/spices/list",
-                        params: { family: family.code, title: familyName(family) },
-                      })
-                    }
-                    style={({ pressed }) => [
-                      styles.tile,
-                      wide ? styles.wide : styles.half,
-                      pressed && styles.pressed,
-                    ]}
-                  >
-                    <Text style={styles.tileName}>{familyName(family)}</Text>
-                    <Text style={styles.tileCount}>{family.count}</Text>
-                  </Pressable>
-                );
-              })}
+            <View style={styles.list}>
+              {families.data.map((family) => (
+                <RowButton
+                  key={family.code}
+                  label={familyName(family)}
+                  icon={FAMILY_ICONS[family.code] ?? "leaf-outline"}
+                  count={family.count}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/spices/list",
+                      params: { family: family.code, title: familyName(family) },
+                    })
+                  }
+                />
+              ))}
             </View>
           )}
         </>
@@ -134,19 +141,12 @@ const styles = StyleSheet.create({
   muted: { fontSize: fontSize.body, color: colors.muted },
   error: { fontSize: fontSize.body, color: colors.error },
   list: { gap: spacing.s },
-  // Two equal columns; the odd one out takes the whole row (rule of the app, session 7)
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: spacing.s },
-  tile: {
-    minHeight: 96,
+  legend: {
+    gap: spacing.s,
     padding: spacing.m,
     borderRadius: radius.m,
-    borderWidth: 2,
-    borderColor: colors.border,
-    justifyContent: "space-between",
+    backgroundColor: colors.surface,
   },
-  half: { flexBasis: "40%", flexGrow: 1 },
-  wide: { flexBasis: "100%" },
-  pressed: { opacity: 0.7 },
-  tileName: { fontSize: fontSize.body, fontWeight: "700", color: colors.ink },
-  tileCount: { fontSize: fontSize.large, fontWeight: "800", color: colors.ink, textAlign: "right" },
+  legendRow: { flexDirection: "row", alignItems: "center", gap: spacing.s },
+  legendText: { flex: 1, fontSize: fontSize.body, color: colors.ink },
 });

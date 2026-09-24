@@ -116,9 +116,9 @@ SPICES = {
         ("dukkah", "dukkah", None),
         ("berberé", "berbere", None),
         ("especias para caldereta", "caldereta spice mix", "mezcla para caldereta"),
-        ("colorante alimentario", "food colouring (paella)", "colorante, colorante de paella"),
     ],
     "salts_seasonings": [
+        ("colorante alimentario", "food colouring (paella)", "colorante, colorante de paella"),
         ("sal en escamas", "flaky salt", None),
         ("sal ahumada", "smoked salt", None),
         ("sal de apio", "celery salt", None),
@@ -179,20 +179,12 @@ FRESH_INGREDIENTS = [
 # (situation_es, situation_en, equivalence_es, equivalence_en, note_es, note_en)
 EQUIVALENCE_RULES = [
     (
-        "Hierba fresca → seca",
-        "Fresh herb → dried",
+        "Hierba fresca ⇄ seca",
+        "Fresh herb ⇄ dried",
         "1 cucharada de fresca = 1 cucharadita de seca (3 : 1)",
         "1 tablespoon fresh = 1 teaspoon dried (3 : 1)",
         "La seca se añade al principio de la cocción; la fresca, al final",
         "Add dried at the start of cooking; fresh at the end",
-    ),
-    (
-        "Hierba seca → fresca",
-        "Dried herb → fresh",
-        "1 cucharadita de seca = 1 cucharada de fresca",
-        "1 teaspoon dried = 1 tablespoon fresh",
-        None,
-        None,
     ),
     (
         "Especia entera → molida",
@@ -694,6 +686,32 @@ SUBSTITUTIONS = {
             "Aproximación",
             "Approximation",
             None,
+        ),
+    ],
+    "colorante alimentario": [
+        (
+            "Cúrcuma",
+            "Turmeric",
+            "1 pizca = ¼ cdta",
+            "Da el mismo amarillo y un punto de sabor terroso",
+            "Same yellow with a slightly earthy taste",
+            "cúrcuma",
+        ),
+        (
+            "Azafrán",
+            "Saffron",
+            "1 pizca = 6–8 hebras",
+            "El color y el sabor auténticos del arroz; infusionar antes en caldo caliente",
+            "The authentic colour and taste for rice; steep in hot stock first",
+            "azafrán",
+        ),
+        (
+            "Pimentón dulce",
+            "Sweet paprika",
+            "1 : 1",
+            "Color más rojizo",
+            "Redder colour",
+            "pimentón dulce",
         ),
     ],
     "galanga": [

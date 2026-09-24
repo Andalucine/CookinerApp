@@ -6,9 +6,11 @@ from fastapi import FastAPI
 
 from app.api import (
     auth,
+    blends,
     catalog,
     health,
     imports,
+    notebook_spices,
     notebooks,
     notes,
     occasions,
@@ -37,6 +39,8 @@ app.include_router(recipes.router)
 app.include_router(pantry.router)
 app.include_router(shopping_list.router)
 app.include_router(spices.router)
+app.include_router(blends.router)
+app.include_router(notebook_spices.router)
 app.include_router(notes.router)
 app.include_router(wines.router)
 app.include_router(occasions.router)

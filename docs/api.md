@@ -100,11 +100,33 @@ La documentación interactiva la genera FastAPI en http://localhost:8000/docs (S
 
 | Método | Ruta | Descripción |
 |---|---|---|
-| GET | `/spices/families` | Las 7 familias en su orden, con nombre y número de especias. |
-| GET | `/spices?family=&q=` | Lista de especias; `q` busca en nombre, alias e inglés. Indica `has_substitutions` e `is_blend`. |
+| GET | `/spices/families?notebook_id=` | Las 7 familias en su orden, con nombre y número de especias (con token, cuenta también las del cuaderno). |
+| GET | `/spices?family=&q=&notebook_id=` | Lista de especias; `q` busca en nombre, alias e inglés. Indica `has_substitutions` e `is_blend`. Con token, añade las mezclas y las especias del cuaderno (`notebook_blend_id`, `is_own_version`, `notebook_spice_id`, `added_by`) y tiene en cuenta sus sustitutos propios; `notebook_id` para un cuaderno ajeno al que se tiene acceso (sesión 8). |
 | GET | `/spices/rules` | Reglas generales de equivalencia (fresca → seca…). |
 | GET | `/spices/blends` | Las mezclas con su composición (`parts`, `is_optional`). |
-| GET | `/spices/{ingredient_id}` | Ficha: `substitutions[]` (proporción y nota), `blend` si es mezcla, `used_in_blends[]`. También ajo, cebolla y jengibre fresco. 404 si no tiene ficha. |
+| GET | `/spices/{ingredient_id}?notebook_id=` | Ficha: `substitutions[]` (proporción y nota), `blend` si es mezcla, `used_in_blends[]`. También ajo, cebolla y jengibre fresco. 404 si no tiene ficha. Con token, `blend` es la versión del cuaderno si la tiene y `catalog_blend` la del catálogo; `substitutions` es la lista propia del cuaderno cuando existe (`has_own_substitutions`, `substitutions_added_by`) (sesión 8). |
+
+### Mezclas del cuaderno (`/blends`, sesión 8)
+
+Mezclas propias del cuaderno y versiones propias de las del catálogo. Propietario y editores las cambian; borra el propietario o quien la creó. Sin límite de plan.
+
+| Método | Ruta | Cuerpo | Respuesta |
+|---|---|---|---|
+| GET | `/blends?notebook_id=` | — | Las mezclas del cuaderno (por defecto el mío). |
+| POST | `/blends` | `name`, `note`, `items[]` (`name`, `parts`, `is_optional`), `notebook_id` opcional | 201 · la mezcla. Si el nombre es el de una mezcla del catálogo, es la **versión del cuaderno**. 409 si el cuaderno ya tiene una con ese nombre; 422 si se lleva a sí misma. |
+| PUT | `/blends/{id}` | igual que POST (sin `notebook_id`) | La mezcla con sus nuevos ingredientes. |
+| DELETE | `/blends/{id}` | — | Borra la mezcla; para una versión del catálogo, vuelve a la del catálogo. |
+
+### Especias y sustitutos del cuaderno (`/notebook-spices`, sesión 8)
+
+| Método | Ruta | Cuerpo | Respuesta |
+|---|---|---|---|
+| GET | `/notebook-spices?notebook_id=` | — | Las especias añadidas por el cuaderno. |
+| POST | `/notebook-spices` | `name`, `family` (código de las 7), `aliases`, `notebook_id` opcional | 201 · la especia. 409 si el nombre ya es una especia del catálogo o del cuaderno. |
+| PUT | `/notebook-spices/{id}` | `name`, `family`, `aliases` | La especia. |
+| DELETE | `/notebook-spices/{id}` | — | Borra la especia del cuaderno y su lista de sustitutos. |
+| PUT | `/notebook-spices/{ingredient_id}/substitutions` | `items[]` (`substitute`, `ratio`, `note`), `notebook_id` opcional | La lista propia del cuaderno para ese ingrediente (sustituye a la del catálogo). Si el sustituto es un solo nombre del catálogo, se enlaza (`substitute_id`). 422 si es la propia especia. |
+| DELETE | `/notebook-spices/{ingredient_id}/substitutions?notebook_id=` | — | Vuelve a la lista del catálogo. 404 si no había lista propia. |
 
 ### Vinos (`/wines`)
 

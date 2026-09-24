@@ -38,3 +38,18 @@ def get_current_user(
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+def get_optional_user(
+    db: DbSession, authorization: Annotated[str | None, Header()] = None
+) -> User | None:
+    """The signed-in user when a token comes, None otherwise (public routes that add the
+    notebook's own data, like the spice zone with the notebook's blends)."""
+    if not authorization or not authorization.lower().startswith("bearer "):
+        return None
+    user_id = decode_access_token(authorization.split(" ", 1)[1])
+    user = db.get(User, user_id) if user_id else None
+    return user if user and user.is_active else None
+
+
+OptionalUser = Annotated[User | None, Depends(get_optional_user)]

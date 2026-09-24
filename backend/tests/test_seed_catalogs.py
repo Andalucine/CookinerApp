@@ -14,12 +14,12 @@ def test_seed_loads_catalogs_and_is_idempotent(db_session):
     assert first[Category] == 153  # 3 branches + categories + subcategories
     assert first[Tag] == 40
     assert first[WineCategory] == 40
-    assert _count(db_session, SpiceSubstitution) == 175
+    assert _count(db_session, SpiceSubstitution) == 178
     assert _count(db_session, PairingRule) > 50
 
     run(db_session)  # second run: nothing duplicated
     assert {m: _count(db_session, m) for m in first} == first
-    assert _count(db_session, SpiceSubstitution) == 175
+    assert _count(db_session, SpiceSubstitution) == 178
 
 
 def test_tree_has_three_levels_and_no_world_cuisine_branch(db_session):

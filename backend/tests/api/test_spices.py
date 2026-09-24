@@ -21,7 +21,7 @@ def test_families_list_and_rules(client, seeded):
     assert "comino" in [s["name"] for s in client.get("/spices?q=cumin").json()]
 
     rules = client.get("/spices/rules").json()
-    assert rules[0]["situation_es"] == "Hierba fresca → seca"
+    assert rules[0]["situation_es"] == "Hierba fresca ⇄ seca"
 
 
 def test_spice_card_and_blends(client, seeded):

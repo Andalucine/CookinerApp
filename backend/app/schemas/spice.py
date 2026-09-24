@@ -1,6 +1,6 @@
 """Spice zone output models: families, cards, equivalence rules, substitutions and blends."""
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class SpiceFamilyOut(BaseModel):
@@ -22,6 +22,13 @@ class SpiceSummary(BaseModel):
     family: str | None = None
     has_substitutions: bool = False
     is_blend: bool = False
+    # Blends of the notebook (session 8): the notebook's row, and whether it is a version of a
+    # catalogue blend (True) or a blend of its own (False)
+    notebook_blend_id: int | None = None
+    is_own_version: bool = False
+    added_by: str | None = None
+    # A spice added by the notebook (session 8)
+    notebook_spice_id: int | None = None
 
 
 class EquivalenceRuleOut(BaseModel):
@@ -55,7 +62,11 @@ class BlendItemOut(BaseModel):
 
 
 class BlendOut(BaseModel):
-    id: int
+    id: int | None = None  # catalogue row (None for a notebook blend)
+    notebook_blend_id: int | None = None  # notebook row (None for a catalogue blend)
+    notebook_id: int | None = None
+    added_by: str | None = None  # "(añadido por NOMBRE)" when it is not the notebook owner
+    created_by_id: int | None = None
     ingredient_id: int
     name: str
     name_en: str | None = None
@@ -75,11 +86,70 @@ class BlendRef(BaseModel):
 
 
 class SpiceCard(SpiceSummary):
-    """The full card: what to use instead, how to make it at home, where it appears."""
+    """The full card: what to use instead, how to make it at home, where it appears.
+    `blend` is the notebook's version when it has one, otherwise the catalogue's;
+    `catalog_blend` carries the catalogue's when both exist ("volver a la del catálogo")."""
 
     substitutions: list[SubstitutionOut]
+    has_own_substitutions: bool = False  # the notebook's list replaces the catalogue's
+    substitutions_added_by: str | None = None
     blend: BlendOut | None = None
+    catalog_blend: BlendOut | None = None
     used_in_blends: list[BlendRef] = []
+
+
+class SubstitutionIn(BaseModel):
+    substitute: str = Field(min_length=1, max_length=150)
+    ratio: str | None = Field(default=None, max_length=60)
+    note: str | None = Field(default=None, max_length=200)
+
+
+class SubstitutionsIn(BaseModel):
+    """The notebook's whole list for one ingredient (replaces the previous one)."""
+
+    items: list[SubstitutionIn] = Field(min_length=1, max_length=20)
+    notebook_id: int | None = Field(default=None, description="Default: your own notebook")
+
+
+class NotebookSpiceIn(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    family: str = Field(
+        pattern="^(herbs|seeds|barks_roots_flowers|peppers_chillies|paprikas|blends|salts_seasonings)$"
+    )  # noqa: E501
+    aliases: str | None = Field(default=None, max_length=300)
+
+
+class NotebookSpiceCreate(NotebookSpiceIn):
+    notebook_id: int | None = Field(default=None, description="Default: your own notebook")
+
+
+class NotebookSpiceOut(BaseModel):
+    id: int
+    notebook_id: int
+    ingredient_id: int
+    name: str
+    family: str
+    aliases: str | None = None
+    added_by: str | None = None
+    created_by_id: int | None = None
+
+
+class BlendItemIn(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    parts: str = Field(default="1", min_length=1, max_length=10)
+    is_optional: bool = False
+
+
+class BlendIn(BaseModel):
+    """What the person writes: the name, a note and the ingredients with their parts."""
+
+    name: str = Field(min_length=1, max_length=100)
+    note: str | None = Field(default=None, max_length=200)
+    items: list[BlendItemIn] = Field(min_length=1, max_length=40)
+
+
+class BlendCreate(BlendIn):
+    notebook_id: int | None = Field(default=None, description="Default: your own notebook")
 
 
 class RecipeSpiceOut(BaseModel):

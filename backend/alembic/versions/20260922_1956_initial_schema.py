@@ -1,4 +1,5 @@
-"""initial schema (v2: personal notebook, catalogs, pantry, shopping list, notes, favorites)
+"""initial schema (v2: personal notebook, catalogs, pantry, shopping list, notes, favorites,
+notebook blends, notebook spices and substitutions)
 
 Revision ID: 0002a1b2c3d4
 Revises:
@@ -363,6 +364,183 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id", name=op.f("pk_notes")),
     )
     op.create_index(op.f("ix_notes_notebook_id"), "notes", ["notebook_id"], unique=False)
+    op.create_table(
+        "notebook_blends",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("notebook_id", sa.Integer(), nullable=False),
+        sa.Column("ingredient_id", sa.Integer(), nullable=False),
+        sa.Column("created_by_id", sa.Integer(), nullable=True),
+        sa.Column("note", sa.String(length=200), nullable=True),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
+        sa.ForeignKeyConstraint(
+            ["created_by_id"],
+            ["users.id"],
+            name=op.f("fk_notebook_blends_created_by_id_users"),
+            ondelete="SET NULL",
+        ),
+        sa.ForeignKeyConstraint(
+            ["ingredient_id"],
+            ["ingredients.id"],
+            name=op.f("fk_notebook_blends_ingredient_id_ingredients"),
+            ondelete="CASCADE",
+        ),
+        sa.ForeignKeyConstraint(
+            ["notebook_id"],
+            ["notebooks.id"],
+            name=op.f("fk_notebook_blends_notebook_id_notebooks"),
+            ondelete="CASCADE",
+        ),
+        sa.PrimaryKeyConstraint("id", name=op.f("pk_notebook_blends")),
+        sa.UniqueConstraint(
+            "notebook_id",
+            "ingredient_id",
+            name=op.f("uq_notebook_blends_notebook_id_ingredient_id"),
+        ),
+    )
+    op.create_index(
+        op.f("ix_notebook_blends_ingredient_id"), "notebook_blends", ["ingredient_id"], unique=False
+    )
+    op.create_index(
+        op.f("ix_notebook_blends_notebook_id"), "notebook_blends", ["notebook_id"], unique=False
+    )
+    op.create_table(
+        "notebook_blend_items",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("blend_id", sa.Integer(), nullable=False),
+        sa.Column("ingredient_id", sa.Integer(), nullable=False),
+        sa.Column("parts", sa.String(length=10), nullable=False),
+        sa.Column("is_optional", sa.Boolean(), nullable=False),
+        sa.Column("position", sa.Integer(), nullable=False),
+        sa.ForeignKeyConstraint(
+            ["blend_id"],
+            ["notebook_blends.id"],
+            name=op.f("fk_notebook_blend_items_blend_id_notebook_blends"),
+            ondelete="CASCADE",
+        ),
+        sa.ForeignKeyConstraint(
+            ["ingredient_id"],
+            ["ingredients.id"],
+            name=op.f("fk_notebook_blend_items_ingredient_id_ingredients"),
+        ),
+        sa.PrimaryKeyConstraint("id", name=op.f("pk_notebook_blend_items")),
+        sa.UniqueConstraint(
+            "blend_id", "ingredient_id", name=op.f("uq_notebook_blend_items_blend_id_ingredient_id")
+        ),
+    )
+    op.create_index(
+        op.f("ix_notebook_blend_items_blend_id"), "notebook_blend_items", ["blend_id"], unique=False
+    )
+    op.create_table(
+        "notebook_spices",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("notebook_id", sa.Integer(), nullable=False),
+        sa.Column("ingredient_id", sa.Integer(), nullable=False),
+        sa.Column("family", sa.String(length=30), nullable=False),
+        sa.Column("aliases", sa.String(length=300), nullable=True),
+        sa.Column("created_by_id", sa.Integer(), nullable=True),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
+        sa.ForeignKeyConstraint(
+            ["created_by_id"],
+            ["users.id"],
+            name=op.f("fk_notebook_spices_created_by_id_users"),
+            ondelete="SET NULL",
+        ),
+        sa.ForeignKeyConstraint(
+            ["ingredient_id"],
+            ["ingredients.id"],
+            name=op.f("fk_notebook_spices_ingredient_id_ingredients"),
+            ondelete="CASCADE",
+        ),
+        sa.ForeignKeyConstraint(
+            ["notebook_id"],
+            ["notebooks.id"],
+            name=op.f("fk_notebook_spices_notebook_id_notebooks"),
+            ondelete="CASCADE",
+        ),
+        sa.PrimaryKeyConstraint("id", name=op.f("pk_notebook_spices")),
+        sa.UniqueConstraint(
+            "notebook_id",
+            "ingredient_id",
+            name=op.f("uq_notebook_spices_notebook_id_ingredient_id"),
+        ),
+    )
+    op.create_index(
+        op.f("ix_notebook_spices_ingredient_id"), "notebook_spices", ["ingredient_id"], unique=False
+    )
+    op.create_index(
+        op.f("ix_notebook_spices_notebook_id"), "notebook_spices", ["notebook_id"], unique=False
+    )
+    op.create_table(
+        "notebook_substitutions",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("notebook_id", sa.Integer(), nullable=False),
+        sa.Column("ingredient_id", sa.Integer(), nullable=False),
+        sa.Column("substitute", sa.String(length=150), nullable=False),
+        sa.Column("substitute_id", sa.Integer(), nullable=True),
+        sa.Column("ratio", sa.String(length=60), nullable=True),
+        sa.Column("note", sa.String(length=200), nullable=True),
+        sa.Column("position", sa.Integer(), nullable=False),
+        sa.Column("created_by_id", sa.Integer(), nullable=True),
+        sa.ForeignKeyConstraint(
+            ["created_by_id"],
+            ["users.id"],
+            name=op.f("fk_notebook_substitutions_created_by_id_users"),
+            ondelete="SET NULL",
+        ),
+        sa.ForeignKeyConstraint(
+            ["ingredient_id"],
+            ["ingredients.id"],
+            name=op.f("fk_notebook_substitutions_ingredient_id_ingredients"),
+            ondelete="CASCADE",
+        ),
+        sa.ForeignKeyConstraint(
+            ["notebook_id"],
+            ["notebooks.id"],
+            name=op.f("fk_notebook_substitutions_notebook_id_notebooks"),
+            ondelete="CASCADE",
+        ),
+        sa.ForeignKeyConstraint(
+            ["substitute_id"],
+            ["ingredients.id"],
+            name=op.f("fk_notebook_substitutions_substitute_id_ingredients"),
+            ondelete="SET NULL",
+        ),
+        sa.PrimaryKeyConstraint("id", name=op.f("pk_notebook_substitutions")),
+    )
+    op.create_index(
+        op.f("ix_notebook_substitutions_ingredient_id"),
+        "notebook_substitutions",
+        ["ingredient_id"],
+        unique=False,
+    )
+    op.create_index(
+        op.f("ix_notebook_substitutions_notebook_id"),
+        "notebook_substitutions",
+        ["notebook_id"],
+        unique=False,
+    )
     op.create_table(
         "occasions",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -947,6 +1125,10 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    op.drop_table("notebook_substitutions")
+    op.drop_table("notebook_spices")
+    op.drop_table("notebook_blend_items")
+    op.drop_table("notebook_blends")
     op.drop_index(op.f("ix_spice_blend_items_blend_id"), table_name="spice_blend_items")
     op.drop_table("spice_blend_items")
     op.drop_index(op.f("ix_shopping_list_items_notebook_id"), table_name="shopping_list_items")

@@ -1,24 +1,33 @@
 /** Ficha de una especia (from a recipe ingredient or from the spice zone): what to use instead,
  * with the proportion and a note; how to make it at home if it is a blend; blends it is part of.
- * Substitutes and blends with a card of their own can be tapped (session 8). */
+ * Substitutes and blends with a card of their own can be tapped. A blend can be edited (my
+ * notebook's version), and my version can go back to the catalogue's (session 8). */
 import { Ionicons } from "@expo/vector-icons";
 import { router, Stack, useLocalSearchParams } from "expo-router";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
+import { BigButton } from "../../components/BigButton.tsx";
 import { LoadError, Loading } from "../../components/LoadState.tsx";
+import { Message } from "../../components/Message.tsx";
 import { Screen } from "../../components/Screen.tsx";
 import { SectionTitle } from "../../components/SectionTitle.tsx";
 import { cap } from "../../components/SpiceRow.tsx";
 import { colors, fontSize, radius, spacing } from "../../components/theme.ts";
 import { useI18n } from "../../i18n";
+import { errorText } from "../../services/errors.ts";
+import { useSession } from "../../services/session.tsx";
 import * as spices from "../../services/spices.ts";
 import { useLoad } from "../../services/useLoad.ts";
 
 export default function SpiceScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t, language } = useI18n();
+  const { token } = useSession();
   const en = language === "en";
-  const data = useLoad(() => spices.card(Number(id), language), [id, language]);
+  const data = useLoad(() => spices.card(Number(id), { language, token }), [id, language, token]);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
 
   if (data.loading && !data.data) return <Loading />;
   if (data.error || !data.data) {
@@ -31,6 +40,55 @@ export default function SpiceScreen() {
   const card = data.data;
   const name = cap((en && card.name_en) || card.name);
   const blendNote = card.blend ? (en ? card.blend.note_en : card.blend.note_es) : null;
+  const ownRow = card.blend?.notebook_blend_id ?? null; // my notebook's row, if any
+  const ownNew = ownRow !== null && !card.is_own_version; // a blend of my own, not a version
+
+  async function run(action: () => Promise<unknown>, thenBack: boolean) {
+    if (!token) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      await action();
+      if (thenBack) router.back();
+      else await data.reload();
+    } catch (error) {
+      setMessage(errorText(error, t));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function confirm(title: string, text: string, button: string, action: () => void) {
+    Alert.alert(title, text, [
+      { text: t("common.cancel"), style: "cancel" },
+      { text: button, style: "destructive", onPress: action },
+    ]);
+  }
+
+  const auth = token ? { token, language } : null;
+
+  function confirmRemove() {
+    if (ownRow === null || !auth) return;
+    const key = ownNew ? "delete" : "restore";
+    confirm(t(`blend.${key}Title`), t(`blend.${key}Text`, { name }), t(`blend.${key}`), () =>
+      run(() => spices.removeBlend(auth, ownRow), ownNew),
+    );
+  }
+
+  function confirmRestoreSubstitutes() {
+    if (!auth) return;
+    confirm(t("subs.restoreTitle"), t("subs.restoreText", { name }), t("subs.restore"), () =>
+      run(() => spices.clearSubstitutions(auth, card.id), false),
+    );
+  }
+
+  function confirmDeleteSpice() {
+    if (!auth || card.notebook_spice_id === null) return;
+    const spiceId = card.notebook_spice_id;
+    confirm(t("ownSpice.deleteTitle"), t("ownSpice.deleteText", { name }), t("ownSpice.delete"), () =>
+      run(() => spices.removeSpice(auth, spiceId), true),
+    );
+  }
 
   return (
     <Screen>
@@ -42,7 +100,20 @@ export default function SpiceScreen() {
         <Text style={styles.muted}>{t("spice.aliases", { names: card.aliases })}</Text>
       ) : null}
 
+      {card.notebook_spice_id !== null ? (
+        <Text style={styles.mark}>
+          {card.added_by ? t("recipes.addedBy", { name: card.added_by }) : t("ownSpice.mark")}
+        </Text>
+      ) : null}
+
       <SectionTitle text={t("spice.substitutes")} />
+      {card.has_own_substitutions ? (
+        <Text style={styles.mark}>
+          {card.substitutions_added_by
+            ? t("recipes.addedBy", { name: card.substitutions_added_by })
+            : t("subs.mark")}
+        </Text>
+      ) : null}
       {card.substitutions.length ? (
         card.substitutions.map((s, index) => {
           const note = en ? s.note_en : s.note_es;
@@ -76,10 +147,36 @@ export default function SpiceScreen() {
       ) : (
         <Text style={styles.muted}>{t("spice.noSubstitutes")}</Text>
       )}
+      {token ? (
+        <View style={styles.actions}>
+          <BigButton
+            label={t("subs.edit")}
+            icon="create-outline"
+            variant="secondary"
+            onPress={() => router.push({ pathname: "/spices/substitutions", params: { id } })}
+          />
+          {card.has_own_substitutions ? (
+            <BigButton
+              label={t("subs.restore")}
+              icon="refresh-outline"
+              variant="link"
+              loading={busy}
+              onPress={confirmRestoreSubstitutes}
+            />
+          ) : null}
+        </View>
+      ) : null}
 
       {card.blend ? (
         <>
           <SectionTitle text={t("spice.blend")} />
+          {card.is_own_version ? (
+            <Text style={styles.mark}>{t("blend.markVersion")}</Text>
+          ) : ownNew ? (
+            <Text style={styles.mark}>
+              {card.added_by ? t("recipes.addedBy", { name: card.added_by }) : t("blend.markOwn")}
+            </Text>
+          ) : null}
           {card.blend.items.map((item) => (
             <Text key={item.ingredient_id} style={styles.body}>
               • {item.parts} {(en && item.name_en) || item.name}
@@ -87,6 +184,25 @@ export default function SpiceScreen() {
             </Text>
           ))}
           {blendNote ? <Text style={styles.muted}>{blendNote}</Text> : null}
+          {token ? (
+            <View style={styles.actions}>
+              <BigButton
+                label={t("blend.edit")}
+                icon="create-outline"
+                variant="secondary"
+                onPress={() => router.push({ pathname: "/spices/blend", params: { id } })}
+              />
+              {ownRow !== null ? (
+                <BigButton
+                  label={t(ownNew ? "blend.delete" : "blend.restore")}
+                  icon={ownNew ? "trash-outline" : "refresh-outline"}
+                  variant="link"
+                  loading={busy}
+                  onPress={confirmRemove}
+                />
+              ) : null}
+            </View>
+          ) : null}
         </>
       ) : null}
 
@@ -110,6 +226,30 @@ export default function SpiceScreen() {
           })}
         </>
       ) : null}
+      {token && card.notebook_spice_id !== null ? (
+        <View style={styles.actions}>
+          <SectionTitle text={t("ownSpice.section")} />
+          <BigButton
+            label={t("ownSpice.edit")}
+            icon="create-outline"
+            variant="secondary"
+            onPress={() =>
+              router.push({
+                pathname: "/spices/spice",
+                params: { id: String(card.notebook_spice_id), ingredient: id },
+              })
+            }
+          />
+          <BigButton
+            label={t("ownSpice.delete")}
+            icon="trash-outline"
+            variant="link"
+            loading={busy}
+            onPress={confirmDeleteSpice}
+          />
+        </View>
+      ) : null}
+      <Message text={message} />
     </Screen>
   );
 }
@@ -123,6 +263,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.m,
     backgroundColor: colors.surface,
   },
+  mark: { fontSize: fontSize.small, fontWeight: "600", color: colors.muted },
+  actions: { gap: spacing.s, marginTop: spacing.s },
   boxRow: { flexDirection: "row", alignItems: "center", gap: spacing.s },
   boxText: { flex: 1, gap: spacing.xs },
   pressed: { opacity: 0.7 },

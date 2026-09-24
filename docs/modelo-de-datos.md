@@ -1,6 +1,6 @@
 # Modelo de datos
 
-Estado: **v2** (migración `initial_schema` regenerada en las sesiones 4 y 5, decisión 0004: cuaderno personal). Regla: cada cambio en `backend/app/models/` actualiza este documento en el mismo commit. 32 tablas.
+Estado: **v2** (migración `initial_schema` regenerada en las sesiones 4, 5 y 8, decisión 0004: cuaderno personal). Regla: cada cambio en `backend/app/models/` actualiza este documento en el mismo commit. 36 tablas.
 
 ## Esquema general
 
@@ -18,6 +18,9 @@ users ──< notebooks (1 por cuenta) ──< recipes ──< recipe_ingredient
   ├─< auth_identities                     ingredients (especias) ──< spice_substitutions
   └─< password_reset_tokens                                       └─< spice_blends ──< spice_blend_items
                                           spice_equivalence_rules
+notebooks ──< notebook_blends ──< notebook_blend_items
+          ├─< notebook_spices
+          └─< notebook_substitutions
                                           pairing_rules: categories → wine_categories
 ```
 
@@ -67,6 +70,13 @@ El tiempo (rápida ≤ 30 · media 31–60 · larga > 60) no se guarda: se calcu
 | `spice_substitutions` | "Si falta X, usa Y" | `ingredient_id` (la que falta), `substitute_es/en` (texto), `substitute_id` (si es un solo ingrediente), `ratio`, `note_es/en` |
 | `spice_blends` | Mezclas que se pueden hacer en casa | `ingredient_id` (la mezcla, único), `quick_substitute_*` |
 | `spice_blend_items` | Composición de la mezcla | `ingredient_id`, `parts` ("2", "½"), `is_optional` |
+| `notebook_blends` | Mezclas **del cuaderno** (sesión 8): una nueva ("mezcla de la abuela") o la versión propia de una del catálogo (mismo `ingredient_id` que `spice_blends`) | `notebook_id`, `ingredient_id` (único por cuaderno), `created_by_id`, `note` |
+| `notebook_blend_items` | Composición de la mezcla del cuaderno | `ingredient_id`, `parts`, `is_optional`, `position` |
+
+| `notebook_spices` | Especias **añadidas por el cuaderno** (sesión 8), en una de las siete familias | `notebook_id`, `ingredient_id` (único por cuaderno), `family`, `aliases`, `created_by_id` |
+| `notebook_substitutions` | Lista **propia del cuaderno** de sustitutos de un ingrediente (del catálogo o suyo); cuando existe, sustituye a la del catálogo para ese cuaderno | `notebook_id`, `ingredient_id`, `substitute` (texto), `substitute_id` (si es un solo ingrediente del catálogo), `ratio`, `note`, `position`, `created_by_id` |
+
+El catálogo de especias, sustituciones y mezclas nunca se modifica: al editar una mezcla del catálogo se crea la versión del cuaderno, y borrarla es volver a la del catálogo. El nombre de una mezcla nueva entra en `ingredients` como cualquier ingrediente (sin `is_spice`), para que una receta que la use enlace con ella.
 
 ## Vinos
 
@@ -95,7 +105,7 @@ El tiempo (rápida ≤ 30 · media 31–60 · larga > 60) no se guarda: se calcu
 
 ## Reglas de negocio que el modelo soporta
 
-- Permisos: sobre un cuaderno, el propietario lo puede todo; `editor` añade y edita recetas (queda en `recipe_contributions`), vinos, notas y épocas propias (queda en `added_by_id`/`updated_by_id`/`created_by_id`); borrar solo el propietario o quien lo creó; `viewer` solo ve y puede copiar a su cuaderno o marcar favoritos.
+- Permisos: sobre un cuaderno, el propietario lo puede todo; `editor` añade y edita recetas (queda en `recipe_contributions`), vinos, notas, épocas propias, mezclas, especias y sustitutos del cuaderno (queda en `added_by_id`/`updated_by_id`/`created_by_id`); borrar solo el propietario o quien lo creó; `viewer` solo ve y puede copiar a su cuaderno o marcar favoritos.
 - Sección de vinos: solo si el **propietario** del cuaderno tiene plan `individual` o `family` (`PLANS_WITH_WINES`, sesión 5).
 - Sugerencia automática de vinos: `pairing_rules` de la categoría principal de la receta (si no tiene, la de su categoría madre; después, las demás categorías de la receta), más los `wines` del cuaderno de esos tipos.
 - Una receta solo puede llevar épocas precargadas o del propio cuaderno.

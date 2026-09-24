@@ -35,6 +35,16 @@ TEXTS = {
     "invitation_cancelled": "Invitation cancelled.",
     "access_removed": "Access removed.",
     "left_notebook": "You have left the notebook.",
+    "blend_not_found": "Blend not found.",
+    "blend_exists": (
+        "The notebook already has a blend with that name: edit it instead of creating another."
+    ),
+    "blend_same_ingredient": "A blend cannot contain itself as an ingredient.",
+    "blend_deleted": "Blend deleted.",
+    "spice_exists": "That spice already exists in the catalogue or in the notebook.",
+    "spice_deleted": "Spice deleted.",
+    "substitute_self": "A spice cannot be its own substitute.",
+    "substitutions_restored": "Back to the catalogue's substitutes.",
     "spice_not_found": "That spice has no card.",
     "note_not_found": "Note not found.",
     "note_deleted": "Note deleted.",

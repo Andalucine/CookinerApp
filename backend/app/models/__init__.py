@@ -14,7 +14,16 @@ from app.models.recipe import (
     RecipeSeason,
     RecipeTag,
 )
-from app.models.spice import SpiceBlend, SpiceBlendItem, SpiceEquivalenceRule, SpiceSubstitution
+from app.models.spice import (
+    NotebookBlend,
+    NotebookBlendItem,
+    NotebookSpice,
+    NotebookSubstitution,
+    SpiceBlend,
+    SpiceBlendItem,
+    SpiceEquivalenceRule,
+    SpiceSubstitution,
+)
 from app.models.taxonomy import Category, Ingredient, Occasion, Season, ShoppingSection, Tag
 from app.models.user import AuthIdentity, PasswordResetToken, User
 from app.models.wine import PairingRule, RecipeWine, Wine, WineCategory
@@ -28,6 +37,10 @@ __all__ = [
     "Note",
     "Notebook",
     "NotebookAccess",
+    "NotebookBlend",
+    "NotebookBlendItem",
+    "NotebookSpice",
+    "NotebookSubstitution",
     "NotebookInvitation",
     "Occasion",
     "PairingRule",
