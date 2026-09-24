@@ -100,15 +100,6 @@ function RecipesHome({ auth, notebook }: { auth: Auth; notebook: OtherNotebook |
       ) : (
         <Text style={styles.empty}>{notebook ? t("shared.empty") : t("recipes.empty")}</Text>
       )}
-      {!notebook ? (
-        <View style={styles.more}>
-          <RowButton
-            label={t("menu.title")}
-            icon="calendar-outline"
-            onPress={() => router.push("/menu")}
-          />
-        </View>
-      ) : null}
       {notebook ? (
         // Someone else's notebook: its notes are reached from here (session 9)
         <View style={styles.more}>

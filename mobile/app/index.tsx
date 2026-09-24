@@ -1,7 +1,7 @@
 /**
- * Inicio: the five doors (Recetas · Vinos · Especias · Notas · Mi despensa), the shopping list
- * always at hand and, further down, Compartir mi cuaderno with Unirme a un cuaderno and Mi cuenta
- * side by side (layout decided in session 6). Without a session it sends the person to Entrar.
+ * Inicio: the six doors (Recetas · Vinos · Especias · Notas · Mi despensa · Menú semanal, the
+ * sixth from session 9), the shopping list always at hand and, further down, Compartir mi
+ * cuaderno with Unirme a un cuaderno and Mi cuenta side by side (layout decided in session 6). Without a session it sends the person to Entrar.
  */
 import { Ionicons } from "@expo/vector-icons";
 import { type Href, Redirect, router } from "expo-router";
@@ -24,6 +24,7 @@ const DOORS: { label: TextKey; icon: IconName; href: Href }[] = [
   { label: "home.spices", icon: "leaf-outline", href: "/spices" },
   { label: "home.notes", icon: "document-text-outline", href: "/notes" },
   { label: "home.pantry", icon: "basket-outline", href: "/pantry" },
+  { label: "home.menu", icon: "calendar-outline", href: "/menu" }, // sixth door, session 9
 ];
 
 export default function Home() {
@@ -73,7 +74,8 @@ export default function Home() {
             onPress={() => router.push(door.href)}
             style={({ pressed }) => [
               styles.door,
-              index === DOORS.length - 1 && styles.doorWide,
+              // an odd number of doors: the last one takes the whole row
+              DOORS.length % 2 === 1 && index === DOORS.length - 1 && styles.doorWide,
               pressed && styles.pressed,
             ]}
           >

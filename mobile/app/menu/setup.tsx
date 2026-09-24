@@ -68,11 +68,8 @@ function Setup({ auth, week }: { auth: Auth; week: string }) {
       />
       <ToggleChips
         label={t("menu.meals")}
-        options={MEALS.map((meal, i) => ({
-          value: i,
-          label: t(`menu.meal.${meal}` as TextKey),
-          wide: i === 0,
-        }))}
+        options={MEALS.map((meal, i) => ({ value: i, label: t(`menu.meal.${meal}` as TextKey) }))}
+        perRow={3}
         selected={meals}
         onToggle={(i) => setMeals((m) => (m.includes(i) ? m.filter((x) => x !== i) : [...m, i]))}
       />

@@ -69,6 +69,7 @@ export const chipStyles = StyleSheet.create({
   },
   // Two per row of the same width (both grow from the same base), or one across
   half: { flexBasis: "40%", flexGrow: 1 },
+  third: { flexBasis: "28%", flexGrow: 1 }, // three in a row (the meals of the menu, session 9)
   wide: { flexBasis: "100%" },
 });
 

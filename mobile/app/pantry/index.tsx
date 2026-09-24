@@ -15,7 +15,6 @@ import { AddField } from "../../components/AddField.tsx";
 import { BigButton } from "../../components/BigButton.tsx";
 import { LoadError, Loading } from "../../components/LoadState.tsx";
 import { Message } from "../../components/Message.tsx";
-import { RowButton } from "../../components/RowButton.tsx";
 import { PhotoButton, PhotoThumb } from "../../components/Photo.tsx";
 import { Screen } from "../../components/Screen.tsx";
 import { type Auth, SignedIn } from "../../components/SignedIn.tsx";
@@ -96,11 +95,6 @@ function Pantry({ auth }: { auth: Auth }) {
         label={t("pantry.cook")}
         icon="restaurant-outline"
         onPress={() => router.push("/pantry/cook")}
-      />
-      <RowButton
-        label={t("menu.title")}
-        icon="calendar-outline"
-        onPress={() => router.push("/menu")}
       />
       <Message text={message} />
       {LOCATIONS.map((place, index) => (

@@ -13,6 +13,7 @@ export function ToggleChips({
   onToggle,
   anyLabel,
   onClear,
+  perRow = 2,
 }: {
   label: string;
   options: { value: number; label: string; wide?: boolean }[];
@@ -20,8 +21,9 @@ export function ToggleChips({
   onToggle: (value: number) => void;
   anyLabel?: string; // "Cualquiera": on when nothing is marked; tapping it clears the rest
   onClear?: () => void;
+  perRow?: 2 | 3; // 3: a single row of three (Beatriz, session 9: the meals of the menu)
 }) {
-  const wide = wideFlags(options);
+  const wide = perRow === 3 ? options.map(() => false) : wideFlags(options);
   const none = selected.length === 0;
   return (
     <View style={styles.wrapper}>
@@ -54,7 +56,7 @@ export function ToggleChips({
               onPress={() => onToggle(option.value)}
               style={({ pressed }) => [
                 chipStyles.chip,
-                wide[index] ? chipStyles.wide : chipStyles.half,
+                wide[index] ? chipStyles.wide : perRow === 3 ? chipStyles.third : chipStyles.half,
                 on && styles.on,
                 pressed && styles.pressed,
               ]}

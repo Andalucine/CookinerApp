@@ -34,6 +34,7 @@ export const en: Record<keyof typeof es, string> = {
   "home.spices": "Spices",
   "home.notes": "Notes",
   "home.pantry": "My pantry",
+  "home.menu": "Weekly menu",
   "home.shoppingList": "Shopping list",
   "home.share": "Share my notebook",
   "home.join": "Join a notebook",

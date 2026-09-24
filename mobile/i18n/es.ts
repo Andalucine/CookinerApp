@@ -34,6 +34,7 @@ export const es = {
   "home.spices": "Especias",
   "home.notes": "Notas",
   "home.pantry": "Mi despensa",
+  "home.menu": "Menú semanal",
   "home.shoppingList": "Lista de la compra",
   "home.share": "Compartir mi cuaderno",
   "home.join": "Unirme a un cuaderno",
