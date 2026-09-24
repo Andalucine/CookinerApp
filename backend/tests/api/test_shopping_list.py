@@ -99,3 +99,29 @@ def test_clear_bought_can_note_it_in_the_pantry(client, seeded, make_user):
     client.post(f"/shopping-list/items/{ids['papel de horno']}/check", headers=headers)
     client.delete("/shopping-list/checked", headers=headers)
     assert len(client.get("/pantry", headers=headers).json()["items"]) == 3
+
+
+def test_missing_preview_and_ticked_ingredients(client, seeded, make_user):
+    headers, _ = make_user()
+    rid = client.post("/recipes", json=marmitako(seeded), headers=headers).json()["id"]
+    client.post("/pantry/items", json={"name": "patata"}, headers=headers)
+    client.post("/shopping-list/items", json={"text": "cebolla"}, headers=headers)
+
+    r = client.get(f"/shopping-list/from-recipe/{rid}", headers=headers)
+    assert r.status_code == 200
+    status = {row["name"]: row["status"] for row in r.json()}
+    assert status == {
+        "bonito": "missing", "patata": "in_pantry", "pimentón dulce": "missing",
+        "cebolla": "pending", "sal": "staple",
+    }  # fmt: skip
+    assert next(row for row in r.json() if row["name"] == "patata")["quantity"] == "4 patatas"
+
+    # tick only bonito and patata (patata is in the pantry, but the person wants more)
+    ids = {row["name"]: row["ingredient_id"] for row in r.json()}
+    r = client.post(
+        f"/shopping-list/from-recipe/{rid}",
+        json={"ingredient_ids": [ids["bonito"], ids["patata"], ids["cebolla"]]},
+        headers=headers,
+    )
+    assert r.status_code == 200
+    assert sorted(i["text"] for i in r.json()) == ["bonito", "patata"]  # cebolla was pending

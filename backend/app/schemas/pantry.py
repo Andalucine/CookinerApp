@@ -51,6 +51,22 @@ class ShoppingItemIn(BaseModel):
     )
 
 
+class MissingIngredientOut(BaseModel):
+    """One ingredient of a recipe (or of a week), before adding it to the list (session 9)."""
+
+    ingredient_id: int
+    name: str
+    quantity: str | None = None  # what the recipe(s) say: "300 g de lentejas"
+    recipes: list[str] = []  # which recipes use it (the menu joins several)
+    status: str  # missing | in_pantry | pending | staple
+
+
+class AddMissingIn(BaseModel):
+    """Which ingredients to add; without a body, the missing ones (session 9)."""
+
+    ingredient_ids: list[int] = Field(min_length=1, max_length=200)
+
+
 class ShoppingItemPatch(BaseModel):
     """Move the line to another section and/or set its photo (session 9). A field that is
     not sent does not change; `image_url: null` removes the photo."""

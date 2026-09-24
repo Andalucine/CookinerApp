@@ -8,6 +8,8 @@ from app.i18n import t
 from app.models import ShoppingSection
 from app.schemas.auth import MessageResponse
 from app.schemas.pantry import (
+    AddMissingIn,
+    MissingIngredientOut,
     ShoppingItemIn,
     ShoppingItemOut,
     ShoppingItemPatch,
@@ -55,17 +57,40 @@ def add_item(body: ShoppingItemIn, db: DbSession, user: CurrentUser) -> Shopping
     return ShoppingItemOut.model_validate(item)
 
 
-@router.post("/from-recipe/{recipe_id}", response_model=list[ShoppingItemOut])
-def add_missing_from_recipe(
-    recipe_id: int, db: DbSession, user: CurrentUser, lang: Lang
-) -> list[ShoppingItemOut]:
-    """'Añadir lo que me falta': every ingredient of the recipe not in my pantry."""
+def _viewable_recipe(db, user, lang, recipe_id: int):
     try:
         recipe = recipe_service.get(db, recipe_id)
         permissions.require_view(db, user, recipe.notebook)
     except (recipe_service.RecipeNotFound, permissions.Forbidden):
         raise HTTPException(status.HTTP_404_NOT_FOUND, t("recipe_not_found", lang)) from None
-    added = pantry_service.add_missing_from_recipe(db, user.notebook, user, recipe)
+    return recipe
+
+
+@router.get("/from-recipe/{recipe_id}", response_model=list[MissingIngredientOut])
+def missing_from_recipe(
+    recipe_id: int, db: DbSession, user: CurrentUser, lang: Lang
+) -> list[MissingIngredientOut]:
+    """Before adding (session 9): the recipe's ingredients with what each one is for me
+    (`missing`, `in_pantry`, `pending`, `staple`), so the person ticks what to add."""
+    recipe = _viewable_recipe(db, user, lang, recipe_id)
+    rows = pantry_service.missing_from_recipes(db, user.notebook.id, [recipe])
+    return [MissingIngredientOut(**r) for r in rows]
+
+
+@router.post("/from-recipe/{recipe_id}", response_model=list[ShoppingItemOut])
+def add_missing_from_recipe(
+    recipe_id: int,
+    db: DbSession,
+    user: CurrentUser,
+    lang: Lang,
+    body: AddMissingIn | None = None,
+) -> list[ShoppingItemOut]:
+    """'Añadir lo que me falta': every ingredient of the recipe not in my pantry — or, with a
+    body, exactly the ticked ones (session 9)."""
+    recipe = _viewable_recipe(db, user, lang, recipe_id)
+    added = pantry_service.add_missing_from_recipe(
+        db, user.notebook, user, recipe, body.ingredient_ids if body else None
+    )
     return [ShoppingItemOut.model_validate(i) for i in added]
 
 

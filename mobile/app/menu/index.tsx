@@ -80,23 +80,12 @@ function Week({ auth, week }: { auth: Auth; week: string }) {
     }
   }
 
-  async function addShopping() {
+  function addShopping() {
     if (!menu) return;
-    setBusy(true);
-    setMessage(null);
-    try {
-      const result = await menus.shopping(auth, menu.id);
-      setMessage({
-        kind: "ok",
-        text: result.added.length
-          ? t("menu.shoppingDone", { names: result.added.map((i) => i.text).join(", ") })
-          : t("menu.shoppingNone"),
-      });
-    } catch (error) {
-      fail(error);
-    } finally {
-      setBusy(false);
-    }
+    router.push({
+      pathname: "/shopping-list/add",
+      params: { menu: String(menu.id), title: weekLabel(week, language) },
+    });
   }
 
   function confirmRemake() {
@@ -283,12 +272,7 @@ function Week({ auth, week }: { auth: Auth; week: string }) {
           ))}
 
           <View style={styles.actions}>
-            <BigButton
-              label={t("menu.shopping")}
-              icon="cart-outline"
-              loading={busy}
-              onPress={addShopping}
-            />
+            <BigButton label={t("menu.shopping")} icon="cart-outline" onPress={addShopping} />
             <BigButton
               label={t("menu.remake")}
               icon="refresh"

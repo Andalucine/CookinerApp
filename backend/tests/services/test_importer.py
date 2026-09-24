@@ -187,6 +187,32 @@ def test_site_name_from_the_json_ld_when_everything_else_is_a_domain():
         ("Tarta de queso | La mejor del mundo", "Tarta de queso"),
         ("Marmitako", "Marmitako"),
         ("Cómo hacer", "Cómo hacer"),  # nothing sensible left: keep it
+        # Session 9: the headlines of the demo recipes
+        (
+            "Empedrado de garbanzos, una receta súper fresquita para verano, fácil y rica",
+            "Empedrado de garbanzos",
+        ),
+        ("Tom Kha Gai, la sopa tailandesa de pollo y coco muy aromática", "Tom Kha Gai"),
+        (
+            "Lasaña boloñesa. Receta de cocina fácil, casera, italiana y deliciosa",
+            "Lasaña boloñesa",
+        ),
+        (
+            "Judías verdes con jamón, la receta más fácil e irresistible para reivindicarlas",
+            "Judías verdes con jamón",
+        ),
+        (
+            "El guiso de pollo en 15 minutos que sabe al de la abuela: desde que lo descubrí…",
+            "Guiso de pollo en 15 minutos",
+        ),
+        (
+            "Pollo al horno con patatas y verduras asadas, la receta casera y fácil",
+            "Pollo al horno con patatas y verduras asadas",
+        ),
+        ("Huevos rotos con jamón, un clásico que nunca falla", "Huevos rotos con jamón"),
+        ("Pan, tomate y jamón", "Pan, tomate y jamón"),  # a comma inside the name stays
+        ("Receta tradicional de pollo al ajillo", "Pollo al ajillo"),
+        ("Croquetas de jamón crujientes con la receta de la abuela", "Croquetas de jamón"),
     ],
 )
 def test_the_title_is_the_name_of_the_dish(headline, name):

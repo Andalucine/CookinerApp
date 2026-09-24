@@ -145,8 +145,55 @@ def add_shopping_item(
     return item
 
 
-def add_missing_from_recipe(db: Session, notebook: Notebook, user: User, recipe: Recipe) -> list:
-    """Put on the list every ingredient of the recipe that is not in the pantry."""
+def missing_from_recipes(db: Session, notebook_id: int, recipes: list[Recipe]) -> list[dict]:
+    """What each ingredient of those recipes is, before adding anything (session 9): `missing`
+    (would go to the list), `in_pantry`, `pending` (already on the list) or `staple`. One
+    line per ingredient, even if several recipes use it; `quantity` joins what they say."""
+    have = {p.ingredient_id for p in list_items(db, notebook_id)}
+    already = {
+        i.ingredient_id
+        for i in shopping_items(db, notebook_id)
+        if not i.is_checked and i.ingredient_id
+    }
+    rows: dict[int, dict] = {}
+    for recipe in recipes:
+        for ri in recipe.ingredients:
+            ing = ri.ingredient
+            row = rows.setdefault(
+                ing.id,
+                {
+                    "ingredient_id": ing.id,
+                    "name": ing.name,
+                    "quantity": None,
+                    "recipes": [],
+                    "status": "missing",
+                },
+            )
+            if ri.raw_text and ri.raw_text not in (row["quantity"] or ""):
+                row["quantity"] = (
+                    f"{row['quantity']} · {ri.raw_text}" if row["quantity"] else ri.raw_text
+                )
+            if recipe.title not in row["recipes"]:
+                row["recipes"].append(recipe.title)
+            if ing.name in STAPLES:
+                row["status"] = "staple"
+            elif ing.id in have:
+                row["status"] = "in_pantry"
+            elif ing.id in already:
+                row["status"] = "pending"
+    return list(rows.values())
+
+
+def add_missing_from_recipe(
+    db: Session,
+    notebook: Notebook,
+    user: User,
+    recipe: Recipe,
+    ingredient_ids: list[int] | None = None,
+) -> list:
+    """Put on the list every ingredient of the recipe that is not in the pantry, or, when
+    `ingredient_ids` is given (session 9), exactly those the person ticked (even if they are
+    in the pantry), skipping only what is already pending."""
     have = {p.ingredient_id for p in list_items(db, notebook.id)}
     already = {
         i.ingredient_id
@@ -156,8 +203,14 @@ def add_missing_from_recipe(db: Session, notebook: Notebook, user: User, recipe:
     added = []
     for ri in recipe.ingredients:
         ing = ri.ingredient
-        if ing.name in STAPLES or ing.id in have or ing.id in already:
+        if ing.id in already:
             continue
+        if ingredient_ids is not None:
+            if ing.id not in ingredient_ids:
+                continue
+        elif ing.name in STAPLES or ing.id in have:
+            continue
+        already.add(ing.id)
         item = ShoppingListItem(
             notebook_id=notebook.id,
             ingredient_id=ing.id,

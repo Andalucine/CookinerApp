@@ -56,6 +56,7 @@ function Navigation() {
       <Stack.Screen name="menu/setup" options={{ title: t("menu.make") }} />
       <Stack.Screen name="menu/pick" options={{ title: t("menu.pickTitle") }} />
       <Stack.Screen name="shopping-list/index" options={{ title: t("home.shoppingList") }} />
+      <Stack.Screen name="shopping-list/add" options={{ title: t("addMissing.title") }} />
       <Stack.Screen name="share/index" options={{ title: t("home.share") }} />
       <Stack.Screen name="join/index" options={{ title: t("home.join") }} />
       <Stack.Screen name="settings/index" options={{ title: t("home.settings") }} />

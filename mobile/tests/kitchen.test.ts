@@ -1,7 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { byLocation, pantryName, shoppingLine, withChecked } from "../services/kitchen.ts";
+import {
+  byLocation,
+  defaultTicks,
+  pantryName,
+  shoppingLine,
+  withChecked,
+} from "../services/kitchen.ts";
 import type { ShoppingList } from "../services/shopping.ts";
 
 test("a typed line keeps what was written and finds the ingredient name", () => {
@@ -62,4 +68,15 @@ test("ticking a line moves it to the end of its section and updates what is left
   assert.equal(after.pending, 1);
   assert.equal(withChecked(after, 1, true).pending, 1); // already ticked: nothing changes
   assert.equal(withChecked(after, 3, false).pending, 2);
+});
+
+test("only the missing ingredients come ticked", () => {
+  const rows = [
+    { ingredient_id: 1, status: "missing" },
+    { ingredient_id: 2, status: "in_pantry" },
+    { ingredient_id: 3, status: "pending" },
+    { ingredient_id: 4, status: "staple" },
+    { ingredient_id: 5, status: "missing" },
+  ];
+  assert.deepEqual(defaultTicks(rows), [1, 5]);
 });

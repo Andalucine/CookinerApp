@@ -518,11 +518,27 @@ def _clean_title(title: str, site: str | None) -> str:
 
 
 _TITLE_LEAD = re.compile(
-    r"^(?:c[oó]mo\s+(?:hacer|preparar|cocinar)|receta\s+(?:f[aá]cil\s+)?(?:de|del)|"
+    r"^(?:c[oó]mo\s+(?:hacer|preparar|cocinar)|receta\s+(?:\w+\s+){0,2}(?:de|del)|"
     r"la\s+receta\s+(?:de|del)|how\s+to\s+make|recipe\s+for)\s+",
     re.IGNORECASE,
 )
-_TITLE_TAIL = re.compile(r"\s*(?:[:|–—]|\s-\s|,\s*(?:receta|la receta|recipe)\b).*$", re.IGNORECASE)
+# Where the headline stops naming the dish and starts selling it (session 9: the demo recipes
+# came out with the whole headline): a colon, a dash, a full stop, or a comma followed by a
+# description ("una receta…", "la sopa tailandesa…", "el plato…", "fácil y…").
+_DESCRIPTION_STARTS = (
+    r"un|una|unos|unas|el|la|los|las|receta|recetas|recipe|mi|nuestra|nuestro|este|esta|"
+    r"f[aá]cil|sencill[ao]|ideal|perfect[ao]|delicios[ao]|tiern[ao]s?|jugos[ao]s?|"
+    r"descubre|as[ií]|c[oó]mo|todo|todos|lista|listo|paso|para|con|sin|the|a|an|easy"
+)
+_TITLE_TAIL = re.compile(
+    r"\s*(?:[:|–—]|\s-\s|\.\s|,\s*(?:" + _DESCRIPTION_STARTS + r")\b).*$", re.IGNORECASE
+)
+# "Este guiso…", "La sopa…" at the start: the article is not part of the name
+_TITLE_ARTICLE = re.compile(r"^(?:este|esta|estos|estas|el|la|los|las)\s+(?=\S)", re.IGNORECASE)
+# "…que sabe al de la abuela", "…para reivindicar este clásico": a clause, not the name
+_TITLE_CLAUSE = re.compile(
+    r"\s+(?:que|para|donde|con\s+(?:la\s+)?receta|crujientes?\s+con)\s+.*$", re.IGNORECASE
+)
 _SMALL_WORDS = {"a", "al", "de", "del", "el", "en", "la", "las", "los", "y", "o", "of", "the"}
 
 
@@ -532,6 +548,10 @@ def short_title(title: str) -> str:
     name = _TITLE_TAIL.sub("", title.strip())
     name = re.sub(r"\s*\([^)]*\)", "", name)
     name = _TITLE_LEAD.sub("", name).strip(" .,;")
+    name = _TITLE_ARTICLE.sub("", name)
+    shorter = _TITLE_CLAUSE.sub("", name).strip(" .,;")
+    if len(shorter.split()) >= 2:
+        name = shorter
     if len(name) < 3:
         return title.strip()
     return name[0].upper() + name[1:]

@@ -1,7 +1,7 @@
 /** Menú semanal (API /menus), session 9. Always the person's own notebook. */
 import { api } from "./apiClient.ts";
 import type { RecipeSummary } from "./recipes.ts";
-import type { ShoppingItem } from "./shopping.ts";
+import type { MissingIngredient, ShoppingItem } from "./shopping.ts";
 
 type Auth = { token: string; language: string };
 
@@ -73,9 +73,15 @@ export function another({ token, language }: Auth, menuId: number, slotId: numbe
   });
 }
 
-export function shopping({ token, language }: Auth, menuId: number) {
+/** Before adding: every ingredient of the week's recipes, once, with what it is for me. */
+export function missingForWeek({ token, language }: Auth, menuId: number) {
+  return api<MissingIngredient[]>(`/menus/${menuId}/shopping`, { token, language });
+}
+
+export function shopping({ token, language }: Auth, menuId: number, ingredientIds?: number[]) {
   return api<{ added: ShoppingItem[]; recipes: number }>(`/menus/${menuId}/shopping`, {
     method: "POST",
+    body: ingredientIds ? { ingredient_ids: ingredientIds } : undefined,
     token,
     language,
   });

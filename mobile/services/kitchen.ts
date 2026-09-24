@@ -29,6 +29,11 @@ export function byLocation(items: PantryItem[]): Record<Location, PantryItem[]> 
   return groups;
 }
 
+/** What comes ticked when choosing what to add (session 9): only what is missing. */
+export function defaultTicks(rows: { ingredient_id: number; status: string }[]): number[] {
+  return rows.filter((r) => r.status === "missing").map((r) => r.ingredient_id);
+}
+
 export function boughtCount(list: ShoppingList): number {
   return list.total - list.pending;
 }

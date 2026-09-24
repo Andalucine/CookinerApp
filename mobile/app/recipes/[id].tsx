@@ -34,7 +34,6 @@ import {
   youtubeId,
 } from "../../services/format.ts";
 import * as recipes from "../../services/recipes.ts";
-import * as shopping from "../../services/shopping.ts";
 import * as winesApi from "../../services/wines.ts";
 import { useLoad } from "../../services/useLoad.ts";
 
@@ -60,8 +59,6 @@ function RecipeView({ auth, id }: { auth: Auth; id: number }) {
   }, [auth.token, auth.language, id]);
   const [favoriteError, setFavoriteError] = useState<string | null>(null);
   const [wineError, setWineError] = useState<string | null>(null);
-  const [missing, setMissing] = useState<{ text: string; kind: "ok" | "error" } | null>(null);
-  const [adding, setAdding] = useState(false);
 
   if (data.loading && !data.data) return <Loading />;
   if (data.error || !data.data) {
@@ -74,22 +71,12 @@ function RecipeView({ auth, id }: { auth: Auth; id: number }) {
 
   const { recipe, spiceIds, wines } = data.data;
 
-  async function addMissing() {
-    setAdding(true);
-    setMissing(null);
-    try {
-      const added = await shopping.fromRecipe(auth, recipe.id);
-      setMissing({
-        kind: "ok",
-        text: added.length
-          ? t("recipe.addedMissing", { names: added.map((i) => i.text).join(", ") })
-          : t("recipe.nothingMissing"),
-      });
-    } catch (error) {
-      setMissing({ kind: "error", text: errorText(error, t) });
-    } finally {
-      setAdding(false);
-    }
+  function addMissing() {
+    // The person ticks what to add (session 9): nothing goes to the list without seeing it
+    router.push({
+      pathname: "/shopping-list/add",
+      params: { recipe: String(recipe.id), title: recipe.title },
+    });
   }
   const video = youtubeId(recipe.youtube_url);
   const steps = splitSteps(recipe.instructions);
@@ -215,18 +202,8 @@ function RecipeView({ auth, id }: { auth: Auth; id: number }) {
             label={t("recipe.addMissing")}
             icon="cart-outline"
             variant="secondary"
-            loading={adding}
             onPress={addMissing}
           />
-          <Message text={missing?.text ?? null} kind={missing?.kind} />
-          {missing?.kind === "ok" ? (
-            <BigButton
-              label={t("recipe.seeList")}
-              icon="list-outline"
-              variant="link"
-              onPress={() => router.push("/shopping-list")}
-            />
-          ) : null}
         </>
       ) : null}
 

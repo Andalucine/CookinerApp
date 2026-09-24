@@ -10,8 +10,9 @@ from app.i18n import t
 from app.models import MenuSlot, WeeklyMenu
 from app.schemas.auth import MessageResponse
 from app.schemas.menu import MenuCheckOut, MenuDraftIn, MenuOut, MenuShoppingOut, SlotIn, SlotOut
-from app.schemas.pantry import ShoppingItemOut
+from app.schemas.pantry import AddMissingIn, MissingIngredientOut, ShoppingItemOut
 from app.services import menu as menu_service
+from app.services import pantry as pantry_service
 from app.services import recipe as recipe_service
 
 router = APIRouter(prefix="/menus", tags=["menus"])
@@ -104,11 +105,27 @@ def another(menu_id: int, slot_id: int, db: DbSession, user: CurrentUser, lang: 
     return _slot_out(slot, favorites)
 
 
-@router.post("/{menu_id}/shopping", response_model=MenuShoppingOut)
-def shopping(menu_id: int, db: DbSession, user: CurrentUser, lang: Lang) -> MenuShoppingOut:
-    """ "Añadir lo que falta para toda la semana" to my shopping list."""
+@router.get("/{menu_id}/shopping", response_model=list[MissingIngredientOut])
+def shopping_preview(
+    menu_id: int, db: DbSession, user: CurrentUser, lang: Lang
+) -> list[MissingIngredientOut]:
+    """Before adding: every ingredient of the week's recipes, once, with what it is for me."""
     menu = _mine(db, user, lang, menu_id)
-    added, recipes = menu_service.shopping_for_week(db, menu, user.notebook, user)
+    rows = pantry_service.missing_from_recipes(
+        db, user.notebook.id, menu_service.recipes_of_week(menu)
+    )
+    return [MissingIngredientOut(**r) for r in rows]
+
+
+@router.post("/{menu_id}/shopping", response_model=MenuShoppingOut)
+def shopping(
+    menu_id: int, db: DbSession, user: CurrentUser, lang: Lang, body: AddMissingIn | None = None
+) -> MenuShoppingOut:
+    """ "Añadir lo que falta para toda la semana" to my shopping list (or the ticked ones)."""
+    menu = _mine(db, user, lang, menu_id)
+    added, recipes = menu_service.shopping_for_week(
+        db, menu, user.notebook, user, body.ingredient_ids if body else None
+    )
     return MenuShoppingOut(
         added=[ShoppingItemOut.model_validate(i) for i in added], recipes=recipes
     )

@@ -77,10 +77,24 @@ export function clearChecked({ token, language }: Auth, toPantry: boolean) {
   });
 }
 
-/** "Añadir lo que me falta": the ingredients of a recipe that are not in my pantry. */
-export function fromRecipe({ token, language }: Auth, recipeId: number) {
+export type MissingIngredient = {
+  ingredient_id: number;
+  name: string;
+  quantity: string | null;
+  recipes: string[];
+  status: "missing" | "in_pantry" | "pending" | "staple";
+};
+
+/** Before adding: the ingredients of a recipe with what each one is for me (session 9). */
+export function missingForRecipe({ token, language }: Auth, recipeId: number) {
+  return api<MissingIngredient[]>(`/shopping-list/from-recipe/${recipeId}`, { token, language });
+}
+
+/** "Añadir lo que me falta": the ticked ingredients of a recipe (or the missing ones). */
+export function fromRecipe({ token, language }: Auth, recipeId: number, ingredientIds?: number[]) {
   return api<ShoppingItem[]>(`/shopping-list/from-recipe/${recipeId}`, {
     method: "POST",
+    body: ingredientIds ? { ingredient_ids: ingredientIds } : undefined,
     token,
     language,
   });

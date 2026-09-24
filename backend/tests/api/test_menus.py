@@ -71,12 +71,22 @@ def test_check_and_draft_follow_the_rules(client, seeded, make_user):
     breakfasts = [s for s in menu["slots"] if s["meal"] == "breakfast"]
     assert all(s["recipe"]["id"] == ids["tostadas"] for s in breakfasts)
     mains = [s for s in menu["slots"] if s["meal"] != "breakfast"]
-    # gazpacho is summer-only: never in an autumn week; the two mains alternate
-    assert {s["recipe"]["id"] for s in mains} == {ids["marmitako"], ids["lentejas"]}
-    for day in range(7):
-        lunch, dinner = [s["recipe"]["id"] for s in mains if s["day"] == day]
+    # the three mains are all used before any repeats, and the summer-only gazpacho is used
+    # rather than repeating a plate (with a notice)
+    first_three = [s["recipe"]["id"] for s in mains[:3]]
+    assert sorted(first_three) == sorted([ids["marmitako"], ids["lentejas"], ids["gazpacho"]])
+    # a recipe repeats at most once: 3 recipes → 6 plates, the other 8 stay empty
+    filled = [s for s in mains if s["recipe"]]
+    assert len(filled) == 6 and all(s["recipe"] is None for s in mains[6:])
+    counts = {}
+    for s in filled:
+        counts[s["recipe"]["id"]] = counts.get(s["recipe"]["id"], 0) + 1
+    assert set(counts.values()) == {2}
+    for day in range(3):
+        lunch, dinner = [s["recipe"]["id"] for s in filled if s["day"] == day]
         assert lunch != dinner
-    assert "repeated" in menu["notices"] and "no_breakfast_recipes" not in menu["notices"]
+    assert {"repeated", "season_ignored", "not_enough_recipes"} <= set(menu["notices"])
+    assert "no_breakfast_recipes" not in menu["notices"]
 
     # the week is found by any of its days; a new draft replaces it
     r = client.get("/menus?week_start=2026-10-04", headers=h)
@@ -98,8 +108,15 @@ def test_wants_pantry_and_notices(client, seeded, make_user):
     slots = r.json()["slots"]
     # the wanted recipe comes first, but a recipe is not repeated while others are unused
     assert slots[0]["recipe"]["id"] == ids["lentejas"]
-    assert sum(1 for s in slots if s["recipe"]["id"] == ids["lentejas"]) >= 3
+    assert sum(1 for s in slots if s["recipe"] and s["recipe"]["id"] == ids["lentejas"]) == 2
     assert "filled_with_rest" in r.json()["notices"]  # one lentejas recipe cannot fill a week
+    # a food found through the category name ("guisos de legumbres")
+    r = client.post(
+        "/menus/draft",
+        json={"week_start": WEEK, "meals": ["lunch"], "wants": "legumbres"},
+        headers=h,
+    )
+    assert r.json()["slots"][0]["recipe"]["id"] == ids["lentejas"]
     # a food nobody has: the draft fills with the rest and says so
     r = client.post(
         "/menus/draft", json={"week_start": WEEK, "meals": ["lunch"], "wants": "caviar"}, headers=h
@@ -113,7 +130,8 @@ def test_wants_pantry_and_notices(client, seeded, make_user):
     )
     assert "no_breakfast_recipes" in r.json()["notices"]
     assert all(s["recipe"] is None for s in r.json()["slots"] if s["meal"] == "breakfast")
-    assert all(s["recipe"] is not None for s in r.json()["slots"] if s["meal"] == "lunch")
+    lunches = [s for s in r.json()["slots"] if s["meal"] == "lunch"]
+    assert sum(1 for s in lunches if s["recipe"]) == 2  # one recipe, used twice at most
 
 
 def test_edit_slots_another_and_shopping(client, seeded, make_user):
@@ -148,11 +166,16 @@ def test_edit_slots_another_and_shopping(client, seeded, make_user):
         f"/menus/{menu['id']}/slots/{first['id']}", json={"recipe_id": foreign}, headers=h
     )
     assert r.status_code == 404
-    assert client.get(f"/menus/{menu['id']}/shopping", headers=other_h).status_code == 405
+    assert client.get(f"/menus/{menu['id']}/shopping", headers=other_h).status_code == 404
     assert client.post(f"/menus/{menu['id']}/shopping", headers=other_h).status_code == 404
 
     # the shopping list for the whole week: every ingredient not at home, once
     client.post("/pantry/items", json={"name": "patata"}, headers=h)
+    preview = client.get(f"/menus/{menu['id']}/shopping", headers=h).json()
+    by_name = {row["name"]: row for row in preview}
+    assert by_name["patata"]["status"] == "in_pantry" and by_name["sal"]["status"] == "staple"
+    assert len(by_name["tomate"]["recipes"]) >= 1  # gazpacho (put by hand) uses it
+    assert len(preview) == len(by_name)  # each ingredient once, whatever the number of meals
     r = client.post(f"/menus/{menu['id']}/shopping", headers=h)
     assert r.status_code == 200
     texts = sorted(i["text"] for i in r.json()["added"])
@@ -162,6 +185,48 @@ def test_edit_slots_another_and_shopping(client, seeded, make_user):
     assert r.json()["recipes"] >= 2
     # again: nothing new (already pending)
     assert client.post(f"/menus/{menu['id']}/shopping", headers=h).json()["added"] == []
+    # the ticked ones only: patata (in the pantry, but asked for)
+    r = client.post(
+        f"/menus/{menu['id']}/shopping",
+        json={"ingredient_ids": [by_name["patata"]["ingredient_id"]]},
+        headers=h,
+    )
+    assert [i["text"] for i in r.json()["added"]] == ["patata"]
 
     assert client.delete(f"/menus/{menu['id']}", headers=h).status_code == 200
     assert client.get(f"/menus?week_start={WEEK}", headers=h).status_code == 404
+
+
+def test_only_main_plates_and_light_dinners(client, seeded, make_user):
+    """Desserts, tapas and sauces never come out as a lunch or a dinner; a soup goes to
+    dinner and a stew to lunch when both are there (session 9, after Beatriz's test)."""
+    h, _ = make_user()
+    for title, slug, course in (
+        ("Torrijas", "dulces-fritos", "dessert"),
+        ("Croquetas", "frituras", "appetiser"),
+        ("Alioli", "salsas-frias", None),
+        ("Cocido", "cocidos-potajes", "main"),
+        ("Crema de calabacín", "cremas-pures", "light-dinner"),
+    ):
+        client.post(
+            "/recipes",
+            json=marmitako(
+                seeded,
+                title=title,
+                ingredients=[{"name": title.lower()}],
+                category_ids=[_cat(seeded, slug)],
+                tag_ids=[_tag(seeded, "course", course)] if course else [],
+                prep_time_minutes=60 if title == "Cocido" else 20,
+            ),
+            headers=h,
+        )
+    r = client.post(
+        "/menus/draft", json={"week_start": WEEK, "meals": ["lunch", "dinner"]}, headers=h
+    )
+    slots = r.json()["slots"]
+    titles = {s["recipe"]["title"] for s in slots if s["recipe"]}
+    assert titles == {"Cocido", "Crema de calabacín"}
+    assert slots[0]["meal"] == "lunch" and slots[0]["recipe"]["title"] == "Cocido"
+    assert slots[1]["meal"] == "dinner" and slots[1]["recipe"]["title"] == "Crema de calabacín"
+    # "Otra propuesta" respects the cap: with both recipes used twice, nothing else is offered
+    assert "not_enough_recipes" in r.json()["notices"]
