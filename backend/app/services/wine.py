@@ -308,3 +308,29 @@ def categories_paired_with(db: Session, wine_category_id: int | None) -> list[Ca
             .order_by(PairingRule.position, Category.name_es)
         )
     )
+
+
+def from_preview(db: Session, preview, url: str, lang: str = "es") -> WineIn:
+    """What the app puts in the form after reading a page (session 8): the preview as a wine,
+    with its type found by slug and "con qué marida" prefilled from the pairing rules."""
+    category = category_by_slug(db, preview.category_slug)
+    paired = categories_paired_with(db, category.id if category else None)
+    pairing = ", ".join(c.name_en if lang == "en" else c.name_es for c in paired) or None
+    return WineIn(
+        name=preview.name or "?",  # the form asks for a real name before saving
+        winery=preview.winery,
+        category_id=category.id if category else None,
+        sweetness=preview.sweetness,
+        ageing=preview.ageing,
+        country=preview.country,
+        appellation=preview.appellation,
+        grapes=preview.grapes,
+        vintage=preview.vintage,
+        price_range=preview.price_range,
+        tasting_notes=preview.tasting_notes,
+        pairing_notes=pairing,
+        source_url=url,
+        source_name=preview.source_name,
+        source_price=preview.source_price,
+        image_url=preview.image_url,
+    )

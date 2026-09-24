@@ -4,6 +4,7 @@ vintage. Nothing is saved: the app shows the preview and the person saves it wit
 
 import re
 from dataclasses import dataclass, field
+from html.parser import HTMLParser
 
 from app.models.wine import price_range_for
 from app.services.importer import (
@@ -17,7 +18,7 @@ from app.services.importer import (
     nice_site_name,
 )
 
-__all__ = ["fetch_html", "read_wine", "WinePreview"]
+__all__ = ["fetch_html", "read_sheet", "read_wine", "WinePreview"]
 
 
 @dataclass
@@ -197,6 +198,110 @@ def _country(appellation: str | None, text: str) -> str | None:
     return None
 
 
+# --- The data sheet of the page --------------------------------------------------------------
+# Shops print the facts as label + value pairs ("Bodega: Zarate", "Origen: D.O. Rías Baixas"),
+# often inside the purchase form, which the recipe reader skips. This small reader keeps every
+# short text of the page in order and pairs each known label with the text that follows it.
+
+_SHEET_LABELS: dict[str, str] = {
+    "bodega": "winery", "productor": "winery", "elaborador": "winery",
+    "winery": "winery", "producer": "winery",
+    "origen": "appellation", "denominación": "appellation", "denominacion": "appellation",
+    "denominación de origen": "appellation", "d.o.": "appellation", "región": "appellation",
+    "region": "appellation", "zona": "appellation", "appellation": "appellation",
+    "país": "country", "pais": "country", "country": "country",
+    "uva": "grapes", "uvas": "grapes", "variedad": "grapes", "variedades": "grapes",
+    "variedad de uva": "grapes", "grape": "grapes", "grapes": "grapes", "varietal": "grapes",
+    "añada": "vintage", "cosecha": "vintage", "vintage": "vintage",
+    "tipo de vino": "type", "type": "type",
+    "crianza": "ageing", "envejecimiento": "ageing", "ageing": "ageing", "aging": "ageing",
+}  # fmt: skip
+_COUNTRIES = {
+    "españa", "spain", "francia", "france", "italia", "italy", "portugal", "alemania", "germany",
+    "argentina", "chile", "austria", "hungría", "hungria", "hungary", "estados unidos", "usa",
+    "australia", "nueva zelanda", "new zealand", "sudáfrica", "south africa",
+}  # fmt: skip
+
+
+class _SheetReader(HTMLParser):
+    """Every leaf text of the page, in order, plus the paragraphs (for the description)."""
+
+    _LEAVES = {"h1", "h2", "h3", "h4", "h5", "h6", "dt", "dd", "th", "td", "a", "span", "p",
+               "li", "strong", "b", "label", "div"}  # fmt: skip
+    _SKIP = {"script", "style", "noscript"}
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.texts: list[str] = []
+        self.paragraphs: list[str] = []
+        self._skip = 0
+        self._stack: list[list[str]] = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag in self._SKIP:
+            self._skip += 1
+        if tag in self._LEAVES:
+            self._stack.append([])
+        elif tag == "br" and self._stack:
+            self._stack[-1].append(" ")
+
+    def handle_endtag(self, tag):
+        if tag in self._SKIP and self._skip:
+            self._skip -= 1
+        if tag in self._LEAVES and self._stack:
+            text = " ".join("".join(self._stack.pop()).split())
+            if text:
+                if tag == "p":
+                    self.paragraphs.append(text)
+                self.texts.append(text)
+
+    def handle_data(self, data):
+        if not self._skip and self._stack:
+            self._stack[-1].append(data)
+            # the same text belongs to the enclosing leaves too (a <p> around <a>s)
+            for open_leaf in self._stack[:-1]:
+                open_leaf.append(data)
+
+
+def read_sheet(html: str) -> dict[str, str]:
+    """{"winery": "Bodegas Zarate", "appellation": "D.O. Rías Baixas", "country": "España"...}
+    from the label + value pairs of the page. Values are the text right after a label; a
+    country printed next to the origin is kept apart."""
+    reader = _SheetReader()
+    reader.feed(html)
+    reader.close()
+    sheet: dict[str, str] = {}
+    texts = reader.texts
+    for i, text in enumerate(texts[:-1]):
+        key = _SHEET_LABELS.get(text.lower().rstrip(":").strip())
+        if not key or key in sheet:
+            continue
+        value = texts[i + 1].strip()
+        if not value or len(value) > 120 or _SHEET_LABELS.get(value.lower().rstrip(":")):
+            continue
+        if key == "appellation":
+            for country in _COUNTRIES:
+                if value.lower().endswith(" " + country):
+                    value = value[: -len(country) - 1].strip()
+                    sheet.setdefault("country", country.title())
+        sheet[key] = value
+        if key == "appellation" and i + 2 < len(texts) and texts[i + 2].lower() in _COUNTRIES:
+            sheet.setdefault("country", texts[i + 2])
+    if "country" in sheet:
+        sheet["country"] = _COUNTRY_NAMES.get(sheet["country"].lower(), sheet["country"])
+    long = [p for p in reader.paragraphs if 80 <= len(p) <= 2000]
+    if long:
+        sheet["description"] = max(long, key=len)
+    return sheet
+
+
+_COUNTRY_NAMES = {
+    "spain": "España", "france": "Francia", "italy": "Italia", "germany": "Alemania",
+    "hungary": "Hungría", "hungria": "Hungría", "usa": "Estados Unidos",
+    "new zealand": "Nueva Zelanda", "south africa": "Sudáfrica",
+}  # fmt: skip
+
+
 def read_wine(html: str, url: str) -> WinePreview:
     reader = _PageReader()
     reader.feed(html)
@@ -222,22 +327,49 @@ def read_wine(html: str, url: str) -> WinePreview:
     preview.source_name = nice_site_name(_site_name(reader, None, url))
     if preview.source_name and "." in preview.source_name:
         preview.source_name = preview.source_name.split(".")[0].capitalize()  # delatierra.com
+    # Shops put themselves as the "brand" and the name as the "description": not wine facts
+    if (
+        preview.winery
+        and preview.source_name
+        and preview.winery.lower() == preview.source_name.lower()
+    ):
+        preview.winery = None
+    if (
+        preview.tasting_notes
+        and preview.name
+        and preview.tasting_notes.strip() == preview.name.strip()
+    ):
+        preview.tasting_notes = None
+
+    sheet = read_sheet(html)
+    preview.winery = preview.winery or sheet.get("winery")
+    preview.appellation = sheet.get("appellation")
+    preview.country = sheet.get("country")
+    preview.grapes = sheet.get("grapes")
+    if sheet.get("vintage") and re.fullmatch(r"(19|20)\d\d", sheet["vintage"]):
+        preview.vintage = int(sheet["vintage"])
+    if not preview.tasting_notes and sheet.get("description"):
+        preview.tasting_notes = sheet["description"]
     if preview.name:
         # Shops append the site to the title: "Viña Tondonia Reserva 2012 - Delatierra"
         preview.name = re.split(r"\s+[-|–]\s+", preview.name)[0].strip()
     if preview.tasting_notes and len(preview.tasting_notes) > 600:
         preview.tasting_notes = preview.tasting_notes[:597].rsplit(" ", 1)[0] + "…"
 
+    # The sheet's own words about type and ageing count first ("Tipo de vino: Blanco")
+    typed = " ".join(x for x in (sheet.get("type"), sheet.get("ageing")) if x)
     clues = " ".join(x for x in (preview.name, preview.tasting_notes, reader.title) if x)
     preview.category_slug = _first(_TYPE_PATTERNS, preview.name or "") or _first(
-        _TYPE_PATTERNS, clues
+        _TYPE_PATTERNS, f"{typed} {clues}"
     )
-    preview.ageing = _first(_AGEING, preview.name or "") or _first(_AGEING, clues)
-    preview.sweetness = _first(_SWEETNESS, clues)
-    preview.vintage = _vintage(preview.name, preview.tasting_notes)
-    preview.grapes = _grapes(clues)
-    preview.appellation = _appellation(clues)
-    preview.country = _country(preview.appellation, clues)
+    preview.ageing = (
+        _first(_AGEING, preview.name or "") or _first(_AGEING, typed) or _first(_AGEING, clues)
+    )
+    preview.sweetness = _first(_SWEETNESS, f"{typed} {clues}")
+    preview.vintage = preview.vintage or _vintage(preview.name, preview.tasting_notes)
+    preview.grapes = preview.grapes or _grapes(clues)
+    preview.appellation = preview.appellation or _appellation(clues)
+    preview.country = preview.country or _country(preview.appellation, clues)
 
     if not preview.name:
         preview.warnings.append("no_name")

@@ -20,7 +20,6 @@ from app.schemas.import_job import (
     WineImportRequest,
 )
 from app.schemas.recipe import RecipeIn, RecipeOut
-from app.schemas.wine import WineIn
 from app.services import import_job as import_service
 from app.services import importer, permissions, wine_importer
 from app.services import recipe as recipe_service
@@ -89,27 +88,7 @@ def import_wine(
     except importer.FetchFailed:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, t("import_fetch_failed", lang)) from None
     preview = wine_importer.read_wine(html, final_url)
-    category = wine_service.category_by_slug(db, preview.category_slug)
-    paired = wine_service.categories_paired_with(db, category.id if category else None)
-    pairing = ", ".join(c.name_en if lang == "en" else c.name_es for c in paired) or None
-    wine = WineIn(
-        name=preview.name or "?",  # the form asks for a real name before saving
-        winery=preview.winery,
-        category_id=category.id if category else None,
-        sweetness=preview.sweetness,
-        ageing=preview.ageing,
-        country=preview.country,
-        appellation=preview.appellation,
-        grapes=preview.grapes,
-        vintage=preview.vintage,
-        price_range=preview.price_range,
-        tasting_notes=preview.tasting_notes,
-        pairing_notes=pairing,
-        source_url=final_url,
-        source_name=preview.source_name,
-        source_price=preview.source_price,
-        image_url=preview.image_url,
-    )
+    wine = wine_service.from_preview(db, preview, final_url, lang)
     return WineImportPreview(
         notebook_id=notebook.id,
         complete="no_product_data" not in preview.warnings,
